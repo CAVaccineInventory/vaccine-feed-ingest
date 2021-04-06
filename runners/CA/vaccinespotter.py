@@ -56,7 +56,7 @@ with open(args.ndjson_output_file, "w") as fh:
             latitude = lat,
             longitude = long,
             website = props["url"],
-            provider_id = props["provider_location_id"],
+            provider_id = f"{props['provider']}:{props['provider_location_id']}",
             provider_name = props["provider_brand_name"], # provider, provider_brand, or provider_brand_name?
         )
 
