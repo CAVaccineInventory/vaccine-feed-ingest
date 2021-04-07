@@ -25,32 +25,32 @@ Location = namedtuple(
 )
 
 
-def to_dict(l):
+def to_dict(loc):
     """ Convert Location namedtuple to nested dict """
 
     d = {
-        "id": l.id,
-        "name": l.name,
+        "id": loc.id,
+        "name": loc.name,
         "address": {
-            "street1": l.street1,
-            "street2": l.street2,
-            "city": l.city,
-            "state": l.state,
-            "zip": l.zip,
+            "street1": loc.street1,
+            "street2": loc.street2,
+            "city": loc.city,
+            "state": loc.state,
+            "zip": loc.zip,
         },
         "location": {
-            "latitude": l.latitude,
-            "longitude": l.longitude,
+            "latitude": loc.latitude,
+            "longitude": loc.longitude,
         },
         "contact": {
-            "phone": [l.phone],
-            "website": [l.website],
-            "email": [l.email],
-            "other": [l.contact_other],
+            "phone": [loc.phone],
+            "website": [loc.website],
+            "email": [loc.email],
+            "other": [loc.contact_other],
         },
         "provider": {
-            "id": l.provider_id,
-            "name": l.provider_name,
+            "id": loc.provider_id,
+            "name": loc.provider_name,
         },
     }
     return d

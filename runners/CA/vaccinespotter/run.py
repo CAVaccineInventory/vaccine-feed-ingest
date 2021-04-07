@@ -1,9 +1,7 @@
 #!/usr/bin/env python3
 
 import argparse
-import json
 import logging
-import os
 import subprocess
 
 from os.path import join, dirname

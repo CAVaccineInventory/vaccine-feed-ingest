@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 
 import argparse
-import sys
 from ingestors import vaccinespotter
 
 parser = argparse.ArgumentParser(description="Vaccinespotter Fetcher")

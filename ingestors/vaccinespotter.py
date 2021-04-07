@@ -4,8 +4,8 @@ import httpx
 import json
 import logging
 
-from os.path import join
 from smart_open import open
+
 from . import header_dict
 from . import jsonschema
 
@@ -60,7 +60,7 @@ def normalize(ndjson_file, normalized_ndjson_file):
                 props = loc["properties"]
                 long, lat = loc["geometry"]["coordinates"]
 
-                l = jsonschema.Location(
+                location = jsonschema.Location(
                     id=f"vaccinespotter:{props['id']}",  # machinetag not hash
                     name=props["name"],
                     street1=props["address"],
@@ -76,6 +76,6 @@ def normalize(ndjson_file, normalized_ndjson_file):
                     ],  # provider, provider_brand, or provider_brand_name?
                 )
 
-                d = jsonschema.to_dict(l)
+                d = jsonschema.to_dict(location)
                 json.dump(d, fout)
                 fout.write("\n")
