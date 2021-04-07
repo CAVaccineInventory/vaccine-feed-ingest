@@ -14,5 +14,5 @@ Run the Vaccine Spotter crawler:
 
 ```bash
 mkdir -p out/CA/vaccinespotter/raw
-python3 runners/CA/vaccinespotter.py --raw-output-dir=out/CA/vaccinespotter/raw --ndjson-output-file=out/CA/vaccinespotter/locations.ndjson
+python3 runners/CA/vaccinespotter/run.py --raw-output-dir=out/CA/vaccinespotter/raw --ndjson-output-file=out/CA/vaccinespotter/locations.ndjson
 ```
