@@ -1,28 +1,23 @@
 #!/usr/bin/env python3
 
-from collections import namedtuple
+from typing import NamedTuple
 
-Location = namedtuple(
-    "Location",
-    [
-        "id",
-        "name",
-        "street1",
-        "street2",
-        "city",
-        "state",
-        "zip",
-        "latitude",
-        "longitude",
-        "phone",
-        "website",
-        "email",
-        "contact_other",
-        "provider_id",
-        "provider_name",
-    ],
-    defaults=[None] * 13,
-)
+class Location(NamedTuple):
+    id: str = None
+    name: str = None
+    street1: str = None
+    street2: str = None
+    city: str = None
+    state: str = None
+    zip: str = None
+    latitude: str = None
+    longitude: str = None
+    phone: str = None
+    website: str = None
+    email: str = None
+    contact_other: str = None
+    provider_id: str = None
+    provider_name: str = None
 
 
 def to_dict(loc):
