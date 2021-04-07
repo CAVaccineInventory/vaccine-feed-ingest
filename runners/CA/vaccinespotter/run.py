@@ -45,6 +45,8 @@ normalized_ndjson_file = join(args.output_dir, f"{state}.normalized.ndjson")
 subprocess.run(
     [
         cmd,
+        "--state",
+        state,
         "--ndjson-file",
         ndjson_file,
         "--normalized-ndjson-file",

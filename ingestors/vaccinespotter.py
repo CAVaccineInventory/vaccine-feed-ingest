@@ -5,6 +5,7 @@ import logging
 
 import httpx
 from smart_open import open
+from datetime import datetime, timezone
 
 from . import header_dict, jsonschema
 
@@ -47,8 +48,11 @@ def parse(geojson_file, ndjson_file):
             fh.write("\n")
 
 
-def normalize(ndjson_file, normalized_ndjson_file):
+def normalize(state, ndjson_file, normalized_ndjson_file):
     """ Convert ndjson_file into a normalized output file """
+
+    now = datetime.now(timezone.utc).isoformat()
+    url = f"https://www.vaccinespotter.org/api/v0/states/{state}.json"
 
     logger.info(f"Normalizing {ndjson_file} to {normalized_ndjson_file}")
     with open(ndjson_file) as fin:
@@ -60,7 +64,7 @@ def normalize(ndjson_file, normalized_ndjson_file):
                 long, lat = loc["geometry"]["coordinates"]
 
                 location = jsonschema.Location(
-                    id=f"vaccinespotter:{props['id']}",  # machinetag not hash
+                    id=f"vaccinespotter:{props['id']}",
                     name=props["name"],
                     street1=props["address"],
                     city=props["city"],
@@ -68,11 +72,16 @@ def normalize(ndjson_file, normalized_ndjson_file):
                     zip=props["postal_code"],
                     latitude=lat,
                     longitude=long,
-                    website=props["url"],
-                    provider_id=f"{props['provider']}:{props['provider_location_id']}",
-                    provider_name=props[
-                        "provider_brand_name"
-                    ],  # provider, provider_brand, or provider_brand_name?
+                    booking_website=props["url"],
+                    provider_id=props["provider_location_id"],
+                    provider_brand=props["provider_brand"],
+                    provider_brand_name=props["provider_brand_name"],
+                    appointments_available=props["appointments_available"],
+                    fetched_at= now,
+                    fetched_from_uri= url,
+                    published_at= props["appointments_last_fetched"],
+                    source = "vaccinespotter",
+                    data = loc
                 )
 
                 d = jsonschema.to_dict(location)

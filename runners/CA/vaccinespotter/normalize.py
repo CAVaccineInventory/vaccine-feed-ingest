@@ -5,6 +5,7 @@ import argparse
 from ingestors import vaccinespotter
 
 parser = argparse.ArgumentParser(description="Vaccinespotter Normalizer")
+parser.add_argument("--state", required=True, help="State")
 parser.add_argument("--ndjson-file", required=True, help="ndjson input file")
 parser.add_argument(
     "--normalized-ndjson-file", required=True, help="ndjson output file"
@@ -12,4 +13,4 @@ parser.add_argument(
 args = parser.parse_args()
 
 # Parse geojson feeds to ndjson feeds
-vaccinespotter.normalize(args.ndjson_file, args.normalized_ndjson_file)
+vaccinespotter.normalize(args.state, args.ndjson_file, args.normalized_ndjson_file)
