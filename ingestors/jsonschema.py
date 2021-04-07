@@ -34,8 +34,8 @@ class Location(NamedTuple):
     fetched_at: str = None
     published_at: str = None
     fetched_from_uri: str = None
-    source: str = None,
-    data: dict[str, str] = None,
+    source: str = None
+    data: dict[str, str] = None
 
 
 def omit_empty(d):
@@ -99,15 +99,16 @@ def to_dict(loc):
         ],
         "fetched_at": loc.fetched_at,
         "published_at": loc.published_at,
-        "sources": [{
-            "source": loc.source,
-            "id": loc.id,
-            "fetched_from_uri": loc.fetched_from_uri,
-            "fetched_at": loc.fetched_at,
-            "published_at": loc.published_at,
-            "data": loc.data,
-        }],
-
+        "sources": [
+            {
+                "source": loc.source,
+                "id": loc.id,
+                "fetched_from_uri": loc.fetched_from_uri,
+                "fetched_at": loc.fetched_at,
+                "published_at": loc.published_at,
+                "data": loc.data,
+            }
+        ],
     }
 
     d = omit_empty(d)

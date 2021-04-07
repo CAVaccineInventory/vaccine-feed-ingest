@@ -77,11 +77,11 @@ def normalize(state, ndjson_file, normalized_ndjson_file):
                     provider_brand=props["provider_brand"],
                     provider_brand_name=props["provider_brand_name"],
                     appointments_available=props["appointments_available"],
-                    fetched_at= now,
-                    fetched_from_uri= url,
-                    published_at= props["appointments_last_fetched"],
-                    source = "vaccinespotter",
-                    data = loc
+                    fetched_at=now,
+                    fetched_from_uri=url,
+                    published_at=props["appointments_last_fetched"],
+                    source="vaccinespotter",
+                    data=loc,
                 )
 
                 d = jsonschema.to_dict(location)
