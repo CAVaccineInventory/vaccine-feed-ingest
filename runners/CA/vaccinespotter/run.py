@@ -6,14 +6,15 @@ import logging
 import os
 import subprocess
 
-import jsonschema
+from os.path import join, dirname
 
+
+state = "CA"
 url = "https://www.vaccinespotter.org/api/v0/states/CA.json"
 
 # Configure argparse
-parser = argparse.ArgumentParser(description="Vaccinespotter Crawler.")
-parser.add_argument("--raw-output-dir", required=True, help="Raw Output Directory")
-parser.add_argument("--ndjson-output-file", required=True, help="ndjson output file")
+parser = argparse.ArgumentParser(description="Vaccinespotter Runner")
+parser.add_argument("--output-dir", required=True, help="Output Directory")
 args = parser.parse_args()
 
 
@@ -23,41 +24,34 @@ logging.basicConfig(
     format="%(asctime)s %(levelname)s:%(name)s:%(message)s",
     datefmt="%m/%d/%Y %H:%M:%S",
 )
-logger = logging.getLogger("vaccinateca")
+logger = logging.getLogger("run")
 
-logger.info("Starting Vaccinespotter crawler")
-
+logger.info(f"Starting Vaccine Spotter {state} crawler")
 
 # Fetch
-rawfile = os.path.join(args.raw_output_dir, "CA.json")
-logger.info(f"Fetching {url} to {rawfile}")
-subprocess.run(["conditional-get", url, "-o", rawfile], check=True)
+cmd = join(dirname(__file__), "fetch.py")
+geojson_file = join(args.output_dir, f"{state}.geojson")
+subprocess.run([cmd, "--state", state, "--geojson-file", geojson_file], check=True)
 
 
-# Parse
-with open(rawfile) as fh:
-    obj = json.load(fh)
+# Parse -- separate location records into ndjson
+cmd = join(dirname(__file__), "parse.py")
+ndjson_file = join(args.output_dir, f"{state}.ndjson")
+subprocess.run(
+    [cmd, "--geojson-file", geojson_file, "--ndjson-file", ndjson_file], check=True
+)
 
-with open(args.ndjson_output_file, "w") as fh:
-    for loc in obj["features"]:
-        props = loc["properties"]
-        long, lat = loc["geometry"]["coordinates"]
-        l = jsonschema.Location(
-            id=f"vaccinespotter:{props['id']}",  # machinetag not hash
-            name=props["name"],
-            street1=props["address"],
-            city=props["city"],
-            state=props["state"],
-            zip=props["postal_code"],
-            latitude=lat,
-            longitude=long,
-            website=props["url"],
-            provider_id=f"{props['provider']}:{props['provider_location_id']}",
-            provider_name=props[
-                "provider_brand_name"
-            ],  # provider, provider_brand, or provider_brand_name?
-        )
 
-        d = jsonschema.to_dict(l)
-        json.dump(d, fh)
-        fh.write("\n")
+# Normalize -- transform ndjson to formatted ndjson
+cmd = join(dirname(__file__), "normalize.py")
+normalized_ndjson_file = join(args.output_dir, f"{state}.normalized.ndjson")
+subprocess.run(
+    [
+        cmd,
+        "--ndjson-file",
+        ndjson_file,
+        "--normalized-ndjson-file",
+        normalized_ndjson_file,
+    ],
+    check=True,
+)

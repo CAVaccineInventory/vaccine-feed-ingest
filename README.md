@@ -13,6 +13,6 @@ $ pip install -r requirements.txt
 Run the Vaccine Spotter crawler:
 
 ```bash
-mkdir -p out/CA/vaccinespotter/raw
-python3 runners/CA/vaccinespotter/run.py --raw-output-dir=out/CA/vaccinespotter/raw --ndjson-output-file=out/CA/vaccinespotter/locations.ndjson
+mkdir -p out/CA/vaccinespotter
+python3 runners/CA/vaccinespotter/run.py --output-dir=out/CA/vaccinespotter
 ```
