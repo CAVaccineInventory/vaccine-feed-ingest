@@ -12,12 +12,8 @@ url = "https://www.vaccinespotter.org/api/v0/states/CA.json"
 
 # Configure argparse
 parser = argparse.ArgumentParser(description="Vaccinespotter Crawler.")
-parser.add_argument(
-    "--raw-output-dir", required=True, help="Raw Output Directory"
-)
-parser.add_argument(
-    "--ndjson-output-file", required=True, help="ndjson output file"
-)
+parser.add_argument("--raw-output-dir", required=True, help="Raw Output Directory")
+parser.add_argument("--ndjson-output-file", required=True, help="ndjson output file")
 args = parser.parse_args()
 
 
@@ -47,17 +43,19 @@ with open(args.ndjson_output_file, "w") as fh:
         props = loc["properties"]
         long, lat = loc["geometry"]["coordinates"]
         l = jsonschema.Location(
-            id = f"vaccinespotter:{props['id']}", # machinetag not hash
-            name = props["name"],
-            street1 = props["address"],
-            city = props["city"],
-            state = props["state"],
-            zip = props["postal_code"],
-            latitude = lat,
-            longitude = long,
-            website = props["url"],
-            provider_id = f"{props['provider']}:{props['provider_location_id']}",
-            provider_name = props["provider_brand_name"], # provider, provider_brand, or provider_brand_name?
+            id=f"vaccinespotter:{props['id']}",  # machinetag not hash
+            name=props["name"],
+            street1=props["address"],
+            city=props["city"],
+            state=props["state"],
+            zip=props["postal_code"],
+            latitude=lat,
+            longitude=long,
+            website=props["url"],
+            provider_id=f"{props['provider']}:{props['provider_location_id']}",
+            provider_name=props[
+                "provider_brand_name"
+            ],  # provider, provider_brand, or provider_brand_name?
         )
 
         d = jsonschema.to_dict(l)
