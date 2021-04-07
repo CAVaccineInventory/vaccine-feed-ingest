@@ -6,7 +6,7 @@ import subprocess
 from os.path import dirname, join
 
 state = "CA"
-url = "https://www.vaccinespotter.org/api/v0/states/CA.json"
+
 
 # Configure argparse
 parser = argparse.ArgumentParser(description="Vaccinespotter Runner")
@@ -23,6 +23,7 @@ logging.basicConfig(
 logger = logging.getLogger("run")
 
 logger.info(f"Starting Vaccine Spotter {state} crawler")
+
 
 # Fetch
 cmd = join(dirname(__file__), "fetch.py")
