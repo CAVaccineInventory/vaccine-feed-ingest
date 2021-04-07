@@ -3,9 +3,7 @@
 import argparse
 import logging
 import subprocess
-
-from os.path import join, dirname
-
+from os.path import dirname, join
 
 state = "CA"
 url = "https://www.vaccinespotter.org/api/v0/states/CA.json"

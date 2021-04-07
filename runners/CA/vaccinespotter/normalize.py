@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import argparse
+
 from ingestors import vaccinespotter
 
 parser = argparse.ArgumentParser(description="Vaccinespotter Normalizer")

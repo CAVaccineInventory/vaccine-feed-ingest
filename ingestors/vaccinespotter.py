@@ -1,13 +1,12 @@
 #!/usr/bin/env python3
 
-import httpx
 import json
 import logging
 
+import httpx
 from smart_open import open
 
-from . import header_dict
-from . import jsonschema
+from . import header_dict, jsonschema
 
 logger = logging.getLogger("vaccinespotter")
 
