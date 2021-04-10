@@ -28,7 +28,7 @@ logging.basicConfig(
 logger = logging.getLogger("ingest")
 
 
-def _get_site_dirs(state: Optional[str] = None) -> Iterator[pathlib.Path]:
+def _get_state_dirs(state: Optional[str] = None) -> Iterator[pathlib.Path]:
     """Return an iterator of site directory paths"""
     for state_dir in RUNNERS_DIR.iterdir():
         # Ignore private directories, in this case the _template directory
@@ -47,6 +47,15 @@ def _get_site_dir(site: str) -> Optional[pathlib.Path]:
 
     if site_dir.exists():
         return site_dir
+
+
+def _get_site_dirs(state: str, sites: str) -> Optional[pathlib.Path]:
+    if not sites:
+        site_dirs = list(_get_state_dirs(state))
+    else:
+        site_dirs = [_get_site_dir(site) for site in sites]
+
+    return site_dirs
 
 
 def _run_fetch(site_dir: pathlib.Path, output_path: pathlib.Path) -> None:
@@ -109,7 +118,7 @@ def cli():
 def available_sites(state: Optional[str]):
     """Print list of available sites, optionally filtered by state"""
 
-    for site_dir in _get_site_dirs(state):
+    for site_dir in _get_state_dirs(state):
         has_fetch = (site_dir / FETCH_CMD).exists()
         has_parse = (site_dir / PARSE_SH).exists() or (site_dir / PARSE_PY).exists()
         has_normalize = (site_dir / NORMALIZE_SH).exists() or (
@@ -136,10 +145,7 @@ def fetch(output_dir: str, state: Optional[str], sites: Optional[Sequence[str]])
         click.echo("The specified output directory does not exist!")
         return
 
-    if not sites:
-        site_dirs = list(_get_site_dirs(state))
-    else:
-        site_dirs = [_get_site_dir(site) for site in sites]
+    site_dirs = _get_site_dirs(state, sites)
 
     for site_dir in site_dirs:
         output_path = output_parent / site_dir.relative_to(RUNNERS_DIR)
@@ -160,10 +166,7 @@ def parse(output_dir: str, state: Optional[str], sites: Optional[Sequence[str]])
         click.echo("The specified output directory does not exist!")
         return
 
-    if not sites:
-        site_dirs = list(_get_site_dirs(state))
-    else:
-        site_dirs = [_get_site_dir(site) for site in sites]
+    site_dirs = _get_site_dirs(state, sites)
 
     for site_dir in site_dirs:
         output_path = output_parent / site_dir.relative_to(RUNNERS_DIR)
@@ -182,10 +185,7 @@ def normalize(output_dir: str, state: Optional[str], sites: Optional[Sequence[st
         click.echo("The specified output directory does not exist!")
         return
 
-    if not sites:
-        site_dirs = list(_get_site_dirs(state))
-    else:
-        site_dirs = [_get_site_dir(site) for site in sites]
+    site_dirs = _get_site_dirs(state, sites)
 
     for site_dir in site_dirs:
         output_path = output_parent / site_dir.relative_to(RUNNERS_DIR)
@@ -204,10 +204,7 @@ def all_stages(output_dir: str, state: Optional[str], sites: Optional[Sequence[s
         click.echo("The specified output directory does not exist!")
         return
 
-    if not sites:
-        site_dirs = list(_get_site_dirs(state))
-    else:
-        site_dirs = [_get_site_dir(site) for site in sites]
+    site_dirs = _get_site_dirs(state, sites)
 
     for site_dir in site_dirs:
         output_path = output_parent / site_dir.relative_to(RUNNERS_DIR)
