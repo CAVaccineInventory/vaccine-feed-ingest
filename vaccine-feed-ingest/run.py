@@ -3,9 +3,9 @@
 """
 Entry point for running vaccine feed runners
 """
+import logging
 import pathlib
 import subprocess
-import tempfile
 from typing import Iterator, Optional, Sequence
 
 import click
@@ -14,8 +14,18 @@ import dotenv
 RUNNERS_DIR = pathlib.Path(__file__).parent / "runners"
 
 FETCH_CMD = "fetch.sh"
-PARSE_CMD = "parse.sh"
-NORMALIZE_CMD = "normalize.sh"
+PARSE_SH = "parse.sh"
+PARSE_PY = "parse.py"
+NORMALIZE_SH = "normalize.sh"
+NORMALIZE_PY = "normalize.py"
+
+# Configure logger
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s %(levelname)s:%(name)s:%(message)s",
+    datefmt="%m/%d/%Y %H:%M:%S",
+)
+logger = logging.getLogger("ingest")
 
 
 def _get_site_dirs(state: Optional[str] = None) -> Iterator[pathlib.Path]:
@@ -39,43 +49,53 @@ def _get_site_dir(site: str) -> Optional[pathlib.Path]:
         return site_dir
 
 
-def _run_fetch(site_dir: pathlib.Path) -> None:
+def _run_fetch(site_dir: pathlib.Path, output_path: pathlib.Path) -> None:
     fetch_path = site_dir / FETCH_CMD
     if not fetch_path.exists():
         return
 
-    with tempfile.TemporaryDirectory(f"_fetch_{site_dir.name}") as tmp_str:
-        tmp_dir = pathlib.Path(tmp_str)
-
-        subprocess.run([str(fetch_path), str(tmp_dir)], check=True)
+    logger.info(f"Fetching data for {site_dir.name} into {output_path}")
+    subprocess.run([str(fetch_path), str(output_path)], check=True)
 
 
-def _run_parse(site_dir: pathlib.Path) -> None:
-    parse_path = site_dir / PARSE_CMD
+def _run_parse(site_dir: pathlib.Path, output_path: pathlib.Path) -> None:
+    """
+    Execute either parse.sh or parse.py for a site.
+    Create a locations.ndjson file in output_path containing one line per location.
+    """
+
+    parse_path = site_dir / PARSE_SH
     if not parse_path.exists():
-        return
+        parse_path = site_dir / PARSE_PY
+        if not parse_path.exists():
+            return
 
-    with tempfile.TemporaryDirectory(f"_parse_{site_dir.name}") as tmp_str:
-        tmp_dir = pathlib.Path(tmp_str)
-
-        subprocess.run(
-            [str(parse_path), str(tmp_dir / "output"), str(tmp_dir / "input")],
-            check=True,
-        )
+    logger.info(f"Parsing data in {output_path} into locations.ndjson")
+    subprocess.run(
+        [str(parse_path), str(output_path), str(output_path / "locations.ndjson")],
+        check=True,
+    )
 
 
-def _run_normalize(site_dir: pathlib.Path) -> None:
-    normalize_path = site_dir / NORMALIZE_CMD
+def _run_normalize(site_dir: pathlib.Path, output_path: pathlib.Path) -> None:
+    """
+    Execute either normalize.sh or normalize.py for a site.
+    Parse a locations.ndjson file into a locations-normalized.ndjson file.
+    """
+
+    normalize_path = site_dir / NORMALIZE_SH
     if not normalize_path.exists():
-        return
+        normalize_path = site_dir / NORMALIZE_PY
+        if not normalize_path.exists():
+            return
 
-    with tempfile.TemporaryDirectory(f"_normalize_{site_dir.name}") as tmp_str:
-        tmp_dir = pathlib.Path(tmp_str)
-
-        subprocess.run(
-            [str(normalize_path), str(tmp_dir / "output"), str(tmp_dir / "input")],
-            check=True,
-        )
+    ndjson_file = str(output_path / "locations.ndjson")
+    normalized_file = str(output_path / "locations-normalized.ndjson")
+    logger.info(f"Normalizing data in {ndjson_file} into locations-normalized.ndjson")
+    subprocess.run(
+        [str(normalize_path), ndjson_file, normalized_file],
+        check=True,
+    )
 
 
 @click.group()
@@ -91,8 +111,10 @@ def available_sites(state: Optional[str]):
 
     for site_dir in _get_site_dirs(state):
         has_fetch = (site_dir / FETCH_CMD).exists()
-        has_parse = (site_dir / PARSE_CMD).exists()
-        has_normalize = (site_dir / NORMALIZE_CMD).exists()
+        has_parse = (site_dir / PARSE_SH).exists() or (site_dir / PARSE_PY).exists()
+        has_normalize = (site_dir / NORMALIZE_SH).exists() or (
+            site_dir / NORMALIZE_PY
+        ).exists()
 
         print(
             site_dir.relative_to(RUNNERS_DIR),
@@ -103,61 +125,97 @@ def available_sites(state: Optional[str]):
 
 
 @cli.command()
+@click.option("--output-dir", "output_dir", type=str, required=True)
 @click.option("--state", "state", type=str)
 @click.argument("sites", nargs=-1, type=str)
-def fetch(state: Optional[str], sites: Optional[Sequence[str]]):
+def fetch(output_dir: str, state: Optional[str], sites: Optional[Sequence[str]]):
     """Run fetch process for specified sites."""
+
+    output_parent = pathlib.Path(output_dir)
+    if not output_parent.exists():
+        click.echo("The specified output directory does not exist!")
+        return
+
     if not sites:
         site_dirs = list(_get_site_dirs(state))
     else:
         site_dirs = [_get_site_dir(site) for site in sites]
 
     for site_dir in site_dirs:
-        _run_fetch(site_dir)
+        output_path = output_parent / site_dir.relative_to(RUNNERS_DIR)
+        if not output_path.exists():
+            output_path.mkdir(parents=True)
+        _run_fetch(site_dir, output_path)
 
 
 @cli.command()
+@click.option("--output-dir", "output_dir", type=str, required=True)
 @click.option("--state", "state", type=str)
 @click.argument("sites", nargs=-1, type=str)
-def parse(state: Optional[str], sites: Optional[Sequence[str]]):
+def parse(output_dir: str, state: Optional[str], sites: Optional[Sequence[str]]):
     """Run parse process for specified sites."""
+
+    output_parent = pathlib.Path(output_dir)
+    if not output_parent.exists():
+        click.echo("The specified output directory does not exist!")
+        return
+
     if not sites:
         site_dirs = list(_get_site_dirs(state))
     else:
         site_dirs = [_get_site_dir(site) for site in sites]
 
     for site_dir in site_dirs:
-        _run_parse(site_dir)
+        output_path = output_parent / site_dir.relative_to(RUNNERS_DIR)
+        _run_parse(site_dir, output_path)
 
 
 @cli.command()
+@click.option("--output-dir", "output_dir", type=str, required=True)
 @click.option("--state", "state", type=str)
 @click.argument("sites", nargs=-1, type=str)
-def normalize(state: Optional[str], sites: Optional[Sequence[str]]):
+def normalize(output_dir: str, state: Optional[str], sites: Optional[Sequence[str]]):
     """Run normalize process for specified sites."""
+
+    output_parent = pathlib.Path(output_dir)
+    if not output_parent.exists():
+        click.echo("The specified output directory does not exist!")
+        return
+
     if not sites:
         site_dirs = list(_get_site_dirs(state))
     else:
         site_dirs = [_get_site_dir(site) for site in sites]
 
     for site_dir in site_dirs:
-        _run_normalize(site_dir)
+        output_path = output_parent / site_dir.relative_to(RUNNERS_DIR)
+        _run_normalize(site_dir, output_path)
 
 
 @cli.command()
+@click.option("--output-dir", "output_dir", type=str, required=True)
 @click.option("--state", "state", type=str)
 @click.argument("sites", nargs=-1, type=str)
-def all_stages(state: Optional[str], sites: Optional[Sequence[str]]):
+def all_stages(output_dir: str, state: Optional[str], sites: Optional[Sequence[str]]):
     """Run all stages in succession for specified sites."""
+
+    output_parent = pathlib.Path(output_dir)
+    if not output_parent.exists():
+        click.echo("The specified output directory does not exist!")
+        return
+
     if not sites:
         site_dirs = list(_get_site_dirs(state))
     else:
         site_dirs = [_get_site_dir(site) for site in sites]
 
     for site_dir in site_dirs:
-        _run_fetch(site_dir)
-        _run_parse(site_dir)
-        _run_normalize(site_dir)
+        output_path = output_parent / site_dir.relative_to(RUNNERS_DIR)
+        if not output_path.exists():
+            output_path.mkdir(parents=True)
+        _run_fetch(site_dir, output_path)
+        _run_parse(site_dir, output_path)
+        _run_normalize(site_dir, output_path)
 
 
 @cli.command()

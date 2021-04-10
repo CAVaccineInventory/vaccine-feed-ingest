@@ -10,4 +10,4 @@ else
     echo "Must pass an output_dir as first argument"
 fi
 
-echo "Fetching into ${output_dir}"
+(cd $output_dir && curl --silent 'https://vaccination-site-microservice.vercel.app/api/v1/appointments' -o 'sf.json')

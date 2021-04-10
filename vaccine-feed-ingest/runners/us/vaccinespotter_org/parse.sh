@@ -2,19 +2,19 @@
 
 set -Eeuo pipefail
 
-output_dir=""
-input_dir=""
+data_dir=""
+ndjson_file=""
 
 if [ -n "${1}" ]; then
-    output_dir="${1}"
+    data_dir="${1}"
 else
-    echo "Must pass an output_dir as first argument"
+    echo "Must pass an data_dir as first argument"
 fi
 
 if [ -n "${2}" ]; then
-    input_dir="${2}"
+    ndjson_file="${2}"
 else
-    echo "Must pass an input_dir as second argument"
+    echo "Must pass an nsjson_file as second argument"
 fi
 
-echo "Parsing ${input_dir} into ${output_dir}"
+echo "Parsing ${data_dir}/ into ${ndjson_file}"

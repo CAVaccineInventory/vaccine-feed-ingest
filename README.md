@@ -4,6 +4,14 @@ Pipeline for ingesting nationwide feed of vaccine facilities
 
 ## Usage
 
+### Quick Setup For MacOS Homebrew users
+
+```sh
+brew install python3
+brew install poetry
+poetry install
+```
+
 ### Setup Environment Once
 
 1. Install required system deps (Ubuntu/Debian):
@@ -65,20 +73,35 @@ Pipeline for ingesting nationwide feed of vaccine facilities
     poetry run vaccine-feed-ingest/run.py available-sites
     ```
 
-- Run fetch for just one site:
-
-    ```sh
-    poetry run vaccine-feed-ingest/run.py fetch ca/sf_gov
-    ```
-
 - Run fetch for all sites in CA:
 
     ```sh
-    poetry run vaccine-feed-ingest/run.py fetch --state=ca
+    poetry run vaccine-feed-ingest/run.py fetch --state=ca --output-dir=out
     ```
 
 - Run all stages for all sites:
 
     ```sh
-    poetry run vaccine-feed-ingest/run.py all-stages
+    poetry run vaccine-feed-ingest/run.py all-stages --output-dir=out
+    ```
+
+- Run fetch for just one site:
+
+    ```sh
+    # Writes ingest data to out/ca/sf_gov/ directory
+    poetry run vaccine-feed-ingest/run.py fetch ca/sf_gov --output-dir=out
+    ```
+
+- Run parse for just one site:
+
+    ```sh
+    # Parses data in out/ca/sf_gov/ directory into out/ca/sf_gov/locations.ndjson
+    poetry run vaccine-feed-ingest/run.py parse ca/sf_gov --output-dir=out
+    ```
+
+- Run normalize for just one site:
+
+    ```sh
+    # Parses data in out/ca/sf_gov/ directory into out/ca/sf_gov/locations.ndjson
+    poetry run vaccine-feed-ingest/run.py normalize ca/sf_gov --output-dir=out
     ```

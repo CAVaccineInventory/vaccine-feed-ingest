@@ -29,3 +29,8 @@ indent_size = 4
 # Makefile
 [Makefile]
 indent_style = tab
+
+# Markdown
+[*.{md,txt}]
+indent_style = space
+indent_size = 4
