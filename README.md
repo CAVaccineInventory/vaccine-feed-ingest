@@ -55,3 +55,30 @@ Pipeline for ingesting nationwide feed of vaccine facilities
     ```sh
     poetry install --extras lint
     ```
+
+
+### Run Pipelines
+
+- List all available sites:
+
+    ```sh
+    poetry run vaccine-feed-ingest/run.py available-sites
+    ```
+
+- Run fetch for just one site:
+
+    ```sh
+    poetry run vaccine-feed-ingest/run.py fetch ca/sf_gov
+    ```
+
+- Run fetch for all sites in CA:
+
+    ```sh
+    poetry run vaccine-feed-ingest/run.py fetch --state=ca
+    ```
+
+- Run all stages for all sites:
+
+    ```sh
+    poetry run vaccine-feed-ingest/run.py all-stages
+    ```
