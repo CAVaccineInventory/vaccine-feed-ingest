@@ -19,7 +19,7 @@ python-dotenv = "^0.17.0"
 lint = ["flake8", "black", "mypy"]
 
 [tool.poetry.scripts]
-vaccine-feed-ingest = "vaccine-feed-ingest.run:cli"
+vaccine-feed-ingest = "vaccine_feed_ingest.run:cli"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
