@@ -6,13 +6,15 @@ Pipeline for ingesting nationwide feed of vaccine facilities
 
 ### Setup Environment Once
 
-1. Install required system deps (Ubuntu/Debian):
+1. Install required system deps for Ubuntu/Debian (skip for Mac):
 
     ```sh
     sudo apt-get install libbz2-dev liblzma-dev libreadline-dev libsqlite3-dev
     ```
 
-1. Install `pyenv`:
+1. Install `pyenv`
+
+    Using pyenv is recommended, but you can install the python version listed in [.python-version](https://github.com/CAVaccineInventory/vaccine-feed-ingest/blob/main/.python-version) as your system python instead.
 
     ```sh
     curl https://pyenv.run | bash
@@ -21,7 +23,7 @@ Pipeline for ingesting nationwide feed of vaccine facilities
 1. Add to `.bashrc`:
 
     ```sh
-    export PATH="/home/codespace/.pyenv/bin:$PATH"
+    export PATH="$HOME/.pyenv/bin:$PATH"
     eval "$(pyenv init -)"
     eval "$(pyenv virtualenv-init -)"
     ```
