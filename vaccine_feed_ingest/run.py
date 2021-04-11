@@ -3,6 +3,7 @@
 """
 Entry point for running vaccine feed runners
 """
+import enum
 import logging
 import os
 import pathlib
@@ -15,9 +16,20 @@ import dotenv
 
 RUNNERS_DIR = pathlib.Path(__file__).parent / "runners"
 
-FETCH_CMD = "fetch"
-PARSE_CMD = "parse"
-NORMALIZE_CMD = "normalize"
+
+@enum.unique
+class PipelineStage(enum.Enum, str):
+    """Stages of a pipeline to run."""
+    FETCH = "fetch"
+    PARSE = "parse"
+    NORMALIZE = "normalize"
+
+
+STAGE_CMD_NAME = {
+    PipelineStage.FETCH: "fetch",
+    PipelineStage.PARSE: "parse",
+    PipelineStage.NORMALIZE: "normalize",
+}
 
 
 # Configure logger
@@ -68,8 +80,13 @@ def _get_site_dirs(
             yield site_dir
 
 
-def _find_executeable(site_dir: pathlib.Path, cmd_name: str) -> Optional[pathlib.Path]:
+def _find_executeable(
+    site_dir: pathlib.Path,
+    stage: PipelineStage,
+) -> Optional[pathlib.Path]:
     """Find executable. Logs an error and returs false if something is wrong."""
+    cmd_name = STAGE_CMD_NAME[stage]
+
     cmds = list(site_dir.glob(f"{cmd_name}.*"))
 
     if not cmds:
@@ -94,7 +111,7 @@ def _find_executeable(site_dir: pathlib.Path, cmd_name: str) -> Optional[pathlib
 
 
 def _run_fetch(site_dir: pathlib.Path) -> None:
-    fetch_path = _find_executeable(site_dir, FETCH_CMD)
+    fetch_path = _find_executeable(site_dir, PipelineStage.FETCH)
     if not fetch_path:
         logger.info("No fetch cmd in %s to run.", str(site_dir))
         return
@@ -106,7 +123,7 @@ def _run_fetch(site_dir: pathlib.Path) -> None:
 
 
 def _run_parse(site_dir: pathlib.Path) -> None:
-    parse_path = _find_executeable(site_dir, PARSE_CMD)
+    parse_path = _find_executeable(site_dir, PipelineStage.PARSE)
     if not parse_path:
         logger.info("No parse cmd in %s to run.", str(site_dir))
         return
@@ -121,7 +138,7 @@ def _run_parse(site_dir: pathlib.Path) -> None:
 
 
 def _run_normalize(site_dir: pathlib.Path) -> None:
-    normalize_path = _find_executeable(site_dir, NORMALIZE_CMD)
+    normalize_path = _find_executeable(site_dir, PipelineStage.NORMALIZE)
     if not normalize_path:
         logger.info("No normalize cmd in %s to run.", str(site_dir))
         return
@@ -147,9 +164,9 @@ def available_sites(state: Optional[str]) -> None:
     """Print list of available sites, optionally filtered by state"""
 
     for site_dir in _get_site_dirs_for_state(state):
-        has_fetch = bool(_find_executeable(site_dir, FETCH_CMD))
-        has_parse = bool(_find_executeable(site_dir, PARSE_CMD))
-        has_normalize = bool(_find_executeable(site_dir, NORMALIZE_CMD))
+        has_fetch = bool(_find_executeable(site_dir, PipelineStage.FETCH))
+        has_parse = bool(_find_executeable(site_dir, PipelineStage.PARSE))
+        has_normalize = bool(_find_executeable(site_dir, PipelineStage.NORMALIZE))
 
         print(
             site_dir.relative_to(RUNNERS_DIR),
