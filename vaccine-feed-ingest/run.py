@@ -18,7 +18,7 @@ PARSE_CMD = "parse.sh"
 NORMALIZE_CMD = "normalize.sh"
 
 
-def _get_site_dirs(state: Optional[str] = None) -> Iterator[pathlib.Path]:
+def _get_site_dirs_for_state(state: Optional[str] = None) -> Iterator[pathlib.Path]:
     """Return an iterator of site directory paths"""
     for state_dir in RUNNERS_DIR.iterdir():
         # Ignore private directories, in this case the _template directory
@@ -37,6 +37,17 @@ def _get_site_dir(site: str) -> Optional[pathlib.Path]:
 
     if site_dir.exists():
         return site_dir
+
+
+def _get_site_dirs(
+    state: Optional[str], sites: Optional[Sequence[str]]
+) -> Iterator[pathlib.Path]:
+    """Return a site directory path, if it exists"""
+    if sites is not None:
+        return _get_site_dirs_for_state(state)
+    else:
+        for site in sites:
+            yield _get_site_dir(site)
 
 
 def _run_fetch(site_dir: pathlib.Path) -> None:
@@ -89,7 +100,7 @@ def cli():
 def available_sites(state: Optional[str]):
     """Print list of available sites, optionally filtered by state"""
 
-    for site_dir in _get_site_dirs(state):
+    for site_dir in _get_site_dirs_for_state(state):
         has_fetch = (site_dir / FETCH_CMD).exists()
         has_parse = (site_dir / PARSE_CMD).exists()
         has_normalize = (site_dir / NORMALIZE_CMD).exists()
@@ -107,10 +118,7 @@ def available_sites(state: Optional[str]):
 @click.argument("sites", nargs=-1, type=str)
 def fetch(state: Optional[str], sites: Optional[Sequence[str]]):
     """Run fetch process for specified sites."""
-    if not sites:
-        site_dirs = list(_get_site_dirs(state))
-    else:
-        site_dirs = [_get_site_dir(site) for site in sites]
+    site_dirs = _get_site_dirs(state, sites)
 
     for site_dir in site_dirs:
         _run_fetch(site_dir)
@@ -121,10 +129,7 @@ def fetch(state: Optional[str], sites: Optional[Sequence[str]]):
 @click.argument("sites", nargs=-1, type=str)
 def parse(state: Optional[str], sites: Optional[Sequence[str]]):
     """Run parse process for specified sites."""
-    if not sites:
-        site_dirs = list(_get_site_dirs(state))
-    else:
-        site_dirs = [_get_site_dir(site) for site in sites]
+    site_dirs = _get_site_dirs(state, sites)
 
     for site_dir in site_dirs:
         _run_parse(site_dir)
@@ -135,10 +140,7 @@ def parse(state: Optional[str], sites: Optional[Sequence[str]]):
 @click.argument("sites", nargs=-1, type=str)
 def normalize(state: Optional[str], sites: Optional[Sequence[str]]):
     """Run normalize process for specified sites."""
-    if not sites:
-        site_dirs = list(_get_site_dirs(state))
-    else:
-        site_dirs = [_get_site_dir(site) for site in sites]
+    site_dirs = _get_site_dirs(state, sites)
 
     for site_dir in site_dirs:
         _run_normalize(site_dir)
@@ -149,10 +151,7 @@ def normalize(state: Optional[str], sites: Optional[Sequence[str]]):
 @click.argument("sites", nargs=-1, type=str)
 def all_stages(state: Optional[str], sites: Optional[Sequence[str]]):
     """Run all stages in succession for specified sites."""
-    if not sites:
-        site_dirs = list(_get_site_dirs(state))
-    else:
-        site_dirs = [_get_site_dir(site) for site in sites]
+    site_dirs = _get_site_dirs(state, sites)
 
     for site_dir in site_dirs:
         _run_fetch(site_dir)
