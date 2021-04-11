@@ -49,7 +49,7 @@ def _get_site_dir(site: str) -> Optional[pathlib.Path]:
     if site_dir.exists():
         return site_dir
 
-      
+
 def _get_site_dirs(
     state: Optional[str], sites: Optional[Sequence[str]]
 ) -> Iterator[pathlib.Path]:
@@ -59,8 +59,8 @@ def _get_site_dirs(
     else:
         for site in sites:
             yield _get_site_dir(site)
-            
-      
+
+
 def _find_executeable(site_dir: pathlib.Path, cmd_name: str) -> Optional[pathlib.Path]:
     """Find executable. Logs an error and returs false if something is wrong."""
     cmds = list(site_dir.glob(f"{cmd_name}.*"))
