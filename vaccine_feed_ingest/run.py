@@ -56,8 +56,9 @@ def _get_site_dirs(
     state: Optional[str], sites: Optional[Sequence[str]]
 ) -> Iterator[pathlib.Path]:
     """Return a site directory path, if it exists"""
-    if sites is not None:
+    if state is not None:
         return _get_site_dirs_for_state(state)
+
     elif sites is not None:
         for site in sites:
             site_dir = _get_site_dir(site)
@@ -72,7 +73,6 @@ def _find_executeable(site_dir: pathlib.Path, cmd_name: str) -> Optional[pathlib
     cmds = list(site_dir.glob(f"{cmd_name}.*"))
 
     if not cmds:
-        logger.info("No %s cmd in %s to run.", cmd_name, str(site_dir))
         return None
 
     if len(cmds) > 1:
@@ -96,6 +96,7 @@ def _find_executeable(site_dir: pathlib.Path, cmd_name: str) -> Optional[pathlib
 def _run_fetch(site_dir: pathlib.Path) -> None:
     fetch_path = _find_executeable(site_dir, FETCH_CMD)
     if not fetch_path:
+        logger.info("No fetch cmd in %s to run.", str(site_dir))
         return
 
     with tempfile.TemporaryDirectory(f"_fetch_{site_dir.name}") as tmp_str:
@@ -107,6 +108,7 @@ def _run_fetch(site_dir: pathlib.Path) -> None:
 def _run_parse(site_dir: pathlib.Path) -> None:
     parse_path = _find_executeable(site_dir, PARSE_CMD)
     if not parse_path:
+        logger.info("No parse cmd in %s to run.", str(site_dir))
         return
 
     with tempfile.TemporaryDirectory(f"_parse_{site_dir.name}") as tmp_str:
@@ -121,6 +123,7 @@ def _run_parse(site_dir: pathlib.Path) -> None:
 def _run_normalize(site_dir: pathlib.Path) -> None:
     normalize_path = _find_executeable(site_dir, NORMALIZE_CMD)
     if not normalize_path:
+        logger.info("No normalize cmd in %s to run.", str(site_dir))
         return
 
     with tempfile.TemporaryDirectory(f"_normalize_{site_dir.name}") as tmp_str:
@@ -144,9 +147,9 @@ def available_sites(state: Optional[str]) -> None:
     """Print list of available sites, optionally filtered by state"""
 
     for site_dir in _get_site_dirs_for_state(state):
-        has_fetch = (site_dir / FETCH_CMD).exists()
-        has_parse = (site_dir / PARSE_CMD).exists()
-        has_normalize = (site_dir / NORMALIZE_CMD).exists()
+        has_fetch = bool(_find_executeable(site_dir, FETCH_CMD))
+        has_parse = bool(_find_executeable(site_dir, PARSE_CMD))
+        has_normalize = bool(_find_executeable(site_dir, NORMALIZE_CMD))
 
         print(
             site_dir.relative_to(RUNNERS_DIR),
