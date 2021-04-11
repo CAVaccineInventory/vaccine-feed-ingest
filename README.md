@@ -96,23 +96,23 @@ Pipeline for ingesting nationwide feed of vaccine facilities
 - List all available sites:
 
     ```sh
-    poetry run vaccine-feed-ingest/run.py available-sites
+    poetry run vaccine-feed-ingest available-sites
     ```
 
 - Run fetch for just one site:
 
     ```sh
-    poetry run vaccine-feed-ingest/run.py fetch ca/sf_gov
+    poetry run vaccine-feed-ingest fetch ca/sf_gov
     ```
 
 - Run fetch for all sites in CA:
 
     ```sh
-    poetry run vaccine-feed-ingest/run.py fetch --state=ca
+    poetry run vaccine-feed-ingest fetch --state=ca
     ```
 
 - Run all stages for all sites:
 
     ```sh
-    poetry run vaccine-feed-ingest/run.py all-stages
+    poetry run vaccine-feed-ingest all-stages
     ```
