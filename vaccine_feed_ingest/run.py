@@ -85,16 +85,16 @@ def _get_site_dirs(
     state: Optional[str], sites: Optional[Sequence[str]]
 ) -> Iterator[pathlib.Path]:
     """Return a site directory path, if it exists"""
-    if state is not None:
-        yield from _get_site_dirs_for_state(state)
-
-    elif sites is not None:
+    if sites:
         for site in sites:
             site_dir = _get_site_dir(site)
             if not site_dir:
                 continue
 
             yield site_dir
+
+    else:
+        yield from _get_site_dirs_for_state(state)
 
 
 def _find_executeable(
@@ -139,6 +139,9 @@ def _find_all_run_dirs(
     """Find latest stage output path"""
     stage_dir = base_output_dir / site / STAGE_OUTPUT_NAME[stage]
 
+    if not stage_dir.exists():
+        return
+
     for run_dir in sorted(stage_dir.iterdir(), reverse=True):
         if run_dir.name.startswith("_"):
             continue
@@ -165,18 +168,36 @@ def _generate_run_dir(
     timestamp: str,
 ) -> pathlib.Path:
     """Generate output path for a pipeline stage."""
-    run_dir = base_output_dir / site / STAGE_OUTPUT_NAME[stage] / timestamp
-
-    run_dir.mkdir(parents=True, exist_ok=True)
-
-    return run_dir
+    return base_output_dir / site / STAGE_OUTPUT_NAME[stage] / timestamp
 
 
-def _copy_files(src_dir: pathlib.Path, dst_dir: pathlib.Path) -> None:
-    for filepath in src_dir.iterdir():
+def _iter_data_paths(data_dir: pathlib.Path) -> Iterator[pathlib.Path]:
+    """Return paths to data files in data_dir.
+
+    Directories and files that start with `_` or `.` are ignored.
+    """
+    for filepath in data_dir.iterdir():
         if filepath.name.startswith("_") or filepath.name.startswith("."):
             continue
 
+        yield filepath
+
+
+def _data_exists(data_dir: pathlib.Path) -> bool:
+    """Returns true if there are data files in data_dir.
+
+    Directories and files that start with `_` or `.` are ignored."""
+    return bool(next(_iter_data_paths(data_dir), None))
+
+
+def _copy_files(src_dir: pathlib.Path, dst_dir: pathlib.Path) -> None:
+    """Copy all files in src_dir to dst_dir.
+
+    Directories and files that start with `_` or `.` are ignored.
+    """
+    dst_dir.mkdir(parents=True, exist_ok=True)
+
+    for filepath in _iter_data_paths(src_dir):
         with filepath.open("rb") as src_file:
             with (dst_dir / filepath.name).open("wb") as dst_file:
                 for content in src_file:
@@ -187,11 +208,11 @@ def _run_fetch(
     site_dir: pathlib.Path,
     output_dir: pathlib.Path,
     timestamp: str,
-) -> None:
+) -> bool:
     fetch_path = _find_executeable(site_dir, PipelineStage.FETCH)
     if not fetch_path:
-        logger.info("No fetch cmd in %s to run.", str(site_dir))
-        return
+        logger.info("No fetch cmd for %s to run.", site_dir.name)
+        return False
 
     fetch_run_dir = _generate_run_dir(
         output_dir, site_dir.name, PipelineStage.FETCH, timestamp
@@ -204,23 +225,38 @@ def _run_fetch(
 
         subprocess.run([str(fetch_path), str(fetch_output_dir)], check=True)
 
+        if not _data_exists(fetch_output_dir):
+            logger.warning(
+                "%s for %s returned no data files.", fetch_path.name, site_dir.name
+            )
+            return False
+
         _copy_files(fetch_output_dir, fetch_run_dir)
+
+    return True
 
 
 def _run_parse(
     site_dir: pathlib.Path,
     output_dir: pathlib.Path,
     timestamp: str,
-) -> None:
+) -> bool:
     parse_path = _find_executeable(site_dir, PipelineStage.PARSE)
     if not parse_path:
-        logger.info("No parse cmd in %s to run.", str(site_dir))
-        return
+        logger.info("No parse cmd for %s to run.", site_dir.name)
+        return False
 
     fetch_run_dir = _find_latest_run_dir(output_dir, site_dir.name, PipelineStage.FETCH)
     if not fetch_run_dir:
-        logger.warning("Skipping parse stage because there is no data from fetch stage")
-        return
+        logger.warning(
+            "Skipping parse stage for %s because there is no data from fetch stage",
+            site_dir.name,
+        )
+        return False
+
+    if not _data_exists(fetch_run_dir):
+        logger.warning("No fetch data available to parse for %s.", site_dir.name)
+        return False
 
     parse_run_dir = _generate_run_dir(
         output_dir, site_dir.name, PipelineStage.PARSE, timestamp
@@ -242,25 +278,38 @@ def _run_parse(
             check=True,
         )
 
+        if not _data_exists(parse_output_dir):
+            logger.warning(
+                "%s for %s returned no data files.", parse_path.name, site_dir.name
+            )
+            return False
+
         _copy_files(parse_output_dir, parse_run_dir)
+
+    return True
 
 
 def _run_normalize(
     site_dir: pathlib.Path,
     output_dir: pathlib.Path,
     timestamp: str,
-) -> None:
+) -> bool:
     normalize_path = _find_executeable(site_dir, PipelineStage.NORMALIZE)
     if not normalize_path:
-        logger.info("No normalize cmd in %s to run.", str(site_dir))
-        return
+        logger.info("No normalize cmd for %s to run.", site_dir.name)
+        return False
 
     parse_run_dir = _find_latest_run_dir(output_dir, site_dir.name, PipelineStage.PARSE)
     if not parse_run_dir:
         logger.warning(
-            "Skipping normalize stage because there is no data from parse stage"
+            "Skipping normalize stage for %s because there is no data from parse stage",
+            site_dir.name,
         )
-        return
+        return False
+
+    if not _data_exists(parse_run_dir):
+        logger.warning("No parse data available to normalize for %s.", site_dir.name)
+        return False
 
     normalize_run_dir = _generate_run_dir(
         output_dir, site_dir.name, PipelineStage.NORMALIZE, timestamp
@@ -282,7 +331,15 @@ def _run_normalize(
             check=True,
         )
 
+        if not _data_exists(normalize_output_dir):
+            logger.warning(
+                "%s for %s returned no data files.", normalize_path.name, site_dir.name
+            )
+            return False
+
         _copy_files(normalize_output_dir, normalize_run_dir)
+
+    return True
 
 
 @click.group()
@@ -354,8 +411,8 @@ def normalize(
 ) -> None:
     """Run normalize process for specified sites."""
     timestamp = _generate_run_timestamp()
-    site_dirs = _get_site_dirs(state, sites)
-
+    site_dirs = list(_get_site_dirs(state, sites))
+    print(site_dirs)
     for site_dir in site_dirs:
         _run_normalize(site_dir, output_dir, timestamp)
 
@@ -374,8 +431,16 @@ def all_stages(
     site_dirs = _get_site_dirs(state, sites)
 
     for site_dir in site_dirs:
-        _run_fetch(site_dir, output_dir, timestamp)
-        _run_parse(site_dir, output_dir, timestamp)
+        fetch_success = _run_fetch(site_dir, output_dir, timestamp)
+
+        if not fetch_success:
+            continue
+
+        parse_success = _run_parse(site_dir, output_dir, timestamp)
+
+        if not parse_success:
+            continue
+
         _run_normalize(site_dir, output_dir, timestamp)
 
 
