@@ -46,8 +46,10 @@ def _get_site_dir(site: str) -> Optional[pathlib.Path]:
     """Return a site directory path, if it exists"""
     site_dir = RUNNERS_DIR / site
 
-    if site_dir.exists():
-        return site_dir
+    if not site_dir.exists():
+        return None
+
+    return site_dir
 
 
 def _get_site_dirs(
@@ -56,9 +58,13 @@ def _get_site_dirs(
     """Return a site directory path, if it exists"""
     if sites is not None:
         return _get_site_dirs_for_state(state)
-    else:
+    elif sites is not None:
         for site in sites:
-            yield _get_site_dir(site)
+            site_dir = _get_site_dir(site)
+            if not site_dir:
+                continue
+
+            yield site_dir
 
 
 def _find_executeable(site_dir: pathlib.Path, cmd_name: str) -> Optional[pathlib.Path]:
@@ -71,7 +77,10 @@ def _find_executeable(site_dir: pathlib.Path, cmd_name: str) -> Optional[pathlib
 
     if len(cmds) > 1:
         logger.error(
-            "Too many %s cmds in %s (%s).", cmd_name, str(site_dir), ", ".join(cmds)
+            "Too many %s cmds in %s (%s).",
+            cmd_name,
+            str(site_dir),
+            ", ".join([c.name for c in cmds]),
         )
         return None
 
@@ -131,7 +140,7 @@ def cli():
 
 @cli.command()
 @click.option("--state", "state", type=str)
-def available_sites(state: Optional[str]):
+def available_sites(state: Optional[str]) -> None:
     """Print list of available sites, optionally filtered by state"""
 
     for site_dir in _get_site_dirs_for_state(state):
@@ -150,7 +159,7 @@ def available_sites(state: Optional[str]):
 @cli.command()
 @click.option("--state", "state", type=str)
 @click.argument("sites", nargs=-1, type=str)
-def fetch(state: Optional[str], sites: Optional[Sequence[str]]):
+def fetch(state: Optional[str], sites: Optional[Sequence[str]]) -> None:
     """Run fetch process for specified sites."""
     site_dirs = _get_site_dirs(state, sites)
 
@@ -161,7 +170,7 @@ def fetch(state: Optional[str], sites: Optional[Sequence[str]]):
 @cli.command()
 @click.option("--state", "state", type=str)
 @click.argument("sites", nargs=-1, type=str)
-def parse(state: Optional[str], sites: Optional[Sequence[str]]):
+def parse(state: Optional[str], sites: Optional[Sequence[str]]) -> None:
     """Run parse process for specified sites."""
     site_dirs = _get_site_dirs(state, sites)
 
@@ -172,7 +181,7 @@ def parse(state: Optional[str], sites: Optional[Sequence[str]]):
 @cli.command()
 @click.option("--state", "state", type=str)
 @click.argument("sites", nargs=-1, type=str)
-def normalize(state: Optional[str], sites: Optional[Sequence[str]]):
+def normalize(state: Optional[str], sites: Optional[Sequence[str]]) -> None:
     """Run normalize process for specified sites."""
     site_dirs = _get_site_dirs(state, sites)
 
@@ -183,7 +192,7 @@ def normalize(state: Optional[str], sites: Optional[Sequence[str]]):
 @cli.command()
 @click.option("--state", "state", type=str)
 @click.argument("sites", nargs=-1, type=str)
-def all_stages(state: Optional[str], sites: Optional[Sequence[str]]):
+def all_stages(state: Optional[str], sites: Optional[Sequence[str]]) -> None:
     """Run all stages in succession for specified sites."""
     site_dirs = _get_site_dirs(state, sites)
 
@@ -194,7 +203,7 @@ def all_stages(state: Optional[str], sites: Optional[Sequence[str]]):
 
 
 @cli.command()
-def version():
+def version() -> None:
     """Get the library version."""
     click.echo(click.style("0.1.0", bold=True))
 
