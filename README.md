@@ -38,7 +38,7 @@ Pipeline for ingesting nationwide feed of vaccine facilities
     poetry install --extras lint
     ```
 
-### Setup Environment for Ubuntu/Debian
+### Setup Developer Environment for Ubuntu/Debian
 
 1. Install required system deps:
 
