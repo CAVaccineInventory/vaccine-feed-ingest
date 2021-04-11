@@ -57,7 +57,7 @@ def _get_site_dirs(
 ) -> Iterator[pathlib.Path]:
     """Return a site directory path, if it exists"""
     if state is not None:
-        return _get_site_dirs_for_state(state)
+        yield from _get_site_dirs_for_state(state)
 
     elif sites is not None:
         for site in sites:
