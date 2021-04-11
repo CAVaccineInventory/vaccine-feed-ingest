@@ -56,8 +56,9 @@ def _get_site_dirs(
     state: Optional[str], sites: Optional[Sequence[str]]
 ) -> Iterator[pathlib.Path]:
     """Return a site directory path, if it exists"""
-    if sites is not None:
+    if state is not None:
         return _get_site_dirs_for_state(state)
+
     elif sites is not None:
         for site in sites:
             site_dir = _get_site_dir(site)
@@ -146,9 +147,9 @@ def available_sites(state: Optional[str]) -> None:
     """Print list of available sites, optionally filtered by state"""
 
     for site_dir in _get_site_dirs_for_state(state):
-        has_fetch = (site_dir / FETCH_CMD).exists()
-        has_parse = (site_dir / PARSE_CMD).exists()
-        has_normalize = (site_dir / NORMALIZE_CMD).exists()
+        has_fetch = bool(_find_executeable(site_dir, FETCH_CMD))
+        has_parse = bool(_find_executeable(site_dir, PARSE_CMD))
+        has_normalize = bool(_find_executeable(site_dir, NORMALIZE_CMD))
 
         print(
             site_dir.relative_to(RUNNERS_DIR),
