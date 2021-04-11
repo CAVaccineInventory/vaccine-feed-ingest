@@ -4,23 +4,61 @@ Pipeline for ingesting nationwide feed of vaccine facilities
 
 ## Usage
 
-### Setup Environment Once
 
-1. Install required system deps for Ubuntu/Debian (skip for Mac):
+### Setup Developer Environment for Mac
+
+1. Install `homebrew` if you don't have it:
+
+    ```sh
+    /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+    ```
+
+1. Install `python` version `3.9` or higher:
+
+    ```sh
+    brew install python@3.9
+    ```
+
+1. *(optional)* If you need multiple python versions then use `pyenv`:
+
+    ```sh
+    brew install pyenv
+    pyenv install
+    ```
+
+1. Install `poetry`
+
+    ```sh
+    brew install poetry
+    ```
+
+1. Install app dependancies with extras for development:
+
+    ```sh
+    poetry install --extras lint
+    ```
+
+### Setup Environment for Ubuntu/Debian
+
+1. Install required system deps:
 
     ```sh
     sudo apt-get install libbz2-dev liblzma-dev libreadline-dev libsqlite3-dev
     ```
 
-1. Install `pyenv`
+1. Install `python` version `3.9` or higher:
 
-    Using pyenv is recommended, but you can install the python version listed in [.python-version](https://github.com/CAVaccineInventory/vaccine-feed-ingest/blob/main/.python-version) as your system python instead.
+    ```sh
+    sudo-apt install python3.9
+    ```
+
+1. *(optional)* If you need multiple python versions then use `pyenv`:
 
     ```sh
     curl https://pyenv.run | bash
     ```
 
-1. Add to `.bashrc`:
+1. *(optional)* Add `pyenv` to `.bashrc`:
 
     ```sh
     export PATH="$HOME/.pyenv/bin:$PATH"
@@ -28,7 +66,7 @@ Pipeline for ingesting nationwide feed of vaccine facilities
     eval "$(pyenv virtualenv-init -)"
     ```
 
-1. Install project python version:
+1. *(optional)* Install project python version:
 
     ```sh
     pyenv install
@@ -46,13 +84,7 @@ Pipeline for ingesting nationwide feed of vaccine facilities
     export PATH="$HOME/.poetry/bin:$PATH"
     ```
 
-1. Install app dependancies:
-
-    ```sh
-    poetry install
-    ```
-
-1. (optional) For development:
+1. Install app dependancies with extras for development:
 
     ```sh
     poetry install --extras lint
