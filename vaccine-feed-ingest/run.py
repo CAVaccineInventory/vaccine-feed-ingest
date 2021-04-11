@@ -3,6 +3,8 @@
 """
 Entry point for running vaccine feed runners
 """
+import logging
+import os
 import pathlib
 import subprocess
 import tempfile
@@ -13,9 +15,18 @@ import dotenv
 
 RUNNERS_DIR = pathlib.Path(__file__).parent / "runners"
 
-FETCH_CMD = "fetch.sh"
-PARSE_CMD = "parse.sh"
-NORMALIZE_CMD = "normalize.sh"
+FETCH_CMD = "fetch"
+PARSE_CMD = "parse"
+NORMALIZE_CMD = "normalize"
+
+
+# Configure logger
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s %(levelname)s:%(name)s:%(message)s",
+    datefmt="%m/%d/%Y %H:%M:%S",
+)
+logger = logging.getLogger("ingest")
 
 
 def _get_site_dirs_for_state(state: Optional[str] = None) -> Iterator[pathlib.Path]:
@@ -50,9 +61,32 @@ def _get_site_dirs(
             yield _get_site_dir(site)
 
 
+def _find_executeable(site_dir: pathlib.Path, cmd_name: str) -> Optional[pathlib.Path]:
+    """Find executable. Logs an error and returs false if something is wrong."""
+    cmds = list(site_dir.glob(f"{cmd_name}.*"))
+
+    if not cmds:
+        logger.info("No %s cmd in %s to run.", cmd_name, str(site_dir))
+        return None
+
+    if len(cmds) > 1:
+        logger.error(
+            "Too many %s cmds in %s (%s).", cmd_name, str(site_dir), ", ".join(cmds)
+        )
+        return None
+
+    cmd = cmds[0]
+
+    if not os.access(cmd, os.X_OK):
+        logger.error("%s in %s is not marked as executable.", cmd.name, str(site_dir))
+        return None
+
+    return cmd
+
+
 def _run_fetch(site_dir: pathlib.Path) -> None:
-    fetch_path = site_dir / FETCH_CMD
-    if not fetch_path.exists():
+    fetch_path = _find_executeable(site_dir, FETCH_CMD)
+    if not fetch_path:
         return
 
     with tempfile.TemporaryDirectory(f"_fetch_{site_dir.name}") as tmp_str:
@@ -62,8 +96,8 @@ def _run_fetch(site_dir: pathlib.Path) -> None:
 
 
 def _run_parse(site_dir: pathlib.Path) -> None:
-    parse_path = site_dir / PARSE_CMD
-    if not parse_path.exists():
+    parse_path = _find_executeable(site_dir, PARSE_CMD)
+    if not parse_path:
         return
 
     with tempfile.TemporaryDirectory(f"_parse_{site_dir.name}") as tmp_str:
@@ -76,8 +110,8 @@ def _run_parse(site_dir: pathlib.Path) -> None:
 
 
 def _run_normalize(site_dir: pathlib.Path) -> None:
-    normalize_path = site_dir / NORMALIZE_CMD
-    if not normalize_path.exists():
+    normalize_path = _find_executeable(site_dir, NORMALIZE_CMD)
+    if not normalize_path:
         return
 
     with tempfile.TemporaryDirectory(f"_normalize_{site_dir.name}") as tmp_str:
