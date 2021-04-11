@@ -18,3 +18,5 @@ else
 fi
 
 echo "Normalizing ${input_dir} into ${output_dir}"
+
+cp "${input_dir}/data.parsed.ndjson" "${output_dir}/data.normalized.ndjson"

@@ -18,3 +18,5 @@ else
 fi
 
 echo "Parsing ${input_dir} into ${output_dir}"
+
+cp "${input_dir}/data.geojson" "${output_dir}/data.parsed.ndjson"

@@ -12,6 +12,7 @@ mypy = { version = "^0.812", optional = true }
 python = "^3.9"
 click = "^7.1.2"
 python-dotenv = "^0.17.0"
+pathy = "^0.4.0"
 
 [tool.poetry.dev-dependencies]
 

@@ -1,3 +1,6 @@
+# Default testing output directory
+out
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]

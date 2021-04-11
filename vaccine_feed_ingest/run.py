@@ -3,6 +3,7 @@
 """
 Entry point for running vaccine feed runners
 """
+import datetime
 import enum
 import logging
 import os
@@ -13,13 +14,15 @@ from typing import Iterator, Optional, Sequence
 
 import click
 import dotenv
+import pathy
 
 RUNNERS_DIR = pathlib.Path(__file__).parent / "runners"
 
 
 @enum.unique
-class PipelineStage(enum.Enum, str):
+class PipelineStage(str, enum.Enum):
     """Stages of a pipeline to run."""
+
     FETCH = "fetch"
     PARSE = "parse"
     NORMALIZE = "normalize"
@@ -32,6 +35,13 @@ STAGE_CMD_NAME = {
 }
 
 
+STAGE_OUTPUT_NAME = {
+    PipelineStage.FETCH: "raw",
+    PipelineStage.PARSE: "parsed",
+    PipelineStage.NORMALIZE: "normalized",
+}
+
+
 # Configure logger
 logging.basicConfig(
     level=logging.INFO,
@@ -39,6 +49,13 @@ logging.basicConfig(
     datefmt="%m/%d/%Y %H:%M:%S",
 )
 logger = logging.getLogger("ingest")
+
+
+def _pathy_data_path(ctx, param, value):
+    try:
+        return pathy.Pathy.fluid(value)
+    except (TypeError, ValueError):
+        raise click.BadParameter("Data path needs to be a local or GCS file path.")
 
 
 def _get_site_dirs_for_state(state: Optional[str] = None) -> Iterator[pathlib.Path]:
@@ -110,46 +127,162 @@ def _find_executeable(
     return cmd
 
 
-def _run_fetch(site_dir: pathlib.Path) -> None:
+def _generate_run_timestamp() -> str:
+    return datetime.datetime.now().replace(microsecond=0).isoformat()
+
+
+def _find_all_run_dirs(
+    base_output_dir: pathlib.Path,
+    site: str,
+    stage: PipelineStage,
+) -> Iterator[pathlib.Path]:
+    """Find latest stage output path"""
+    stage_dir = base_output_dir / site / STAGE_OUTPUT_NAME[stage]
+
+    for run_dir in sorted(stage_dir.iterdir(), reverse=True):
+        if run_dir.name.startswith("_"):
+            continue
+
+        if run_dir.name.startswith("."):
+            continue
+
+        yield run_dir
+
+
+def _find_latest_run_dir(
+    base_output_dir: pathlib.Path,
+    site: str,
+    stage: PipelineStage,
+) -> Optional[pathlib.Path]:
+    """Find latest stage output path"""
+    return next(_find_all_run_dirs(base_output_dir, site, stage), None)
+
+
+def _generate_run_dir(
+    base_output_dir: pathlib.Path,
+    site: str,
+    stage: PipelineStage,
+    timestamp: str,
+) -> pathlib.Path:
+    """Generate output path for a pipeline stage."""
+    run_dir = base_output_dir / site / STAGE_OUTPUT_NAME[stage] / timestamp
+
+    run_dir.mkdir(parents=True, exist_ok=True)
+
+    return run_dir
+
+
+def _copy_files(src_dir: pathlib.Path, dst_dir: pathlib.Path) -> None:
+    for filepath in src_dir.iterdir():
+        if filepath.name.startswith("_") or filepath.name.startswith("."):
+            continue
+
+        with filepath.open("rb") as src_file:
+            with (dst_dir / filepath.name).open("wb") as dst_file:
+                for content in src_file:
+                    dst_file.write(content)
+
+
+def _run_fetch(
+    site_dir: pathlib.Path,
+    output_dir: pathlib.Path,
+    timestamp: str,
+) -> None:
     fetch_path = _find_executeable(site_dir, PipelineStage.FETCH)
     if not fetch_path:
         logger.info("No fetch cmd in %s to run.", str(site_dir))
         return
 
+    fetch_run_dir = _generate_run_dir(
+        output_dir, site_dir.name, PipelineStage.FETCH, timestamp
+    )
+
     with tempfile.TemporaryDirectory(f"_fetch_{site_dir.name}") as tmp_str:
         tmp_dir = pathlib.Path(tmp_str)
+        fetch_output_dir = tmp_dir / "output"
+        fetch_output_dir.mkdir(parents=True, exist_ok=True)
 
-        subprocess.run([str(fetch_path), str(tmp_dir)], check=True)
+        subprocess.run([str(fetch_path), str(fetch_output_dir)], check=True)
+
+        _copy_files(fetch_output_dir, fetch_run_dir)
 
 
-def _run_parse(site_dir: pathlib.Path) -> None:
+def _run_parse(
+    site_dir: pathlib.Path,
+    output_dir: pathlib.Path,
+    timestamp: str,
+) -> None:
     parse_path = _find_executeable(site_dir, PipelineStage.PARSE)
     if not parse_path:
         logger.info("No parse cmd in %s to run.", str(site_dir))
         return
 
+    fetch_run_dir = _find_latest_run_dir(output_dir, site_dir.name, PipelineStage.FETCH)
+    if not fetch_run_dir:
+        logger.warning("Skipping parse stage because there is no data from fetch stage")
+        return
+
+    parse_run_dir = _generate_run_dir(
+        output_dir, site_dir.name, PipelineStage.PARSE, timestamp
+    )
+
     with tempfile.TemporaryDirectory(f"_parse_{site_dir.name}") as tmp_str:
         tmp_dir = pathlib.Path(tmp_str)
 
+        parse_output_dir = tmp_dir / "output"
+        parse_input_dir = tmp_dir / "input"
+
+        parse_output_dir.mkdir(parents=True, exist_ok=True)
+        parse_input_dir.mkdir(parents=True, exist_ok=True)
+
+        _copy_files(fetch_run_dir, parse_input_dir)
+
         subprocess.run(
-            [str(parse_path), str(tmp_dir / "output"), str(tmp_dir / "input")],
+            [str(parse_path), str(parse_output_dir), str(parse_input_dir)],
             check=True,
         )
 
+        _copy_files(parse_output_dir, parse_run_dir)
 
-def _run_normalize(site_dir: pathlib.Path) -> None:
+
+def _run_normalize(
+    site_dir: pathlib.Path,
+    output_dir: pathlib.Path,
+    timestamp: str,
+) -> None:
     normalize_path = _find_executeable(site_dir, PipelineStage.NORMALIZE)
     if not normalize_path:
         logger.info("No normalize cmd in %s to run.", str(site_dir))
         return
 
+    parse_run_dir = _find_latest_run_dir(output_dir, site_dir.name, PipelineStage.PARSE)
+    if not parse_run_dir:
+        logger.warning(
+            "Skipping normalize stage because there is no data from parse stage"
+        )
+        return
+
+    normalize_run_dir = _generate_run_dir(
+        output_dir, site_dir.name, PipelineStage.NORMALIZE, timestamp
+    )
+
     with tempfile.TemporaryDirectory(f"_normalize_{site_dir.name}") as tmp_str:
         tmp_dir = pathlib.Path(tmp_str)
 
+        normalize_output_dir = tmp_dir / "output"
+        normalize_input_dir = tmp_dir / "input"
+
+        normalize_output_dir.mkdir(parents=True, exist_ok=True)
+        normalize_input_dir.mkdir(parents=True, exist_ok=True)
+
+        _copy_files(parse_run_dir, normalize_input_dir)
+
         subprocess.run(
-            [str(normalize_path), str(tmp_dir / "output"), str(tmp_dir / "input")],
+            [str(normalize_path), normalize_output_dir, normalize_input_dir],
             check=True,
         )
+
+        _copy_files(normalize_output_dir, normalize_run_dir)
 
 
 @click.group()
@@ -178,48 +311,72 @@ def available_sites(state: Optional[str]) -> None:
 
 @cli.command()
 @click.option("--state", "state", type=str)
+@click.option(
+    "--output-dir", "output_dir", type=str, default="out", callback=_pathy_data_path
+)
 @click.argument("sites", nargs=-1, type=str)
-def fetch(state: Optional[str], sites: Optional[Sequence[str]]) -> None:
+def fetch(
+    state: Optional[str], output_dir: pathlib.Path, sites: Optional[Sequence[str]]
+) -> None:
     """Run fetch process for specified sites."""
+    timestamp = _generate_run_timestamp()
     site_dirs = _get_site_dirs(state, sites)
 
     for site_dir in site_dirs:
-        _run_fetch(site_dir)
+        _run_fetch(site_dir, output_dir, timestamp)
 
 
 @cli.command()
 @click.option("--state", "state", type=str)
+@click.option(
+    "--output-dir", "output_dir", type=str, default="out", callback=_pathy_data_path
+)
 @click.argument("sites", nargs=-1, type=str)
-def parse(state: Optional[str], sites: Optional[Sequence[str]]) -> None:
+def parse(
+    state: Optional[str], output_dir: pathlib.Path, sites: Optional[Sequence[str]]
+) -> None:
     """Run parse process for specified sites."""
+    timestamp = _generate_run_timestamp()
     site_dirs = _get_site_dirs(state, sites)
 
     for site_dir in site_dirs:
-        _run_parse(site_dir)
+        _run_parse(site_dir, output_dir, timestamp)
 
 
 @cli.command()
 @click.option("--state", "state", type=str)
+@click.option(
+    "--output-dir", "output_dir", type=str, default="out", callback=_pathy_data_path
+)
 @click.argument("sites", nargs=-1, type=str)
-def normalize(state: Optional[str], sites: Optional[Sequence[str]]) -> None:
+def normalize(
+    state: Optional[str], output_dir: pathlib.Path, sites: Optional[Sequence[str]]
+) -> None:
     """Run normalize process for specified sites."""
+    timestamp = _generate_run_timestamp()
     site_dirs = _get_site_dirs(state, sites)
 
     for site_dir in site_dirs:
-        _run_normalize(site_dir)
+        _run_normalize(site_dir, output_dir, timestamp)
 
 
 @cli.command()
 @click.option("--state", "state", type=str)
+@click.option(
+    "--output-dir", "output_dir", type=str, default="out", callback=_pathy_data_path
+)
 @click.argument("sites", nargs=-1, type=str)
-def all_stages(state: Optional[str], sites: Optional[Sequence[str]]) -> None:
+def all_stages(
+    state: Optional[str], output_dir: pathlib.Path, sites: Optional[Sequence[str]]
+) -> None:
     """Run all stages in succession for specified sites."""
+    timestamp = _generate_run_timestamp()
     site_dirs = _get_site_dirs(state, sites)
 
     for site_dir in site_dirs:
-        _run_fetch(site_dir)
-        _run_parse(site_dir)
-        _run_normalize(site_dir)
+        _run_fetch(site_dir, output_dir, timestamp)
+        _run_parse(site_dir, output_dir, timestamp)
+        _run_normalize(site_dir, output_dir, timestamp)
 
 
 @cli.command()
