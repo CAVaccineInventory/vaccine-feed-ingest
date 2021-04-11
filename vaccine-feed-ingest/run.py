@@ -67,7 +67,7 @@ def _find_executeable(site_dir: pathlib.Path, cmd_name: str) -> Optional[pathlib
     cmd = cmds[0]
 
     if not os.access(cmd, os.X_OK):
-        logger.error("%s in %s is not marked as executable.", cmd.name)
+        logger.error("%s in %s is not marked as executable.", cmd.name, str(site_dir))
         return None
 
     return cmd
