@@ -72,7 +72,6 @@ def _find_executeable(site_dir: pathlib.Path, cmd_name: str) -> Optional[pathlib
     cmds = list(site_dir.glob(f"{cmd_name}.*"))
 
     if not cmds:
-        logger.info("No %s cmd in %s to run.", cmd_name, str(site_dir))
         return None
 
     if len(cmds) > 1:
@@ -96,6 +95,7 @@ def _find_executeable(site_dir: pathlib.Path, cmd_name: str) -> Optional[pathlib
 def _run_fetch(site_dir: pathlib.Path) -> None:
     fetch_path = _find_executeable(site_dir, FETCH_CMD)
     if not fetch_path:
+        logger.info("No fetch cmd in %s to run.", str(site_dir))
         return
 
     with tempfile.TemporaryDirectory(f"_fetch_{site_dir.name}") as tmp_str:
@@ -107,6 +107,7 @@ def _run_fetch(site_dir: pathlib.Path) -> None:
 def _run_parse(site_dir: pathlib.Path) -> None:
     parse_path = _find_executeable(site_dir, PARSE_CMD)
     if not parse_path:
+        logger.info("No parse cmd in %s to run.", str(site_dir))
         return
 
     with tempfile.TemporaryDirectory(f"_parse_{site_dir.name}") as tmp_str:
@@ -121,6 +122,7 @@ def _run_parse(site_dir: pathlib.Path) -> None:
 def _run_normalize(site_dir: pathlib.Path) -> None:
     normalize_path = _find_executeable(site_dir, NORMALIZE_CMD)
     if not normalize_path:
+        logger.info("No normalize cmd in %s to run.", str(site_dir))
         return
 
     with tempfile.TemporaryDirectory(f"_normalize_{site_dir.name}") as tmp_str:
