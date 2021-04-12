@@ -1,3 +1,3 @@
 # SF GOV
 
-Example state site with only a fetch stage
+Basic fetch, parse, and normalize pipeline for a JSON api
