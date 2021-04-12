@@ -11,3 +11,4 @@ else
 fi
 
 echo "Fetching into ${output_dir}"
+touch "${output_dir}/data.geojson"
