@@ -4,7 +4,6 @@ Pipeline for ingesting nationwide feed of vaccine facilities
 
 ## Usage
 
-
 ### Setup Developer Environment for Mac
 
 1. Install `homebrew` if you don't have it:
@@ -89,7 +88,6 @@ Pipeline for ingesting nationwide feed of vaccine facilities
     ```sh
     poetry install --extras lint
     ```
-
 
 ### Run Pipelines
 
