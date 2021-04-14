@@ -142,16 +142,18 @@ poetry run vaccine-feed-ingest <fetch|parse|normalize> <site>
 
 ### Runner
 
-There are 3 stages of work to writing a scraper, and you can do as many of the stages as you want. Even just writing the fetch stage done is a big help.
+There are 3 stages to writing a scraper, and you can write as many of the stages as you want. Even just writing the first stage is a big help.
 
 Each scraper is stored in [vaccine_feed_ingest/runners/
-](https://github.com/CAVaccineInventory/vaccine-feed-ingest/tree/main/vaccine_feed_ingest/runners). They are grouped by region and names was the website with `_` replacing `.` e.g. `vaccine_feed_ingest/runners/ca/sf_gov`.
+](https://github.com/CAVaccineInventory/vaccine-feed-ingest/tree/main/vaccine_feed_ingest/runners). Runners are grouped by state, and named the same as the website with `_` replacing `.` e.g. `vaccine_feed_ingest/runners/ca/sf_gov`.
+
+#### Stages
 
 1. **Fetch**: Retrieve the raw data from external source and store it unchanged
 2. **Parse**: Convert the raw data into json records and store it as ndjson
 3. **Normalize**: Transform the parsed json records into VaccinateCA schema
 
-Each stage writted as a executeable script (with a `+x` bit) named after the stage e.g. `fetch.sh` or `fetch.py`. The script is passed an output directory as the first argument, and an input directory as a second argument.
+Each stage is an executeable script (with a `+x` bit) named after the stage e.g. `fetch.sh` or `fetch.py`. The script is passed an output directory as the first argument, and an input directory as the second argument.
 
 Every file written to the output directory that doesn't start with `.` or `_` is stored and passed along to the next stage.
 
@@ -163,14 +165,17 @@ Every file written to the output directory that doesn't start with `.` or `_` is
 
 ### Development
 
-You can iterate on the stage that you are developing by running the stage for that site. Output for runs are stored by default in a `out` directory.
+You can iterate on one stage at a time by running just the stage for that site. Output for runs are stored by default in a `out` directory at the root of the repo.
 
-This means if you are iterating on parsing, you only need to run `fetch` once, and then run `parse` as many times as you need.
+If you are iterating on parsing, then you only need to run `fetch` stage once, and then run `parse` as many times as you need.
+
+Example:
 
 ```sh
-poetry run vaccine-feed-ingest <fetch|parse|normalize> <state>/<site>
+poetry run vaccine-feed-ingest fetch ca/sf_gov
 ```
+
 
 ### Production
 
-In production, the code is run peridocially and data is stored to the `vaccine-feeds` bucket on GCS. If you need to test GCS then used the `vaccine-feeds-dev` bucket.
+In production, all stages for all runners are run, and outputs are stored to the `vaccine-feeds` bucket on GCS. If you need to test GCS then use the `vaccine-feeds-dev` bucket.
