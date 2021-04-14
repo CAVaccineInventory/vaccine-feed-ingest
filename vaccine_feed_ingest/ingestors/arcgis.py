@@ -72,7 +72,7 @@ def get_results(query_url: str, offset: int, batch_size: int, output_dir: str) -
         fh.write(r.data)
 
 
-def fetch(query_url: str, output_dir: str, batch_size=50):
+def fetch(query_url: str, output_dir: str, batch_size: int = 50) -> None:
     """ Fetch ArcGIS features in chunks of batch_size """
 
     count = get_count(query_url)
