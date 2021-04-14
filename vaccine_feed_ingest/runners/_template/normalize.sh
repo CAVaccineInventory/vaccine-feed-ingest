@@ -1,5 +1,9 @@
 #!/usr/bin/env bash
 
+#
+# Normalize stage should transform parsed json records into VaccinateCA schema
+#
+
 set -Eeuo pipefail
 
 output_dir=""
@@ -17,4 +21,7 @@ else
     echo "Must pass an input_dir as second argument"
 fi
 
+### Replace the following with your implementation ###
+
 echo "Normalizing ${input_dir} into ${output_dir}"
+cp "${input_dir}/data.parsed.ndjson" "${output_dir}/data.normalized.ndjson"
