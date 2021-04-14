@@ -34,7 +34,7 @@ def get_results(query_url: str, offset: int, batch_size: int, output_dir: str):
         fields={
             "where": "1=1",
             "outSR": out_sr,
-            "f": "pjson",
+            "f": "pgeojson",
             "outFields": "*",
             "returnGeometry": "true",
             "orderByFields": "objectId ASC",
