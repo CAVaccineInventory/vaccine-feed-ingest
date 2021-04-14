@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 
 import json
-import urllib3
 from os.path import join
+
+import urllib3
 
 http = urllib3.PoolManager()
 
