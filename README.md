@@ -137,7 +137,7 @@ poetry run vaccine-feed-ingest <fetch|parse|normalize> <site>
 ### How to
 
 1. Configure your python environment as specified above.
-2. Choose a website from [National Websites to Scrape](https://airtable.com/invite/l?inviteId=invRAMMkTCYH5FAoh&inviteToken=651c8220466fc266cd936182bf3aea6643606a44f3f1414784e4d0964e2a163a) airtable.
+2. Choose an unassigned website from [National Websites to Scrap](https://airtable.com/shr55fpTXObYmdk48) ([Commenter access](https://airtable.com/invite/l?inviteId=invRAMMkTCYH5FAoh&inviteToken=651c8220466fc266cd936182bf3aea6643606a44f3f1414784e4d0964e2a163a))
 3. Submit a PR to his repo that scraps data from that source
 
 ### Runner
