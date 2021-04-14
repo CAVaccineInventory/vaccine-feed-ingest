@@ -45,7 +45,7 @@ def get_count(query_url: str) -> int:
     return obj["count"]
 
 
-def get_results(query_url: str, offset: int, batch_size: int, output_dir: str):
+def get_results(query_url: str, offset: int, batch_size: int, output_dir: str) -> None:
     """ Fetch one batch of ArcGIS features from the query_url """
 
     # Set Output Spatial reference to EPSG 4326 GPS coords
