@@ -99,19 +99,7 @@ You can enter the poetry `venv` with the `poetry shell` command, or prefix each 
 with `poetry run`.
 
 ```sh
- Usage: vaccine-feed-ingest [OPTIONS] COMMAND [ARGS]...
-
-  Run vaccine-feed-ingest commands
-
-Options:
-  --help  Show this message and exit.
-
-Commands:
-  all-stages       Run all stages in succession for specified sites.
-  available-sites  Print list of available sites
-  fetch            Run fetch process for specified sites.
-  normalize        Run normalize process for specified sites.
-  parse            Run parse process for specified sites.
+poetry run vaccine-feed-ingest <fetch|parse|normalize> <site>
 ```
 
 ### Example Commands
