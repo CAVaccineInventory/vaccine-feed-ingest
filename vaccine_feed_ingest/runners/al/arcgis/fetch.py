@@ -15,6 +15,6 @@ output_dir = sys.argv[1]
 print(f"Starting AL scraper with {output_dir=}")
 
 
-query_url = """https://services7.arcgis.com/4RQmZZ0yaZkGR1zy/arcgis/rest/services/DriveThruWalkIn2_Public/FeatureServer/0/query""" # noqa: E501
+query_url = """https://services7.arcgis.com/4RQmZZ0yaZkGR1zy/arcgis/rest/services/DriveThruWalkIn2_Public/FeatureServer/0/query"""  # noqa: E501
 
 arcgis.fetch(query_url, output_dir)
