@@ -2,10 +2,32 @@
 
 import json
 from os.path import join
+from typing import Optional, Sequence
 
 import urllib3
+from arcgis import GIS
 
 http = urllib3.PoolManager()
+
+
+def fetch_geojson(
+    service_item_id: str,
+    output_dir: str,
+    selected_layers: Optional[Sequence[str]] = None,
+):
+    """ Save selected layers of the arcgis service item """
+    gis = GIS()
+    item = gis.content.get(service_item_id)
+    for layer in item.layers:
+        if selected_layers is not None:
+            if layer.properties.name not in selected_layers:
+                continue
+
+        results = layer.query()
+        layer_id = layer.properties.id
+        file_name = f"{service_item_id}_{layer_id}.json"
+        print(f"Saving {layer.properties.name} layer to {file_name}")
+        results.save(output_dir, file_name)
 
 
 def get_count(query_url: str) -> int:
@@ -43,8 +65,6 @@ def get_results(query_url: str, offset: int, batch_size: int, output_dir: str):
             "resultRecordCount": batch_size,
         },
     )
-
-    # obj = json.loads(r.data.decode('utf-8'))
 
     output_file = join(output_dir, f"{offset}.json")
     with open(output_file, "wb") as fh:

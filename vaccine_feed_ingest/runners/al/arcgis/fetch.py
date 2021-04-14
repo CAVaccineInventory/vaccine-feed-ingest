@@ -14,7 +14,4 @@ from ingestors import arcgis  # noqa: E402
 output_dir = sys.argv[1]
 print(f"Starting AL scraper with {output_dir=}")
 
-
-query_url = """https://services7.arcgis.com/4RQmZZ0yaZkGR1zy/arcgis/rest/services/DriveThruWalkIn2_Public/FeatureServer/0/query"""  # noqa: E501
-
-arcgis.fetch(query_url, output_dir)
+arcgis.fetch_geojson("51d4c310f1fe4d83a63e2b47acb77898", output_dir, ["Providers"])
