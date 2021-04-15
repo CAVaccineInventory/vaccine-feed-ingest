@@ -178,4 +178,6 @@ poetry run vaccine-feed-ingest fetch ca/sf_gov
 
 ### Production
 
-In production, all stages for all runners are run, and outputs are stored to the `vaccine-feeds` bucket on GCS. If you need to test GCS then use the `vaccine-feeds-dev` bucket.
+In production, all stages for all runners are run, and outputs are stored to the `vaccine-feeds` bucket on GCS. If you need to test the full pipeline with GCS, use the `vaccine-feeds-dev` bucket (you will need to be granted access).
+
+Results are also periodically committed to [`vaccine-feed-ingest-results`](https://github.com/CAVaccineInventory/vaccine-feed-ingest-results).
