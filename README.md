@@ -137,12 +137,12 @@ poetry run vaccine-feed-ingest <fetch|parse|normalize> <site>
 ### How to
 
 1. Configure your python environment as specified above.
-2. Choose an unassigned website from [National Websites to Scrap](https://airtable.com/shr55fpTXObYmdk48) ([Commenter access](https://airtable.com/invite/l?inviteId=invRAMMkTCYH5FAoh&inviteToken=651c8220466fc266cd936182bf3aea6643606a44f3f1414784e4d0964e2a163a))
-3. Submit a PR to his repo that scraps data from that source
+2. Choose an unassigned website from [National Websites to Scrape](https://airtable.com/shr55fpTXObYmdk48) ([Commenter access](https://airtable.com/invite/l?inviteId=invRAMMkTCYH5FAoh&inviteToken=651c8220466fc266cd936182bf3aea6643606a44f3f1414784e4d0964e2a163a))
+3. Submit a PR to his repo that scrapes data from that source
 
 ### Runner
 
-There are 3 stages to writing a scraper, and you can write as many of the stages as you want. Even just writing the first stage is a big help.
+There are 3 stages to writing a scraper, and you can write as many of the stages as you want. Even writing just the first stage is a big help.
 
 Each scraper is stored in [vaccine_feed_ingest/runners/
 ](https://github.com/CAVaccineInventory/vaccine-feed-ingest/tree/main/vaccine_feed_ingest/runners). Runners are grouped by state, and named the same as the website with `_` replacing `.` e.g. `vaccine_feed_ingest/runners/ca/sf_gov`.
@@ -165,7 +165,7 @@ Every file written to the output directory that doesn't start with `.` or `_` is
 
 ### Development
 
-You can iterate on one stage at a time by running just the stage for that site. Output for runs are stored by default in a `out` directory at the root of the repo.
+You can iterate on one stage at a time by running just that stage for a single site. Output for runs are stored by default in a `out` directory at the root of the repo.
 
 If you are iterating on parsing, then you only need to run `fetch` stage once, and then run `parse` as many times as you need.
 
