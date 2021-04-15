@@ -29,4 +29,6 @@ arcgis.fetch_geojson(
 arcgis.fetch_geojson("d1a799c7f98e41fb8c6b4386ca6fe014", output_dir, ["ApptOnly2"])
 
 # DriveThruWalkIn2_Public
-arcgis.fetch_geojson("8537322b652841b4a36b7ddb7bc3b204", output_dir, ["DriveThruWalkIn"])
+arcgis.fetch_geojson(
+    "8537322b652841b4a36b7ddb7bc3b204", output_dir, ["DriveThruWalkIn"]
+)
