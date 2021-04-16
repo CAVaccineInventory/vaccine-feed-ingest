@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import json
+import logging
 from os.path import join
 from typing import Optional, Sequence
 
@@ -8,6 +9,14 @@ import urllib3
 from arcgis import GIS
 
 http = urllib3.PoolManager()
+
+# Configure logger
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s %(levelname)s:%(name)s:%(message)s",
+    datefmt="%m/%d/%Y %H:%M:%S",
+)
+logger = logging.getLogger("arcgis")
 
 
 def fetch_geojson(
@@ -18,6 +27,14 @@ def fetch_geojson(
     """ Save selected layers of the arcgis service item """
     gis = GIS()
     item = gis.content.get(service_item_id)
+
+    if selected_layers is not None:
+        suggest_changing_selected_layers(
+            service_item_id,
+            map(lambda l: l.properties.name, item.layers),
+            selected_layers,
+        )
+
     for layer in item.layers:
         if selected_layers is not None:
             if layer.properties.name not in selected_layers:
@@ -28,6 +45,37 @@ def fetch_geojson(
         file_name = f"{service_item_id}_{layer_id}.json"
         print(f"Saving {layer.properties.name} layer to {file_name}")
         results.save(output_dir, file_name)
+
+
+def suggest_changing_selected_layers(
+    service_item_id: str,
+    found_layers: Sequence[str],
+    selected_layers: Sequence[str],
+) -> None:
+    """
+    Utility logging:
+    * Warn if unavailable layers are requested.
+    * Inform if available layers are not requested.
+    """
+    found_set = set(found_layers)
+    selected_set = set(selected_layers)
+
+    extra_layers = selected_set - found_set
+    missed_layers = found_set - selected_set
+
+    if len(extra_layers) > 0:
+        logger.warn(
+            "%s - requested layers which do not exist - %s",
+            service_item_id,
+            extra_layers,
+        )
+
+    if len(missed_layers) > 0:
+        logger.info(
+            "%s - additional layers available but not selected - %s",
+            service_item_id,
+            missed_layers,
+        )
 
 
 def get_count(query_url: str) -> int:
