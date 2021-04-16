@@ -3,6 +3,7 @@
 import logging
 import pathlib
 import sys
+
 import yaml
 
 # import arcgis ingestor
@@ -53,7 +54,8 @@ try:
             )
 except KeyError as e:
     logger.error(
-        "config file must have key 'arcgis' containing a list of objects, each with a key 'id' and a key 'layer_names'. This config does not - %s",
+        "config file must have key 'arcgis' containing a list of objects, "
+        "each with a key 'id' and a key 'layer_names'. This config does not - %s",
         yml_config,
     )
     raise e
