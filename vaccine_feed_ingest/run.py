@@ -97,11 +97,11 @@ def _get_site_dirs(
         yield from _get_site_dirs_for_state(state)
 
 
-def _find_executeable(
+def _find_relevant_file(
     site_dir: pathlib.Path,
     stage: PipelineStage,
 ) -> Optional[pathlib.Path]:
-    """Find executable. Logs an error and returs false if something is wrong."""
+    """Find file. Logs an error and returns false if something is wrong."""
     cmd_name = STAGE_CMD_NAME[stage]
 
     cmds = list(site_dir.glob(f"{cmd_name}.*"))
@@ -118,13 +118,47 @@ def _find_executeable(
         )
         return None
 
-    cmd = cmds[0]
+    return cmds[0]
+
+
+def _find_executeable(
+    site_dir: pathlib.Path,
+    stage: PipelineStage,
+) -> Optional[pathlib.Path]:
+    """Find executable. Logs and returns false if something is wrong."""
+    cmd = _find_relevant_file(site_dir, stage)
+
+    if not cmd:
+        return None
 
     if not os.access(cmd, os.X_OK):
-        logger.error("%s in %s is not marked as executable.", cmd.name, str(site_dir))
+        logger.warn("%s in %s is not marked as executable.", cmd.name, str(site_dir))
         return None
 
     return cmd
+
+
+def _find_yml(
+    site_dir: pathlib.Path,
+    stage: PipelineStage,
+) -> Optional[pathlib.Path]:
+    """Find yml file. Logs and returns false if something is wrong."""
+    yml = _find_relevant_file(site_dir, stage)
+
+    if not yml:
+        return None
+
+    _, extension = os.path.splitext(yml)
+
+    if not extension == ".yml":
+        logger.warn("%s in %s is not a .yml file", yml.name, str(site_dir))
+        return None
+
+    if not os.access(yml, os.R_OK):
+        logger.warn("%s in %s is not marked as readable.", yml.name, str(site_dir))
+        return None
+
+    return yml
 
 
 def _generate_run_timestamp() -> str:
@@ -210,9 +244,18 @@ def _run_fetch(
     timestamp: str,
 ) -> bool:
     fetch_path = _find_executeable(site_dir, PipelineStage.FETCH)
+
+    yml_path = None
     if not fetch_path:
-        logger.info("No fetch cmd for %s to run.", site_dir.name)
-        return False
+        yml_path = _find_yml(site_dir, PipelineStage.FETCH)
+
+        if not yml_path:
+            logger.info("No fetch cmd or .yml config for %s to run.", site_dir.name)
+            return False
+
+        fetch_path = _find_executeable(
+            RUNNERS_DIR.joinpath("_shared"), PipelineStage.FETCH
+        )
 
     fetch_run_dir = _generate_run_dir(
         output_dir, site_dir.name, PipelineStage.FETCH, timestamp
@@ -223,7 +266,9 @@ def _run_fetch(
         fetch_output_dir = tmp_dir / "output"
         fetch_output_dir.mkdir(parents=True, exist_ok=True)
 
-        subprocess.run([str(fetch_path), str(fetch_output_dir)], check=True)
+        subprocess.run(
+            [str(fetch_path), str(fetch_output_dir), str(yml_path)], check=True
+        )
 
         if not _data_exists(fetch_output_dir):
             logger.warning(
