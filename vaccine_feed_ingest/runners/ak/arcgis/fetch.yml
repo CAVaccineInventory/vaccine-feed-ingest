@@ -1,0 +1,6 @@
+---
+state: ak
+arcgis:
+- id: d92cbd6ff2524d7e92bef109f30cb366
+  layer_names:
+  - COVID19_Vaccine_Site_Survey_PROD
