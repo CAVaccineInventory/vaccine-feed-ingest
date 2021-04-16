@@ -1,0 +1,15 @@
+---
+state: al
+arcgis:
+- id: 51d4c310f1fe4d83a63e2b47acb77898
+  layer_names:
+  - Providers
+- id: 8f23e1c3b5c54198ab60d2f729cb787d
+  layer_names:
+  - FederalPartners
+- id: d1a799c7f98e41fb8c6b4386ca6fe014
+  layer_names:
+  - ApptOnly2
+- id: 8537322b652841b4a36b7ddb7bc3b204
+  layer_names:
+  - DriveThruWalkIn
