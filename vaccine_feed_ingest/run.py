@@ -167,11 +167,12 @@ def _generate_run_timestamp() -> str:
 
 def _find_all_run_dirs(
     base_output_dir: pathlib.Path,
+    state: str,
     site: str,
     stage: PipelineStage,
 ) -> Iterator[pathlib.Path]:
     """Find latest stage output path"""
-    stage_dir = base_output_dir / site / STAGE_OUTPUT_NAME[stage]
+    stage_dir = base_output_dir / state / site / STAGE_OUTPUT_NAME[stage]
 
     if not stage_dir.exists():
         return
@@ -188,21 +189,23 @@ def _find_all_run_dirs(
 
 def _find_latest_run_dir(
     base_output_dir: pathlib.Path,
+    state: str,
     site: str,
     stage: PipelineStage,
 ) -> Optional[pathlib.Path]:
     """Find latest stage output path"""
-    return next(_find_all_run_dirs(base_output_dir, site, stage), None)
+    return next(_find_all_run_dirs(base_output_dir, state, site, stage), None)
 
 
 def _generate_run_dir(
     base_output_dir: pathlib.Path,
+    state: str,
     site: str,
     stage: PipelineStage,
     timestamp: str,
 ) -> pathlib.Path:
     """Generate output path for a pipeline stage."""
-    return base_output_dir / site / STAGE_OUTPUT_NAME[stage] / timestamp
+    return base_output_dir / state / site / STAGE_OUTPUT_NAME[stage] / timestamp
 
 
 def _iter_data_paths(data_dir: pathlib.Path) -> Iterator[pathlib.Path]:
@@ -258,10 +261,12 @@ def _run_fetch(
         )
 
     fetch_run_dir = _generate_run_dir(
-        output_dir, site_dir.name, PipelineStage.FETCH, timestamp
+        output_dir, site_dir.parent.name, site_dir.name, PipelineStage.FETCH, timestamp
     )
 
-    with tempfile.TemporaryDirectory(f"_fetch_{site_dir.name}") as tmp_str:
+    with tempfile.TemporaryDirectory(
+        f"_fetch_{site_dir.parent.name}_{site_dir.name}"
+    ) as tmp_str:
         tmp_dir = pathlib.Path(tmp_str)
         fetch_output_dir = tmp_dir / "output"
         fetch_output_dir.mkdir(parents=True, exist_ok=True)
@@ -291,7 +296,9 @@ def _run_parse(
         logger.info("No parse cmd for %s to run.", site_dir.name)
         return False
 
-    fetch_run_dir = _find_latest_run_dir(output_dir, site_dir.name, PipelineStage.FETCH)
+    fetch_run_dir = _find_latest_run_dir(
+        output_dir, site_dir.parent.name, site_dir.name, PipelineStage.FETCH
+    )
     if not fetch_run_dir:
         logger.warning(
             "Skipping parse stage for %s because there is no data from fetch stage",
@@ -304,10 +311,12 @@ def _run_parse(
         return False
 
     parse_run_dir = _generate_run_dir(
-        output_dir, site_dir.name, PipelineStage.PARSE, timestamp
+        output_dir, site_dir.parent.name, site_dir.name, PipelineStage.PARSE, timestamp
     )
 
-    with tempfile.TemporaryDirectory(f"_parse_{site_dir.name}") as tmp_str:
+    with tempfile.TemporaryDirectory(
+        f"_parse_{site_dir.parent.name}_{site_dir.name}"
+    ) as tmp_str:
         tmp_dir = pathlib.Path(tmp_str)
 
         parse_output_dir = tmp_dir / "output"
@@ -344,7 +353,9 @@ def _run_normalize(
         logger.info("No normalize cmd for %s to run.", site_dir.name)
         return False
 
-    parse_run_dir = _find_latest_run_dir(output_dir, site_dir.name, PipelineStage.PARSE)
+    parse_run_dir = _find_latest_run_dir(
+        output_dir, site_dir.parent.name, site_dir.name, PipelineStage.PARSE
+    )
     if not parse_run_dir:
         logger.warning(
             "Skipping normalize stage for %s because there is no data from parse stage",
@@ -357,10 +368,16 @@ def _run_normalize(
         return False
 
     normalize_run_dir = _generate_run_dir(
-        output_dir, site_dir.name, PipelineStage.NORMALIZE, timestamp
+        output_dir,
+        site_dir.parent.name,
+        site_dir.name,
+        PipelineStage.NORMALIZE,
+        timestamp,
     )
 
-    with tempfile.TemporaryDirectory(f"_normalize_{site_dir.name}") as tmp_str:
+    with tempfile.TemporaryDirectory(
+        f"_normalize_{site_dir.parent.name}_{site_dir.name}"
+    ) as tmp_str:
         tmp_dir = pathlib.Path(tmp_str)
 
         normalize_output_dir = tmp_dir / "output"
