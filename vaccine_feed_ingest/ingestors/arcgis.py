@@ -40,7 +40,7 @@ def fetch_geojson(
             if layer.properties.name not in selected_layers:
                 continue
 
-        results = layer.query()
+        results = layer.query(return_all_records=True)
         layer_id = layer.properties.id
         file_name = f"{service_item_id}_{layer_id}.json"
         print(f"Saving {layer.properties.name} layer to {file_name}")
