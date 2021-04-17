@@ -292,9 +292,17 @@ def _run_parse(
     timestamp: str,
 ) -> bool:
     parse_path = _find_executeable(site_dir, PipelineStage.PARSE)
+    yml_path = None
     if not parse_path:
-        logger.info("No parse cmd for %s to run.", site_dir.name)
-        return False
+        yml_path = _find_yml(site_dir, PipelineStage.PARSE)
+
+        if not yml_path:
+            logger.info("No parse cmd or .yml config for %s to run.", site_dir.name)
+            return False
+
+        parse_path = _find_executeable(
+            RUNNERS_DIR.joinpath("_shared"), PipelineStage.PARSE
+        )
 
     fetch_run_dir = _find_latest_run_dir(
         output_dir, site_dir.parent.name, site_dir.name, PipelineStage.FETCH
@@ -328,7 +336,12 @@ def _run_parse(
         _copy_files(fetch_run_dir, parse_input_dir)
 
         subprocess.run(
-            [str(parse_path), str(parse_output_dir), str(parse_input_dir)],
+            [
+                str(parse_path),
+                str(parse_output_dir),
+                str(parse_input_dir),
+                str(yml_path),
+            ],
             check=True,
         )
 
