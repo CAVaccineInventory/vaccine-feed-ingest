@@ -1,0 +1,6 @@
+---
+state: tx
+arcgis:
+- id: 3078b524189848569f62985d71f4584b
+  layer_names:
+  - VaccinesPublic
