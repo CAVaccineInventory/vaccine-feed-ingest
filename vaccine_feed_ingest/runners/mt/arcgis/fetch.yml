@@ -1,0 +1,6 @@
+---
+state: mt
+arcgis:
+- id: cba5b18cfc82436fbd645327c2699ddf
+  layer_names:
+  - COVID_Vaccinations_PRD

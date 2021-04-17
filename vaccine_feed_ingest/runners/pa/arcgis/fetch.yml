@@ -1,0 +1,6 @@
+---
+state: pa
+arcgis:
+- id: 5b874ac0947347e9be49f6847eb44604
+  layer_names:
+  - Vaccine_Provider_Information

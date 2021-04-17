@@ -1,0 +1,6 @@
+---
+state: ri
+arcgis:
+- id: da57e8c8663048a2a9893c636fef63d0
+  layer_names:
+  - VaccinationSites03122021
