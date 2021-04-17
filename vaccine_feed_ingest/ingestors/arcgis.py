@@ -93,7 +93,9 @@ def get_count(query_url: str) -> int:
     return obj["count"]
 
 
-def get_results(query_url: str, offset: int, batch_size: int, output_dir: str) -> None:
+def get_results(
+    query_url: str, offset: int, batch_size: int, output_dir: str, format: str
+) -> None:
     """ Fetch one batch of ArcGIS features from the query_url """
 
     # Set Output Spatial reference to EPSG 4326 GPS coords
@@ -105,7 +107,7 @@ def get_results(query_url: str, offset: int, batch_size: int, output_dir: str) -
         fields={
             "where": "1=1",
             "outSR": out_sr,
-            "f": "pgeojson",
+            "f": format,
             "outFields": "*",
             "returnGeometry": "true",
             "orderByFields": "objectId ASC",
@@ -120,11 +122,13 @@ def get_results(query_url: str, offset: int, batch_size: int, output_dir: str) -
         fh.write(r.data)
 
 
-def fetch(query_url: str, output_dir: str, batch_size: int = 50) -> None:
+def fetch(
+    query_url: str, output_dir: str, batch_size: int = 50, format: str = "geojson"
+) -> None:
     """ Fetch ArcGIS features in chunks of batch_size """
 
     count = get_count(query_url)
     print(f"Found {count} results")
 
     for offset in range(0, count, batch_size):
-        get_results(query_url, offset, batch_size, output_dir)
+        get_results(query_url, offset, batch_size, output_dir, format)
