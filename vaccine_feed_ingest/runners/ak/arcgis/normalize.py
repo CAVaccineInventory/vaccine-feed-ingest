@@ -28,7 +28,7 @@ logger = logging.getLogger("ak/arcgis/normalize.py")
 
 
 def _get_availability(site: dict) -> schema.Availability:
-    manufacturer_field = site["attributes"]["flu_walkins"]
+    avail_field = site["attributes"]["flu_walkins"]
 
     potentials = {
         "no_please_make_an_appointment": schema.Availability(appointments=True),
@@ -36,7 +36,7 @@ def _get_availability(site: dict) -> schema.Availability:
     }
 
     try:
-        return potentials[manufacturer_field]
+        return potentials[avail_field]
     except KeyError as e:
         logger.error("Unexpected availability code: %s", e)
 
@@ -44,8 +44,7 @@ def _get_availability(site: dict) -> schema.Availability:
 
 
 def _get_inventory(site: dict) -> Optional[List[schema.Vaccine]]:
-    avail_field = site["attributes"]["flu_vaccinations"]
-    vaccines_field = avail_field.lower().split(",")
+    vaccines_field = site["attributes"]["flu_vaccinations"].lower().split(",")
 
     potentials = {
         "pfizer": schema.Vaccine(vaccine="pfizer"),
