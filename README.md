@@ -218,3 +218,22 @@ Results are also periodically committed to [`vaccine-feed-ingest-results`](https
     ```sh
     poetry run vaccine-feed-ingest all-stages --output-dir=gs://vaccine-feeds-dev/locations/
     ```
+
+## Load Source Locations
+
+### VIAL Setup
+
+1. Request an account on the VIAL staging server `https://vial-staging.calltheshots.us`
+
+1. Create an API Key for yourself at `https://vial-staging.calltheshots.us/admin/api/apikey/`
+
+1. Store the API key in project `.env` file with the var `VIAL_APIKEY`
+
+
+### Load Usage
+
+- Load SF.GOV source feed to VIAL
+
+    ```sh
+    poetry run vaccine-feed-ingest load-to-vial ca/sf_gov
+    ```
