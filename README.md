@@ -37,6 +37,18 @@ Pipeline for ingesting nationwide feed of vaccine facilities
     poetry install --extras lint
     ```
 
+1. (optional) Install `gcloud` SDK:
+
+    You only need this if you are going to try uploading to GCS. Google has
+    [detailed instructions](https://cloud.google.com/sdk/docs/install) if you need them.
+
+    Use an account that has access to `vaccine-feeds` project, and link to that project.
+
+    ```sh
+    brew install --cask google-cloud-sdk
+    gcloud init
+    ```
+
 ### Setup Developer Environment for Ubuntu/Debian
 
 1. Install required system deps:
@@ -87,6 +99,16 @@ Pipeline for ingesting nationwide feed of vaccine facilities
 
     ```sh
     poetry install --extras lint
+    ```
+
+1. (optional) Install `gcloud` SDK:
+
+    You only need this if you are going to try uploading to GCS. Google has
+    [detailed instructions](https://cloud.google.com/sdk/docs/install) if you need them.
+
+    ```sh
+    curl https://sdk.cloud.google.com | bash
+    gcloud init
     ```
 
 ### Run Pipelines
@@ -175,9 +197,24 @@ Example:
 poetry run vaccine-feed-ingest fetch ca/sf_gov
 ```
 
+## Production
 
-### Production
+In production, all stages for all runners are run, and outputs are stored to the `vaccine-feeds` bucket on GCS.
 
-In production, all stages for all runners are run, and outputs are stored to the `vaccine-feeds` bucket on GCS. If you need to test the full pipeline with GCS, use the `vaccine-feeds-dev` bucket (you will need to be granted access).
+If you need to test GCS then install the `gcloud` SDK from setup instructions and use the `vaccine-feeds-dev` bucket (you will need to be granted access).
 
 Results are also periodically committed to [`vaccine-feed-ingest-results`](https://github.com/CAVaccineInventory/vaccine-feed-ingest-results).
+
+### Instructions
+
+1. Authenticate to gcloud with an account that has access to `vaccine-feeds-dev` bucket.
+
+    ```sh
+    gcloud auth application-default login
+    ```
+
+1. Run ingestion with an GCS `--output-dir`
+
+    ```sh
+    poetry run vaccine-feed-ingest all-stages --output-dir=gs://vaccine-feeds-dev/locations/
+    ```
