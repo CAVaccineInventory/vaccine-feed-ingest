@@ -12,7 +12,6 @@ import pathlib
 import subprocess
 import tempfile
 from typing import Iterator, Optional, Sequence
-from urllib.parse import urljoin, urlsplit
 
 import click
 import dotenv
@@ -454,7 +453,7 @@ def _run_load_to_vial(
             for line in src_file:
                 try:
                     normalized_location = schema.NormalizedLocation.parse_raw(line)
-                except pydantic.ValidationError as e:
+                except pydantic.ValidationError:
                     logger.warning(
                         "Skipping source location because it is invalid: %s",
                         line,
