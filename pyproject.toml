@@ -16,6 +16,7 @@ pathy = "^0.4.0"
 isort = "^5.8.0"
 arcgis = "^1.8.5"
 PyYAML = "^5.4.1"
+pydantic = "^1.8.1"
 
 [tool.poetry.dev-dependencies]
 

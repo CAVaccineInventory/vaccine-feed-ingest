@@ -487,7 +487,7 @@ def normalize(
     """Run normalize process for specified sites."""
     timestamp = _generate_run_timestamp()
     site_dirs = list(_get_site_dirs(state, sites))
-    print(site_dirs)
+
     for site_dir in site_dirs:
         _run_normalize(site_dir, output_dir, timestamp)
 
