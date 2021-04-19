@@ -420,7 +420,7 @@ def _run_normalize(
 @click.group()
 def cli():
     """Run vaccine-feed-ingest commands"""
-    pass
+    dotenv.load_dotenv()
 
 
 @cli.command()
@@ -526,5 +526,4 @@ def version() -> None:
 
 
 if __name__ == "__main__":
-    dotenv.load_dotenv()
     cli()
