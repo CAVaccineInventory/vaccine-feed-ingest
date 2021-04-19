@@ -69,8 +69,8 @@ class OpenHour(BaseModel):
     """
     {
         "day": str as day of week enum e.g. monday,
-        "opens": str as hh:mm:ss,
-        "closes": str as hh:mm:ss,
+        "opens": str as hh:mm,
+        "closes": str as hh:mm,
     }
     """
 
