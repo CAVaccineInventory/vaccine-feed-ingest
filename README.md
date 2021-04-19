@@ -229,7 +229,6 @@ Results are also periodically committed to [`vaccine-feed-ingest-results`](https
 
 1. Store the API key in project `.env` file with the var `VIAL_APIKEY`
 
-
 ### Load Usage
 
 - Load SF.GOV source feed to VIAL

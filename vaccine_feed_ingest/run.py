@@ -12,16 +12,15 @@ import pathlib
 import subprocess
 import tempfile
 from typing import Iterator, Optional, Sequence
-from urllib.parse import urlsplit, urljoin
+from urllib.parse import urljoin, urlsplit
 
 import click
 import dotenv
 import pathy
-import urllib3
 import pydantic
+import urllib3
 
 from vaccine_feed_ingest.schema import schema
-
 
 RUNNERS_DIR = pathlib.Path(__file__).parent / "runners"
 
