@@ -5,16 +5,23 @@ Entry point for running vaccine feed runners
 """
 import datetime
 import enum
+import json
 import logging
 import os
 import pathlib
 import subprocess
 import tempfile
 from typing import Iterator, Optional, Sequence
+from urllib.parse import urlsplit, urljoin
 
 import click
 import dotenv
 import pathy
+import urllib3
+import pydantic
+
+from vaccine_feed_ingest.schema import schema
+
 
 RUNNERS_DIR = pathlib.Path(__file__).parent / "runners"
 
@@ -417,6 +424,105 @@ def _run_normalize(
     return True
 
 
+def _run_load_to_vial(
+    vial_http: urllib3.connectionpool.ConnectionPool,
+    site_dir: pathlib.Path,
+    output_dir: pathlib.Path,
+    import_run_id: str,
+) -> bool:
+    normalize_run_dir = _find_latest_run_dir(
+        output_dir, site_dir.parent.name, site_dir.name, PipelineStage.NORMALIZE
+    )
+    if not normalize_run_dir:
+        logger.warning(
+            "Skipping load for %s because there is no data from normalize stage",
+            site_dir.name,
+        )
+        return False
+
+    if not _data_exists(normalize_run_dir):
+        logger.warning("No normalize data available to load for %s.", site_dir.name)
+        return False
+
+    num_imported_locations = 0
+
+    for filepath in _iter_data_paths(normalize_run_dir):
+        if not filepath.name.endswith(".normalized.ndjson"):
+            continue
+
+        import_locations = []
+        with filepath.open("rb") as src_file:
+            for line in src_file:
+                try:
+                    normalized_location = schema.NormalizedLocation.parse_raw(line)
+                except pydantic.ValidationError as e:
+                    logger.warning(
+                        "Skipping source location because it is invalid: %s",
+                        line,
+                        exc_info=True,
+                    )
+                    continue
+
+                import_locations.append(_create_import_location(normalized_location))
+
+        if not import_locations:
+            logger.warning(
+                "No locations to import in %s in %s",
+                filepath.name,
+                site_dir.name,
+            )
+            continue
+
+        encoded_ndjson = "\n".join([loc.json() for loc in import_locations])
+
+        import_resp = vial_http.request(
+            "POST",
+            f"/api/importSourceLocations?import_run_id={import_run_id}",
+            headers={**vial_http.headers, "Content-Type": "application/x-ndjson"},
+            body=encoded_ndjson.encode("utf-8"),
+        )
+
+        if import_resp.status != 200:
+            logger.warning(
+                "Failed to import source locations for %s in %s: %s",
+                filepath.name,
+                site_dir.name,
+                import_resp.data[:100],
+            )
+
+        num_imported_locations += len(import_locations)
+
+    logger.info(
+        "Imported %d source locations for %s",
+        num_imported_locations,
+        site_dir.name,
+    )
+
+    return bool(num_imported_locations)
+
+
+def _create_import_location(
+    normalized_record: schema.NormalizedLocation,
+) -> schema.ImportSourceLocation:
+    """Transform normalized record into import record"""
+    import_location = schema.ImportSourceLocation(
+        source_uid=normalized_record.id,
+        source_name=normalized_record.source.source,
+        import_json=normalized_record,
+        # TODO: Add code to match to existing entities
+        match=schema.ImportMatchAction(action="new"),
+    )
+
+    if normalized_record.name:
+        import_location.name = normalized_record.name
+
+    if normalized_record.location:
+        import_location.latitude = normalized_record.location.latitude
+        import_location.longitude = normalized_record.location.longitude
+
+    return import_location
+
+
 @click.group()
 def cli():
     """Run vaccine-feed-ingest commands"""
@@ -517,6 +623,71 @@ def all_stages(
             continue
 
         _run_normalize(site_dir, output_dir, timestamp)
+
+
+@cli.command()
+@click.option(
+    "--vial-server",
+    "vial_server",
+    type=str,
+    default=lambda: os.environ.get(
+        "VIAL_SERVER", "https://vial-staging.calltheshots.us"
+    ),
+)
+@click.option(
+    "--vial-apikey",
+    "vial_apikey",
+    type=str,
+    default=lambda: os.environ.get("VIAL_APIKEY", ""),
+)
+@click.option("--state", "state", type=str)
+@click.option(
+    "--output-dir", "output_dir", type=str, default="out", callback=_pathy_data_path
+)
+@click.argument("sites", nargs=-1, type=str)
+def load_to_vial(
+    vial_server: str,
+    vial_apikey: str,
+    state: Optional[str],
+    output_dir: pathlib.Path,
+    sites: Optional[Sequence[str]],
+) -> None:
+    """Load specified sites to vial server."""
+    if not vial_server:
+        raise Exception("Must configure VIAL server to call")
+
+    if not vial_apikey:
+        raise Exception("Must configure VIAL API Key to use")
+
+    site_dirs = _get_site_dirs(state, sites)
+
+    http_pool = urllib3.PoolManager()
+    vial_http = http_pool.connection_from_url(
+        vial_server,
+        pool_kwargs={"headers": {"Authorization": f"Bearer {vial_apikey}"}},
+    )
+
+    verify_resp = vial_http.request("GET", "/api/verifyToken")
+    if verify_resp.status != 200:
+        raise Exception(f"Invalid api key for VIAL server: {verify_resp.data}")
+
+    import_resp = vial_http.request("POST", "/api/startImportRun")
+    if import_resp.status != 200:
+        raise Exception(f"Failed to start import run {import_resp.data}")
+
+    import_data = json.loads(import_resp.data.decode("utf-8"))
+    import_run_id = import_data.get("import_run_id")
+
+    if not import_run_id:
+        raise Exception(f"Failed to start import run {import_data}")
+
+    for site_dir in site_dirs:
+        _run_load_to_vial(
+            vial_http,
+            site_dir,
+            output_dir,
+            import_run_id,
+        )
 
 
 @cli.command()
