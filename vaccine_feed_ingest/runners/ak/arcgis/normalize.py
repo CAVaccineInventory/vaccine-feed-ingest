@@ -43,6 +43,22 @@ def _get_availability(site: dict) -> schema.Availability:
     return None
 
 
+def _get_id(site: dict) -> str:
+    data_id = site["attributes"]["globalid"]
+
+    # Could parse these from directory traversal, but do not for now to avoid
+    # accidental mutation.
+    site = "arcgis"
+    runner = "ak"
+
+    # Could parse these from the input file name, but do not for now to avoid
+    # accidental mutation.
+    arcgis = "d92cbd6ff2524d7e92bef109f30cb366"
+    layer = 0
+
+    return f"{runner}:{site}:{arcgis}_{layer}:{data_id}"
+
+
 def _get_inventory(site: dict) -> Optional[List[schema.Vaccine]]:
     vaccines_field = site["attributes"]["flu_vaccinations"].lower().split(",")
 
@@ -106,7 +122,7 @@ def _get_published_at(site: dict) -> Optional[str]:
 
 def _get_normalized_location(site: dict, timestamp: str) -> schema.NormalizedLocation:
     return schema.NormalizedLocation(
-        id=f"ak_arcgis_{site['attributes']['globalid']}",
+        id=_get_id(site),
         name=site["attributes"]["vaccinationSite"],
         address=schema.Address(
             street1=site["attributes"]["address"],
@@ -136,7 +152,7 @@ def _get_normalized_location(site: dict, timestamp: str) -> schema.NormalizedLoc
             fetched_from_uri="https://services1.arcgis.com/WzFsmainVTuD5KML/ArcGIS/rest/services/COVID19_Vaccine_Site_Survey_API/FeatureServer/0",  # noqa: E501
             fetched_at=timestamp,
             published_at=_get_published_at(site),
-            data=json.dumps(site),
+            data=site,
         ),
     )
 
