@@ -18,7 +18,6 @@ import dotenv
 import pathy
 import pydantic
 import urllib3
-
 from vaccine_feed_ingest.schema import schema
 
 RUNNERS_DIR = pathlib.Path(__file__).parent / "runners"
