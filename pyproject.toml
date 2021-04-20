@@ -32,3 +32,8 @@ build-backend = "poetry.core.masonry.api"
 
 [tool.black]
 target-version = ['py38']
+
+[tool.isort]
+profile = "black"
+src_paths = ["vaccine_feed_ingest"]
+known_first_party = ["vaccine_feed_ingest"]
