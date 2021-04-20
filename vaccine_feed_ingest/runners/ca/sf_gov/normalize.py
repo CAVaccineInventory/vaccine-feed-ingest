@@ -58,16 +58,14 @@ def normalize(site: dict, timestamp: str) -> dict:
         "fetched_at": timestamp,
         "published_at": site["appointments"]["last_updated"],
         "active": site["active"],
-        "sources": [
-            {
-                "source": "sf_gov",
-                "id": site["id"],
-                "fetched_from_uri": "https://vaccination-site-microservice.vercel.app/api/v1/appointments",
-                "fetched_at": timestamp,
-                "published_at": site["appointments"]["last_updated"],
-                "data": site,
-            },
-        ],
+        "source": {
+            "source": "sf_gov",
+            "id": site["id"],
+            "fetched_from_uri": "https://vaccination-site-microservice.vercel.app/api/v1/appointments",
+            "fetched_at": timestamp,
+            "published_at": site["appointments"]["last_updated"],
+            "data": site,
+        },
     }
 
 

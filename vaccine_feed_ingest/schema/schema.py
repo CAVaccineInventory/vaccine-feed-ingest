@@ -125,8 +125,8 @@ class Organization(BaseModel):
     }
     """
 
-    id: str
-    name: str
+    id: Optional[str]
+    name: Optional[str]
 
 
 class Link(BaseModel):
@@ -138,9 +138,9 @@ class Link(BaseModel):
     }
     """
 
-    authority: str
-    id: str
-    uri: str
+    authority: Optional[str]
+    id: Optional[str]
+    uri: Optional[str]
 
 
 class Source(BaseModel):
@@ -157,17 +157,17 @@ class Source(BaseModel):
 
     source: str
     id: str
-    fetched_from_uri: str
-    fetched_at: str
+    fetched_from_uri: Optional[str]
+    fetched_at: Optional[str]
     published_at: Optional[str]
-    data: str
+    data: dict
 
 
 class NormalizedLocation(BaseModel):
     id: str
-    name: str
-    address: Address
-    location: LatLng
+    name: Optional[str]
+    address: Optional[Address]
+    location: Optional[LatLng]
     contact: Optional[List[Contact]]
     languages: Optional[List[str]]  # [str as ISO 639-1 code]
     opening_dates: Optional[List[OpenDate]]
@@ -180,3 +180,22 @@ class NormalizedLocation(BaseModel):
     notes: Optional[List[str]]
     active: Optional[bool]
     source: Source
+
+
+class ImportMatchAction(BaseModel):
+    """Match action to take when importing a source location"""
+
+    id: Optional[str]
+    action: str
+
+
+class ImportSourceLocation(BaseModel):
+    """Import source location record"""
+
+    source_uid: str
+    source_name: str
+    name: Optional[str]
+    latitude: Optional[float]
+    longitude: Optional[float]
+    import_json: dict
+    match: Optional[ImportMatchAction]
