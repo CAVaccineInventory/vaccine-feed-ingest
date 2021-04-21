@@ -14,7 +14,6 @@ import click
 import dotenv
 import pathy
 import urllib3
-
 from vaccine_feed_ingest.stages import common, ingest, load, site
 
 # Configure logger
