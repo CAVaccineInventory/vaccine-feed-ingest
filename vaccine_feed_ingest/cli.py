@@ -8,7 +8,7 @@ import json
 import logging
 import os
 import pathlib
-from typing import Optional, Sequence
+from typing import Callable, Optional, Sequence
 
 import click
 import dotenv
@@ -37,6 +37,27 @@ def _pathy_data_path(ctx, param, value):
         raise click.BadParameter("Data path needs to be a local or GCS file path.")
 
 
+# --- Common Click options --- #
+
+
+def _output_dir_option() -> Callable:
+    return click.option(
+        "--output-dir",
+        "output_dir",
+        type=str,
+        default=lambda: os.environ.get("OUTPUT_DIR", "out"),
+        callback=_pathy_data_path,
+    )
+
+
+def _state_option() -> Callable:
+    return click.option("--state", "state", type=str)
+
+
+def _sites_argument() -> Callable:
+    return click.argument("sites", nargs=-1, type=str)
+
+
 @click.group()
 def cli():
     """Run vaccine-feed-ingest commands"""
@@ -44,7 +65,7 @@ def cli():
 
 
 @cli.command()
-@click.option("--state", "state", type=str)
+@_state_option()
 def available_sites(state: Optional[str]) -> None:
     """Print list of available sites, optionally filtered by state"""
 
@@ -64,11 +85,9 @@ def available_sites(state: Optional[str]) -> None:
 
 
 @cli.command()
-@click.option("--state", "state", type=str)
-@click.option(
-    "--output-dir", "output_dir", type=str, default="out", callback=_pathy_data_path
-)
-@click.argument("sites", nargs=-1, type=str)
+@_state_option()
+@_output_dir_option()
+@_sites_argument()
 def fetch(
     state: Optional[str], output_dir: pathlib.Path, sites: Optional[Sequence[str]]
 ) -> None:
@@ -81,11 +100,9 @@ def fetch(
 
 
 @cli.command()
-@click.option("--state", "state", type=str)
-@click.option(
-    "--output-dir", "output_dir", type=str, default="out", callback=_pathy_data_path
-)
-@click.argument("sites", nargs=-1, type=str)
+@_state_option()
+@_output_dir_option()
+@_sites_argument()
 def parse(
     state: Optional[str], output_dir: pathlib.Path, sites: Optional[Sequence[str]]
 ) -> None:
@@ -98,11 +115,9 @@ def parse(
 
 
 @cli.command()
-@click.option("--state", "state", type=str)
-@click.option(
-    "--output-dir", "output_dir", type=str, default="out", callback=_pathy_data_path
-)
-@click.argument("sites", nargs=-1, type=str)
+@_state_option()
+@_output_dir_option()
+@_sites_argument()
 def normalize(
     state: Optional[str], output_dir: pathlib.Path, sites: Optional[Sequence[str]]
 ) -> None:
@@ -115,11 +130,9 @@ def normalize(
 
 
 @cli.command()
-@click.option("--state", "state", type=str)
-@click.option(
-    "--output-dir", "output_dir", type=str, default="out", callback=_pathy_data_path
-)
-@click.argument("sites", nargs=-1, type=str)
+@_state_option()
+@_output_dir_option()
+@_sites_argument()
 def all_stages(
     state: Optional[str], output_dir: pathlib.Path, sites: Optional[Sequence[str]]
 ) -> None:
@@ -156,11 +169,9 @@ def all_stages(
     type=str,
     default=lambda: os.environ.get("VIAL_APIKEY", ""),
 )
-@click.option("--state", "state", type=str)
-@click.option(
-    "--output-dir", "output_dir", type=str, default="out", callback=_pathy_data_path
-)
-@click.argument("sites", nargs=-1, type=str)
+@_state_option()
+@_output_dir_option()
+@_sites_argument()
 def load_to_vial(
     vial_server: str,
     vial_apikey: str,
