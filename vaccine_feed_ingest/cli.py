@@ -36,7 +36,9 @@ def _pathy_data_path(ctx, param, value):
     except (TypeError, ValueError):
         raise click.BadParameter("Data path needs to be a local or GCS file path.")
 
-### Common Click options ###
+
+# --- Common Click options --- #
+
 
 def _output_dir_option() -> Callable:
     return click.option(
