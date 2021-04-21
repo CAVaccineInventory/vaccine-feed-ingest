@@ -11,4 +11,4 @@ else
 fi
 
 echo "Fetching into ${output_dir}"
-curl https://www.vaccinespotter.org/api/v0/US.json > "${output_dir}/data.geojson"
+curl https://www.vaccinespotter.org/api/v0/US.json >"${output_dir}/data.geojson"
