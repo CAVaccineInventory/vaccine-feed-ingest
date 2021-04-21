@@ -43,7 +43,7 @@ def _output_dir_option() -> Callable:
         "--output-dir",
         "output_dir",
         type=str,
-        default="out",
+        default=lambda: os.environ.get("OUTPUT_DIR", "out"),
         callback=_pathy_data_path,
     )
 
