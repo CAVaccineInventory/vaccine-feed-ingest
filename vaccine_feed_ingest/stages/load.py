@@ -3,7 +3,6 @@ import pathlib
 
 import pydantic
 import urllib3
-
 from vaccine_feed_ingest.schema import schema
 
 from . import outputs
