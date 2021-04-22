@@ -2,10 +2,10 @@
 
 import contextlib
 import json
-from typing import Iterator, Iterable
+from typing import Iterable, Iterator
 
-import urllib3
 import geopandas as gpd
+import urllib3
 from vaccine_feed_ingest.schema import schema
 
 

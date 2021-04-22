@@ -2,9 +2,9 @@ import logging
 import pathlib
 from typing import Optional
 
+import geopandas as gpd
 import pydantic
 import urllib3
-import geopandas as gpd
 from vaccine_feed_ingest import vial
 from vaccine_feed_ingest.schema import schema
 
