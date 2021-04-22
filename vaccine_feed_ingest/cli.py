@@ -4,7 +4,6 @@
 Entry point for running vaccine feed runners
 """
 import datetime
-import json
 import logging
 import os
 import pathlib
@@ -13,7 +12,7 @@ from typing import Callable, Optional, Sequence
 import click
 import dotenv
 import pathy
-import urllib3
+from vaccine_feed_ingest import vial
 from vaccine_feed_ingest.stages import common, ingest, load, site
 
 # Configure logger
@@ -180,41 +179,18 @@ def load_to_vial(
     sites: Optional[Sequence[str]],
 ) -> None:
     """Load specified sites to vial server."""
-    if not vial_server:
-        raise Exception("Must configure VIAL server to call")
-
-    if not vial_apikey:
-        raise Exception("Must configure VIAL API Key to use")
-
     site_dirs = site.get_site_dirs(state, sites)
 
-    http_pool = urllib3.PoolManager()
-    vial_http = http_pool.connection_from_url(
-        vial_server,
-        pool_kwargs={"headers": {"Authorization": f"Bearer {vial_apikey}"}},
-    )
+    with vial.vial_client(vial_server, vial_apikey) as vial_http:
+        import_run_id = vial.start_import_run(vial_http)
 
-    verify_resp = vial_http.request("GET", "/api/verifyToken")
-    if verify_resp.status != 200:
-        raise Exception(f"Invalid api key for VIAL server: {verify_resp.data}")
-
-    import_resp = vial_http.request("POST", "/api/startImportRun")
-    if import_resp.status != 200:
-        raise Exception(f"Failed to start import run {import_resp.data}")
-
-    import_data = json.loads(import_resp.data.decode("utf-8"))
-    import_run_id = import_data.get("import_run_id")
-
-    if not import_run_id:
-        raise Exception(f"Failed to start import run {import_data}")
-
-    for site_dir in site_dirs:
-        load.run_load_to_vial(
-            vial_http,
-            site_dir,
-            output_dir,
-            import_run_id,
-        )
+        for site_dir in site_dirs:
+            load.run_load_to_vial(
+                vial_http,
+                site_dir,
+                output_dir,
+                import_run_id,
+            )
 
 
 @cli.command()

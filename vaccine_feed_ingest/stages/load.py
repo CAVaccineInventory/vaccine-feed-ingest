@@ -3,6 +3,7 @@ import pathlib
 
 import pydantic
 import urllib3
+from vaccine_feed_ingest import vial
 from vaccine_feed_ingest.schema import schema
 
 from . import outputs
@@ -60,13 +61,8 @@ def run_load_to_vial(
             )
             continue
 
-        encoded_ndjson = "\n".join([loc.json() for loc in import_locations])
-
-        import_resp = vial_http.request(
-            "POST",
-            f"/api/importSourceLocations?import_run_id={import_run_id}",
-            headers={**vial_http.headers, "Content-Type": "application/x-ndjson"},
-            body=encoded_ndjson.encode("utf-8"),
+        import_resp = vial.import_source_locations(
+            vial_http, import_run_id, import_locations
         )
 
         if import_resp.status != 200:
@@ -76,6 +72,7 @@ def run_load_to_vial(
                 site_dir.name,
                 import_resp.data[:100],
             )
+            continue
 
         num_imported_locations += len(import_locations)
 
