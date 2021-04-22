@@ -57,8 +57,10 @@ def run_load_to_vial(
 
                 match_action = None
                 if locations is not None:
-                    match_action = _match_source_to_existing_locations(
-                        normalized_location, locations
+                    match_action = (
+                        _match_source_to_existing_locations(  # pylint: disable=E1111
+                            normalized_location, locations
+                        )
                     )
 
                 import_location = _create_import_location(
@@ -104,7 +106,7 @@ def _match_source_to_existing_locations(
     existing_locations: gpd.GeoDataFrame,
 ) -> Optional[schema.ImportMatchAction]:
     """Attempt to match source location to existing locations"""
-    return None
+    pass
 
 
 def _create_import_location(
