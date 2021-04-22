@@ -20,6 +20,7 @@ def run_load_to_vial(
     output_dir: pathlib.Path,
     import_run_id: str,
     locations: Optional[gpd.GeoDataFrame],
+    dry_run: bool = False,
 ) -> bool:
     """Load source to vial source locations"""
     normalize_run_dir = outputs.find_latest_run_dir(
@@ -77,18 +78,19 @@ def run_load_to_vial(
             )
             continue
 
-        import_resp = vial.import_source_locations(
-            vial_http, import_run_id, import_locations
-        )
-
-        if import_resp.status != 200:
-            logger.warning(
-                "Failed to import source locations for %s in %s: %s",
-                filepath.name,
-                site_dir.name,
-                import_resp.data[:100],
+        if not dry_run:
+            import_resp = vial.import_source_locations(
+                vial_http, import_run_id, import_locations
             )
-            continue
+
+            if import_resp.status != 200:
+                logger.warning(
+                    "Failed to import source locations for %s in %s: %s",
+                    filepath.name,
+                    site_dir.name,
+                    import_resp.data[:100],
+                )
+                continue
 
         num_imported_locations += len(import_locations)
 

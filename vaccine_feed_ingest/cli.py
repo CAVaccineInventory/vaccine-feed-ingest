@@ -49,6 +49,10 @@ def _output_dir_option() -> Callable:
     )
 
 
+def _dry_run_option() -> Callable:
+    return click.option("--dry-run/--no-dry-run", type=bool, default=False)
+
+
 def _state_option() -> Callable:
     return click.option("--state", "state", type=str)
 
@@ -86,46 +90,58 @@ def available_sites(state: Optional[str]) -> None:
 @cli.command()
 @_state_option()
 @_output_dir_option()
+@_dry_run_option()
 @_sites_argument()
 def fetch(
-    state: Optional[str], output_dir: pathlib.Path, sites: Optional[Sequence[str]]
+    state: Optional[str],
+    output_dir: pathlib.Path,
+    dry_run: bool,
+    sites: Optional[Sequence[str]],
 ) -> None:
     """Run fetch process for specified sites."""
     timestamp = _generate_run_timestamp()
     site_dirs = site.get_site_dirs(state, sites)
 
     for site_dir in site_dirs:
-        ingest.run_fetch(site_dir, output_dir, timestamp)
+        ingest.run_fetch(site_dir, output_dir, timestamp, dry_run)
 
 
 @cli.command()
 @_state_option()
 @_output_dir_option()
+@_dry_run_option()
 @_sites_argument()
 def parse(
-    state: Optional[str], output_dir: pathlib.Path, sites: Optional[Sequence[str]]
+    state: Optional[str],
+    output_dir: pathlib.Path,
+    dry_run: bool,
+    sites: Optional[Sequence[str]],
 ) -> None:
     """Run parse process for specified sites."""
     timestamp = _generate_run_timestamp()
     site_dirs = site.get_site_dirs(state, sites)
 
     for site_dir in site_dirs:
-        ingest.run_parse(site_dir, output_dir, timestamp)
+        ingest.run_parse(site_dir, output_dir, timestamp, dry_run)
 
 
 @cli.command()
 @_state_option()
 @_output_dir_option()
+@_dry_run_option()
 @_sites_argument()
 def normalize(
-    state: Optional[str], output_dir: pathlib.Path, sites: Optional[Sequence[str]]
+    state: Optional[str],
+    output_dir: pathlib.Path,
+    dry_run: bool,
+    sites: Optional[Sequence[str]],
 ) -> None:
     """Run normalize process for specified sites."""
     timestamp = _generate_run_timestamp()
     site_dirs = site.get_site_dirs(state, sites)
 
     for site_dir in site_dirs:
-        ingest.run_normalize(site_dir, output_dir, timestamp)
+        ingest.run_normalize(site_dir, output_dir, timestamp, dry_run)
 
 
 @cli.command()
@@ -170,13 +186,15 @@ def all_stages(
 )
 @_state_option()
 @_output_dir_option()
+@_dry_run_option()
 @_sites_argument()
-@click.option("--match/--no-match", default=True)
+@click.option("--match/--no-match", type=bool, default=True)
 def load_to_vial(
     vial_server: str,
     vial_apikey: str,
     state: Optional[str],
     output_dir: pathlib.Path,
+    dry_run: bool,
     sites: Optional[Sequence[str]],
     match: bool,
 ) -> None:
@@ -197,6 +215,7 @@ def load_to_vial(
                 output_dir,
                 import_run_id,
                 locations,
+                dry_run,
             )
 
 

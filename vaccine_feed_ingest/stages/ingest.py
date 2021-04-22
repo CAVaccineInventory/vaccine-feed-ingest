@@ -15,6 +15,7 @@ def run_fetch(
     site_dir: pathlib.Path,
     output_dir: pathlib.Path,
     timestamp: str,
+    dry_run: bool = False,
 ) -> bool:
     fetch_path = site.find_executeable(site_dir, PipelineStage.FETCH)
 
@@ -34,14 +35,6 @@ def run_fetch(
             logger.info("Missing shapred executable to run for yml in %s.", site_dir.name)
             return False
 
-    fetch_run_dir = outputs.generate_run_dir(
-        output_dir,
-        site_dir.parent.name,
-        site_dir.name,
-        PipelineStage.FETCH,
-        timestamp,
-    )
-
     with tempfile.TemporaryDirectory(
         f"_fetch_{site_dir.parent.name}_{site_dir.name}"
     ) as tmp_str:
@@ -59,7 +52,16 @@ def run_fetch(
             )
             return False
 
-        outputs.copy_files(fetch_output_dir, fetch_run_dir)
+        if not dry_run:
+            fetch_run_dir = outputs.generate_run_dir(
+                output_dir,
+                site_dir.parent.name,
+                site_dir.name,
+                PipelineStage.FETCH,
+                timestamp,
+            )
+
+            outputs.copy_files(fetch_output_dir, fetch_run_dir)
 
     return True
 
@@ -68,6 +70,7 @@ def run_parse(
     site_dir: pathlib.Path,
     output_dir: pathlib.Path,
     timestamp: str,
+    dry_run: bool = False,
 ) -> bool:
     parse_path = site.find_executeable(site_dir, PipelineStage.PARSE)
     yml_path = None
@@ -100,14 +103,6 @@ def run_parse(
         logger.warning("No fetch data available to parse for %s.", site_dir.name)
         return False
 
-    parse_run_dir = outputs.generate_run_dir(
-        output_dir,
-        site_dir.parent.name,
-        site_dir.name,
-        PipelineStage.PARSE,
-        timestamp,
-    )
-
     with tempfile.TemporaryDirectory(
         f"_parse_{site_dir.parent.name}_{site_dir.name}"
     ) as tmp_str:
@@ -137,7 +132,16 @@ def run_parse(
             )
             return False
 
-        outputs.copy_files(parse_output_dir, parse_run_dir)
+        if not dry_run:
+            parse_run_dir = outputs.generate_run_dir(
+                output_dir,
+                site_dir.parent.name,
+                site_dir.name,
+                PipelineStage.PARSE,
+                timestamp,
+            )
+
+            outputs.copy_files(parse_output_dir, parse_run_dir)
 
     return True
 
@@ -146,6 +150,7 @@ def run_normalize(
     site_dir: pathlib.Path,
     output_dir: pathlib.Path,
     timestamp: str,
+    dry_run: bool = False,
 ) -> bool:
     normalize_path = site.find_executeable(site_dir, PipelineStage.NORMALIZE)
     if not normalize_path:
@@ -165,14 +170,6 @@ def run_normalize(
     if not outputs.data_exists(parse_run_dir):
         logger.warning("No parse data available to normalize for %s.", site_dir.name)
         return False
-
-    normalize_run_dir = outputs.generate_run_dir(
-        output_dir,
-        site_dir.parent.name,
-        site_dir.name,
-        PipelineStage.NORMALIZE,
-        timestamp,
-    )
 
     with tempfile.TemporaryDirectory(
         f"_normalize_{site_dir.parent.name}_{site_dir.name}"
@@ -198,6 +195,15 @@ def run_normalize(
             )
             return False
 
-        outputs.copy_files(normalize_output_dir, normalize_run_dir)
+        if not dry_run:
+            normalize_run_dir = outputs.generate_run_dir(
+                output_dir,
+                site_dir.parent.name,
+                site_dir.name,
+                PipelineStage.NORMALIZE,
+                timestamp,
+            )
+
+            outputs.copy_files(normalize_output_dir, normalize_run_dir)
 
     return True
