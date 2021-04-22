@@ -30,6 +30,10 @@ def run_fetch(
             RUNNERS_DIR.joinpath("_shared"), PipelineStage.FETCH
         )
 
+        if not fetch_path:
+            logger.info("Missing shapred executable to run for yml in %s.", site_dir.name)
+            return False
+
     fetch_run_dir = outputs.generate_run_dir(
         output_dir,
         site_dir.parent.name,
@@ -77,6 +81,10 @@ def run_parse(
         parse_path = site.find_executeable(
             RUNNERS_DIR.joinpath("_shared"), PipelineStage.PARSE
         )
+
+        if not parse_path:
+            logger.info("Missing shapred executable to run for yml in %s.", site_dir.name)
+            return False
 
     fetch_run_dir = outputs.find_latest_run_dir(
         output_dir, site_dir.parent.name, site_dir.name, PipelineStage.FETCH

@@ -31,7 +31,7 @@ def fetch_geojson(
     if selected_layers is not None:
         suggest_changing_selected_layers(
             service_item_id,
-            map(lambda l: l.properties.name, item.layers),
+            [l.properties.name for l in item.layers],
             selected_layers,
         )
 
