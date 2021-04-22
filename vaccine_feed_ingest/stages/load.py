@@ -57,8 +57,8 @@ def run_load_to_vial(
 
                 match_action = None
                 if locations is not None:
-                    match_action = (
-                        _match_source_to_existing_locations(  # pylint: disable=E1111
+                    match_action = (  # pylint: disable=E1111
+                        _match_source_to_existing_locations(
                             normalized_location, locations
                         )
                     )
