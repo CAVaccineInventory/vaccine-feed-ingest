@@ -171,12 +171,14 @@ def all_stages(
 @_state_option()
 @_output_dir_option()
 @_sites_argument()
+@click.option("--match/--no-match", default=True)
 def load_to_vial(
     vial_server: str,
     vial_apikey: str,
     state: Optional[str],
     output_dir: pathlib.Path,
     sites: Optional[Sequence[str]],
+    match: bool,
 ) -> None:
     """Load specified sites to vial server."""
     site_dirs = site.get_site_dirs(state, sites)
@@ -185,11 +187,16 @@ def load_to_vial(
         import_run_id = vial.start_import_run(vial_http)
 
         for site_dir in site_dirs:
+            locations = None
+            if match:
+                locations = vial.retrieve_existing_locations(vial_http)
+
             load.run_load_to_vial(
                 vial_http,
                 site_dir,
                 output_dir,
                 import_run_id,
+                locations,
             )
 
 
