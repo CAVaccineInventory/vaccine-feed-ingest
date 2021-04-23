@@ -216,12 +216,14 @@ def load_to_vial(
     with vial.vial_client(vial_server, vial_apikey) as vial_http:
         import_run_id = vial.start_import_run(vial_http)
 
+        refresh_locations = True
+        locations = None
+
         for site_dir in site_dirs:
-            locations = None
-            if enable_match or enable_create:
+            if (enable_match or enable_create) and refresh_locations:
                 locations = list(vial.retrieve_existing_locations(vial_http))
 
-            load.run_load_to_vial(
+            success = load.run_load_to_vial(
                 vial_http,
                 site_dir,
                 output_dir,
@@ -231,6 +233,10 @@ def load_to_vial(
                 enable_create=enable_create,
                 dry_run=dry_run,
             )
+
+            # If data was loaded then refresh existing locations
+            if success:
+                refresh_locations = True
 
 
 @cli.command()
