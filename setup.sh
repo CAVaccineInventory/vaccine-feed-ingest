@@ -5,6 +5,7 @@ maybe_install() {
     exists=$(which "$1")
     if [ "xx$exists" == "xx" ]; then
         echo "$2 doesn't seem to be installed locally, but I can do it for you."
+        echo "Press Return to continue"
         echo ""
         echo "Hit Control-C if you don't want me to install $2 for you"
         read -r
