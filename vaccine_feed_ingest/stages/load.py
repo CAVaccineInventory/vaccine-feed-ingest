@@ -1,6 +1,6 @@
 import logging
 import pathlib
-from typing import Callable, Iterable, Iterator, List, Optional
+from typing import Iterable, Iterator, List, Optional
 
 import pydantic
 import shapely.geometry
@@ -8,6 +8,7 @@ import urllib3
 from vaccine_feed_ingest import vial
 from vaccine_feed_ingest.schema import schema
 
+from ..utils.match import canonicalize_address, get_full_address
 from . import outputs
 from .common import PipelineStage
 
@@ -128,22 +129,37 @@ def _find_candidates(
             yield loc
 
 
-def _is_different(source: schema.NormalizedLocation) -> Callable[[dict], bool]:
+def _is_different(source: schema.NormalizedLocation, candidate: dict) -> bool:
     """Return True if candidate is so different it couldn't be a match"""
-
-    def _fn(candidate: dict) -> bool:
-        return False
-
-    return _fn
+    return False
 
 
-def _is_match(source: schema.NormalizedLocation) -> Callable[[dict], bool]:
+def _is_match(source: schema.NormalizedLocation, candidate: dict) -> bool:
     """Return True if candidate is so similar it must be a match"""
+    source_links = (
+        set("{}:{}".format(link.authority, link.id) for link in source.links)
+        if source.links
+        else set()
+    )
 
-    def _fn(candidate: dict) -> bool:
-        return False
+    candidate = candidate["properties"]
+    candidate_links = (
+        set(candidate["concordances"]) if "concordances" in candidate else set()
+    )
+    shared_links = source_links.intersection(candidate_links)
 
-    return _fn
+    if len(shared_links) > 0:
+        # Shared concordances, mark as match
+        return True
+
+    if candidate["full_address"] is not None and source.address is not None:
+        if canonicalize_address(
+            get_full_address(source.address)
+        ) == canonicalize_address(candidate["full_address"]):
+            # Canonicalized address matches, mark as match
+            return True
+
+    return False
 
 
 def _match_source_to_existing_locations(
@@ -157,30 +173,34 @@ def _match_source_to_existing_locations(
     candidates = list(_find_candidates(source, existing))
 
     if not candidates:
+        logger.info("%s is a new location - nothing close", source.name)
         if ENABLE_CREATE_NEW:
             return schema.ImportMatchAction(action="new")
         else:
             return None
 
     # Filter out candidates that are too different to be a match
-    candidates = [loc for loc in candidates if not _is_different(source)]
+    candidates = [loc for loc in candidates if not _is_different(source, loc)]
 
     if not candidates:
+        logger.info("%s is a new location", source.name)
         if ENABLE_CREATE_NEW:
             return schema.ImportMatchAction(action="new")
         else:
             return None
 
     # Filter to candidates that are similar enough to be the same
-    candidates = [loc for loc in candidates if _is_match(source)]
+    candidates = [loc for loc in candidates if _is_match(source, loc)]
 
     # If there is one remaining high confidant match then use it.
     if len(candidates) == 1:
+        logger.info("%s is an existing location", source.name)
         return schema.ImportMatchAction(
             action="match",
-            id=candidates[0]["id"],
+            id=candidates[0]["properties"]["id"],
         )
 
+    logger.info("%d matches, not sure about %s", len(candidates), source.name)
     return None
 
 
