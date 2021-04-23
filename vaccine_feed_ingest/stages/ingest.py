@@ -32,7 +32,9 @@ def run_fetch(
         )
 
         if not fetch_path:
-            logger.info("Missing shapred executable to run for yml in %s.", site_dir.name)
+            logger.info(
+                "Missing shapred executable to run for yml in %s.", site_dir.name
+            )
             return False
 
     with tempfile.TemporaryDirectory(
@@ -86,7 +88,9 @@ def run_parse(
         )
 
         if not parse_path:
-            logger.info("Missing shapred executable to run for yml in %s.", site_dir.name)
+            logger.info(
+                "Missing shapred executable to run for yml in %s.", site_dir.name
+            )
             return False
 
     fetch_run_dir = outputs.find_latest_run_dir(
