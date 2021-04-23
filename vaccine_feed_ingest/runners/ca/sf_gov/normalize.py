@@ -5,6 +5,8 @@ import json
 import pathlib
 import sys
 
+from vaccine_feed_ingest.utils.normalize import provider_id_from_name
+
 
 def normalize(site: dict, timestamp: str) -> dict:
     address = site["location"]["address"]
@@ -17,7 +19,7 @@ def normalize(site: dict, timestamp: str) -> dict:
     if len(address_parts) > 1:
         street2 = ", ".join(address_parts[1:])
 
-    return {
+    normalized = {
         "id": f"sf_gov:{site['id']}",
         "name": site["name"],
         address: {
@@ -67,6 +69,13 @@ def normalize(site: dict, timestamp: str) -> dict:
             "data": site,
         },
     }
+
+    parsed_provider_link = provider_id_from_name(site["name"])
+    if parsed_provider_link is not None:
+        normalized["links"].append(
+            {"authority": parsed_provider_link[0], "id": parsed_provider_link[1]}
+        )
+    return normalized
 
 
 output_dir = pathlib.Path(sys.argv[1])
