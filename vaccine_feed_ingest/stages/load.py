@@ -2,9 +2,8 @@ import logging
 import pathlib
 from typing import Callable, Iterable, Iterator, List, Optional
 
-import geopandas as gpd
 import pydantic
-import shapely
+import shapely.geometry
 import urllib3
 from vaccine_feed_ingest import vial
 from vaccine_feed_ingest.schema import schema
@@ -115,8 +114,8 @@ def _find_candidates(
 ) -> Iterator[dict]:
     """Return a slice of existing locations"""
     src_point = shapely.geometry.Point(
-        source.location.latitude,
         source.location.longitude,
+        source.location.latitude,
     )
 
     for loc in existing:
@@ -129,7 +128,7 @@ def _find_candidates(
             yield loc
 
 
-def _is_different(source: schema.NormalizedLocation) -> Callable[[gpd.GeoSeries], bool]:
+def _is_different(source: schema.NormalizedLocation) -> Callable[[dict], bool]:
     """Return True if candidate is so different it couldn't be a match"""
 
     def _fn(candidate: dict) -> bool:
@@ -138,7 +137,7 @@ def _is_different(source: schema.NormalizedLocation) -> Callable[[gpd.GeoSeries]
     return _fn
 
 
-def _is_match(source: schema.NormalizedLocation) -> Callable[[gpd.GeoSeries], bool]:
+def _is_match(source: schema.NormalizedLocation) -> Callable[[dict], bool]:
     """Return True if candidate is so similar it must be a match"""
 
     def _fn(candidate: dict) -> bool:
