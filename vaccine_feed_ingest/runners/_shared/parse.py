@@ -42,7 +42,15 @@ except KeyError as e:
     )
     raise e
 
-if site == "arcgis":
+try:
+    parser = config["parser"]
+except KeyError as e:
+    logger.error(
+        "config file must have key 'parser'. This config does not - %s", YML_CONFIG
+    )
+    raise e
+
+if parser == "arcgis_features":
     json_filepaths = INPUT_DIR.glob("*.json")
 
     for in_filepath in json_filepaths:
@@ -64,7 +72,7 @@ if site == "arcgis":
                 json.dump(feature, fout)
                 fout.write("\n")
 else:
-    logger.error("Site '%s' was not recognized.", site)
+    logger.error("Parser '%s' was not recognized.", parser)
     raise NotImplementedError(
-        f"Sites of type '{site}' are not parse-able via the shared parser."
+        f"No shared parser available for '{parser}'."
     )

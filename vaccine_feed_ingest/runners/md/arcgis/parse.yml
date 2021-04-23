@@ -1,3 +1,4 @@
 ---
 state: md
 site: arcgis
+parser: arcgis_features
