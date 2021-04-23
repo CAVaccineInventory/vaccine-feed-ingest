@@ -8,10 +8,10 @@ import sys
 from vaccine_feed_ingest.utils.normalize import provider_id_from_name
 
 def normalize(site_blob: dict, timestamp: str) -> dict:
-    site = site_blob['properties']
+    site = site_blob["properties"]
     geometry = site_blob["geometry"]
     street1 = site["address"]
-    street2 = None # this is part of street1...
+    street2 = None  # this is part of street1...
 
     normalized = {
         "id": f"vaccinespotter_org:{site['id']}",
@@ -52,24 +52,31 @@ def normalize(site_blob: dict, timestamp: str) -> dict:
             },
         ],
         "fetched_at": timestamp,
-        "published_at": site["appointments_last_fetched"], # we could also use `appointments_last_modified`
+        "published_at": site[
+            "appointments_last_fetched"  # we could also use `appointments_last_modified`
+        ],
         "active": None,
         "source": {
             "source": "vaccinespotter_org",
             "id": site["id"],
             "fetched_from_uri": "https://www.vaccinespotter.org/api/v0/US.json",
             "fetched_at": timestamp,
-            "published_at": site["appointments_last_fetched"], # we could also use `appointments_last_modified`
+            "published_at": site[
+                "appointments_last_fetched"  # we could also use `appointments_last_modified`
+            ],
             "data": site_blob,
         },
     }
 
-    parsed_provider_link = provider_id_from_name(site["provider_brand_name"]) # or use site["name"]?
+    parsed_provider_link = provider_id_from_name(
+        site["provider_brand_name"]   # or use site["name"]?
+    )
     if parsed_provider_link is not None:
         normalized["links"].append(
             {"authority": parsed_provider_link[0], "id": parsed_provider_link[1]}
         )
     return normalized
+
 
 parsed_at_timestamp = datetime.datetime.utcnow().isoformat()
 
