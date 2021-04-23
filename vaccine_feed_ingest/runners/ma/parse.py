@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 
-import csv
 import json
 import pathlib
 import sys
