@@ -36,7 +36,9 @@ def normalize(site: dict, timestamp: str) -> dict:
         "access": {
             "drive": site["isDriveThru"],
         },
-        "inventory": [{"vaccine": vaccine["name"]} for vaccine in site["providerVaccines"]],
+        "inventory": [
+            {"vaccine": vaccine["name"]} for vaccine in site["providerVaccines"]
+        ],
         "links": [
             {
                 "authority": "ct_gov",
