@@ -49,7 +49,7 @@ def normalize(site: dict, timestamp: str) -> dict:
         ],
         "parent_organization": {
             "name": site["networks"][0]["name"],
-        }
+        },
         "fetched_at": timestamp,
         "published_at": site["lastModified"],
         "source": {
