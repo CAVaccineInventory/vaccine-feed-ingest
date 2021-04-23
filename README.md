@@ -1,207 +1,33 @@
 # vaccine-feed-ingest
 
-Pipeline for ingesting nationwide feed of vaccine facilities
+[![see results in vaccine-feed-ingest-results](https://img.shields.io/static/v1?label=see%20results&message=vaccine-feed-ingest-results&color=brightgreen)](https://github.com/CAVaccineInventory/vaccine-feed-ingest-results)
 
-## Usage
-
-### Setup Developer Environment for Mac
-
-1. Install `homebrew` if you don't have it:
-
-    ```sh
-    /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
-    ```
-
-1. Install `python` version `3.9` or higher:
-
-    ```sh
-    brew install python@3.9
-    ```
-
-1. *(optional)* If you need multiple python versions then use `pyenv`:
-
-    ```sh
-    brew install pyenv
-    pyenv install
-    ```
-
-1. Install `poetry`
-
-    ```sh
-    brew install poetry
-    ```
-
-1. Install app dependancies with extras for development:
-
-    ```sh
-    poetry install --extras lint
-    ```
-
-1. (optional) Install `gcloud` SDK:
-
-    You only need this if you are going to try uploading to GCS. Google has
-    [detailed instructions](https://cloud.google.com/sdk/docs/install) if you need them.
-
-    Use an account that has access to `vaccine-feeds` project, and link to that project.
-
-    ```sh
-    brew install --cask google-cloud-sdk
-    gcloud init
-    ```
-
-### Setup Developer Environment for Ubuntu/Debian
-
-1. Install required system deps:
-
-    ```sh
-    sudo apt-get install libbz2-dev liblzma-dev libreadline-dev libsqlite3-dev
-    ```
-
-1. Install `python` version `3.9` or higher:
-
-    ```sh
-    sudo-apt install python3.9
-    ```
-
-1. *(optional)* If you need multiple python versions then use `pyenv`:
-
-    ```sh
-    curl https://pyenv.run | bash
-    ```
-
-1. *(optional)* Add `pyenv` to `.bashrc`:
-
-    ```sh
-    export PATH="$HOME/.pyenv/bin:$PATH"
-    eval "$(pyenv init -)"
-    eval "$(pyenv virtualenv-init -)"
-    ```
-
-1. *(optional)* Install project python version:
-
-    ```sh
-    pyenv install
-    ```
-
-1. Install `poetry`:
-
-    ```sh
-    curl -sSL https://raw.githubusercontent.com/python-poetry/poetry/master/get-poetry.py | python -
-    ```
-
-1. Add to `.bashrc`:
-
-    ```sh
-    export PATH="$HOME/.poetry/bin:$PATH"
-    ```
-
-1. Install app dependancies with extras for development:
-
-    ```sh
-    poetry install --extras lint
-    ```
-
-1. (optional) Install `gcloud` SDK:
-
-    You only need this if you are going to try uploading to GCS. Google has
-    [detailed instructions](https://cloud.google.com/sdk/docs/install) if you need them.
-
-    ```sh
-    curl https://sdk.cloud.google.com | bash
-    gcloud init
-    ```
-
-### Run Pipelines
-
-Run pipelines using the `vaccine-feed-ingest` command in the poetry `venv`:
-
-You can enter the poetry `venv` with the `poetry shell` command, or prefix each command
-with `poetry run`.
-
-```sh
-poetry run vaccine-feed-ingest <fetch|parse|normalize> <site>
-```
-
-### Example Commands
-
-- List all available sites:
-
-    ```sh
-    poetry run vaccine-feed-ingest available-sites
-    ```
-
-- Run fetch for just one site:
-
-    ```sh
-    poetry run vaccine-feed-ingest fetch ca/sf_gov
-    ```
-
-- Run fetch for all sites in CA:
-
-    ```sh
-    poetry run vaccine-feed-ingest fetch --state=ca
-    ```
-
-- Run all stages for all sites:
-
-    ```sh
-    poetry run vaccine-feed-ingest all-stages
-    ```
-
-- Run all stages for two sites:
-
-    ```sh
-    poetry run vaccine-feed-ingest all-stages ca/sf_gov us/vaccinespotter_org
-    ```
-
+Pipeline for ingesting nationwide feeds of vaccine facilities.
 ## Contributing
 
 ### How to
 
-1. Configure your python environment as specified above.
-2. Choose an unassigned website from [National Websites to Scrape](https://airtable.com/shr55fpTXObYmdk48) ([Commenter access](https://airtable.com/invite/l?inviteId=invRAMMkTCYH5FAoh&inviteToken=651c8220466fc266cd936182bf3aea6643606a44f3f1414784e4d0964e2a163a))
-3. Submit a PR to his repo that scrapes data from that source
+1. Configure your environment ([instructions on the wiki](https://github.com/CAVaccineInventory/vaccine-feed-ingest/wiki/Development-environment-setup)).
+1. Choose an unassigned [issue](https://github.com/CAVaccineInventory/vaccine-feed-ingest/issues), and comment that you're working on it.
+1. Open a PR containing a new `fetch`, `parse`, or `normalize` script! ([details on these stages](https://github.com/CAVaccineInventory/vaccine-feed-ingest/wiki/Runner-Pipeline-Stages))
 
-### Runner
+Results are periodically committed to [`vaccine-feed-ingest-results`](https://github.com/CAVaccineInventory/vaccine-feed-ingest-results). Once your PR is merged, you will be able to see the output of your work there!
 
-There are 3 stages to writing a scraper, and you can write as many of the stages as you want. Even writing just the first stage is a big help.
+### Run the tool
 
-Each scraper is stored in [vaccine_feed_ingest/runners/
-](https://github.com/CAVaccineInventory/vaccine-feed-ingest/tree/main/vaccine_feed_ingest/runners). Runners are grouped by state, and named the same as the website with `_` replacing `.` e.g. `vaccine_feed_ingest/runners/ca/sf_gov`.
+[See the wiki](https://github.com/CAVaccineInventory/vaccine-feed-ingest/wiki/Run-vaccine-feed-ingest) for instructions on how to run `vaccine-feed-ingest`.
 
-#### Stages
 
-1. **Fetch**: Retrieve the raw data from external source and store it unchanged
-2. **Parse**: Convert the raw data into json records and store it as ndjson
-3. **Normalize**: Transform the parsed json records into VaccinateCA schema
+## Production Details
 
-Each stage is an executeable script (with a `+x` bit) named after the stage e.g. `fetch.sh` or `fetch.py`. The script is passed an output directory as the first argument, and an input directory as the second argument.
+For more information on ([pipeline stages](https://github.com/CAVaccineInventory/vaccine-feed-ingest/wiki/Runner-Pipeline-Stages)) and how to contribute, [see the wiki](https://github.com/CAVaccineInventory/vaccine-feed-ingest/wiki)!
 
-Every file written to the output directory that doesn't start with `.` or `_` is stored and passed along to the next stage.
-
-#### Expected Output
-
-1. **Fetch**: `.geojson`, `.html`, `.zip`, etc.
-2. **Parse**: `*.parsed.ndjson`
-3. **Normalize**:  `*.normalized.ndjson`
-
-### Development
-
-You can iterate on one stage at a time by running just that stage for a single site. Output for runs are stored by default in a `out` directory at the root of the repo.
-
-If you are iterating on parsing, then you only need to run `fetch` stage once, and then run `parse` as many times as you need.
-
-Example:
-
-```sh
-poetry run vaccine-feed-ingest fetch ca/sf_gov
-```
-
-## Production
+The below details on interacting with our production environment are intended for staff developers.
+### Overall setup
 
 In production, all stages for all runners are run, and outputs are stored to the `vaccine-feeds` bucket on GCS.
 
-If you need to test GCS then install the `gcloud` SDK from setup instructions and use the `vaccine-feeds-dev` bucket (you will need to be granted access).
+If you are developing a feature that interacts with the remote storage, you need to test GCS then install the `gcloud` SDK from setup instructions and use the `vaccine-feeds-dev` bucket (you will need to be granted access).
 
 Results are also periodically committed to [`vaccine-feed-ingest-results`](https://github.com/CAVaccineInventory/vaccine-feed-ingest-results).
 
@@ -219,9 +45,9 @@ Results are also periodically committed to [`vaccine-feed-ingest-results`](https
     poetry run vaccine-feed-ingest all-stages --output-dir=gs://vaccine-feeds-dev/locations/
     ```
 
-## Load Source Locations
+### Load Source Locations
 
-### VIAL Setup
+#### VIAL Setup
 
 1. Request an account on the VIAL staging server `https://vial-staging.calltheshots.us`
 
@@ -229,7 +55,7 @@ Results are also periodically committed to [`vaccine-feed-ingest-results`](https
 
 1. Store the API key in project `.env` file with the var `VIAL_APIKEY`
 
-### Load Usage
+#### Load Usage
 
 - Load SF.GOV source feed to VIAL
 
