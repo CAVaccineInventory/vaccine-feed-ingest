@@ -68,6 +68,12 @@ def _output_ndjson(json_list: List[dict], out_filepath: pathlib.Path) -> None:
 config = _get_config(YML_CONFIG)
 
 if config["parser"] == "arcgis_features":
+    """
+    ArcGIS FeatureServers fetch as a json object containing a "features"
+    attribute which contains a list of json objects.
+
+    Parse files of this structure.
+    """
     json_filepaths = INPUT_DIR.glob("*.json")
     for in_filepath in json_filepaths:
         with in_filepath.open() as fin:
@@ -77,6 +83,20 @@ if config["parser"] == "arcgis_features":
         _log_activity(config["state"], config["site"], in_filepath, out_filepath)
 
         _output_ndjson(arcgis_feature_json["features"], out_filepath)
+
+if config["parser"] == "json_list":
+    """
+    Parse files containing lists of json objects.
+    """
+    json_filepaths = INPUT_DIR.glob("*.json")
+    for in_filepath in json_filepaths:
+        with in_filepath.open() as fin:
+            json_list = json.load(fin)
+
+        out_filepath = _get_out_filepath(in_filepath, OUTPUT_DIR)
+        _log_activity(config["state"], config["site"], in_filepath, out_filepath)
+
+        _output_ndjson(json_list, out_filepath)
 
 else:
     logger.error("Parser '%s' was not recognized.", config["parser"])
