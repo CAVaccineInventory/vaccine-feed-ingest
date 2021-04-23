@@ -1,0 +1,6 @@
+---
+state: ny
+arcgis:
+- id: 77b8b56f3b6844ba8612b17e90e48f2f
+  layer_names:
+  - VaccineFinderSchema
