@@ -84,7 +84,7 @@ if config["parser"] == "arcgis_features":
 
         _output_ndjson(arcgis_feature_json["features"], out_filepath)
 
-if config["parser"] == "json_list":
+elif config["parser"] == "json_list":
     """
     Parse files containing lists of json objects.
     """
