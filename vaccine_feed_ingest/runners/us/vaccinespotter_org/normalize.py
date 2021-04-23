@@ -7,6 +7,7 @@ import sys
 
 from vaccine_feed_ingest.utils.normalize import provider_id_from_name
 
+
 def normalize(site_blob: dict, timestamp: str) -> dict:
     site = site_blob["properties"]
     geometry = site_blob["geometry"]
@@ -69,7 +70,7 @@ def normalize(site_blob: dict, timestamp: str) -> dict:
     }
 
     parsed_provider_link = provider_id_from_name(
-        site["provider_brand_name"]   # or use site["name"]?
+        site["provider_brand_name"]  # or use site["name"]?
     )
     if parsed_provider_link is not None:
         normalized["links"].append(
