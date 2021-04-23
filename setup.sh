@@ -40,12 +40,22 @@ maybe_install "brew" "Homebrew" '/bin/bash -c "$(curl -fsSL https://raw.githubus
 	echo "poetry run vaccine-feed-ingest --help"
 }
 
+setup_linux() {
+	echo "I think you're running Linux"
+	if [ "xx$(which apt-get)" == "xx" ]; then
+		echo "It looks like you don't have an 'apt-get' command."
+		echo ""
+		echo "You're probably running an RPM-based distribution."
+		echo ""
+		echo "We don't yet have automated setup for RPM-based distributions"
+		echo "and would be absolutely delighted to take a patch."
+	fi
+}
+
 
 case "$OSTYPE" in
 	darwin*)  setup_macos; ;;
-  linux*)   echo "LINUX" ;;
-  bsd*)     echo "BSD" ;;
-  msys*)    echo "WINDOWS" ;;
-  *)        echo "unknown: $OSTYPE" ;;
+  linux*)   setup_linux ;;
+  *)        echo "Sorry. We're not set up to set up $OSTYPE" ;;
 esac
 
