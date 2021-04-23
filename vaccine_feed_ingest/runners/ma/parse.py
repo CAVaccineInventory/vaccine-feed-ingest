@@ -12,7 +12,7 @@ input_dir = pathlib.Path(sys.argv[2])
 xlsx_filepath = input_dir / "ma.xlsx"
 
 locations = []
-data = pandas.read_excel(xlsx_filepath, engine="openpyxl")
+data = pandas.read_excel(xlsx_filepath, engine="openpyxl", skiprows=1)
 
 for row in data.itertuples():
     locations.append(dict(name=row[1], address=row[3]))
