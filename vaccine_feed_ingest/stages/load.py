@@ -178,7 +178,7 @@ def _match_source_to_existing_locations(
     if len(candidates) == 1:
         return schema.ImportMatchAction(
             action="match",
-            id=candidates.iloc[0]["id"],
+            id=candidates[0]["id"],
         )
 
     return None
