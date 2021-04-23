@@ -18,9 +18,6 @@ logger = logging.getLogger("load")
 # Collect locations that are within .1 degrees = 11.1 km = 6.9 mi
 CANDIDATE_DEGREES_DISTANCE = 0.1
 
-# Disabling create new for now
-ENABLE_CREATE_NEW = False
-
 
 def run_load_to_vial(
     vial_http: urllib3.connectionpool.ConnectionPool,
@@ -28,6 +25,8 @@ def run_load_to_vial(
     output_dir: pathlib.Path,
     import_run_id: str,
     locations: Optional[List[dict]],
+    enable_match: bool = True,
+    enable_create: bool = False,
     dry_run: bool = False,
 ) -> bool:
     """Load source to vial source locations"""
@@ -65,9 +64,12 @@ def run_load_to_vial(
                     continue
 
                 match_action = None
-                if locations is not None:
+                if (enable_match or enable_create) and locations is not None:
                     match_action = _match_source_to_existing_locations(
-                        normalized_location, locations
+                        normalized_location,
+                        locations,
+                        enable_match=enable_match,
+                        enable_create=enable_create,
                     )
 
                 import_location = _create_import_location(
@@ -165,6 +167,8 @@ def _is_match(source: schema.NormalizedLocation, candidate: dict) -> bool:
 def _match_source_to_existing_locations(
     source: schema.NormalizedLocation,
     existing: Iterable[dict],
+    enable_match: bool = True,
+    enable_create: bool = False,
 ) -> Optional[schema.ImportMatchAction]:
     """Attempt to match source location to existing locations"""
     if not source.location:
@@ -174,7 +178,7 @@ def _match_source_to_existing_locations(
 
     if not candidates:
         logger.info("%s is a new location - nothing close", source.name)
-        if ENABLE_CREATE_NEW:
+        if enable_create:
             return schema.ImportMatchAction(action="new")
         else:
             return None
@@ -184,7 +188,7 @@ def _match_source_to_existing_locations(
 
     if not candidates:
         logger.info("%s is a new location", source.name)
-        if ENABLE_CREATE_NEW:
+        if enable_create:
             return schema.ImportMatchAction(action="new")
         else:
             return None
@@ -195,10 +199,13 @@ def _match_source_to_existing_locations(
     # If there is one remaining high confidant match then use it.
     if len(candidates) == 1:
         logger.info("%s is an existing location", source.name)
-        return schema.ImportMatchAction(
-            action="existing",
-            id=candidates[0]["properties"]["id"],
-        )
+        if enable_match:
+            return schema.ImportMatchAction(
+                action="existing",
+                id=candidates[0]["properties"]["id"],
+            )
+        else:
+            return None
 
     logger.info("%d matches, not sure about %s", len(candidates), source.name)
     return None

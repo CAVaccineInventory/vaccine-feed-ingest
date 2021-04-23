@@ -188,7 +188,18 @@ def all_stages(
 @_output_dir_option()
 @_dry_run_option()
 @_sites_argument()
-@click.option("--match/--no-match", type=bool, default=True)
+@click.option(
+    "--match/--no-match",
+    "enable_match",
+    type=bool,
+    default=lambda: os.environ.get("ENABLE_MATCH", "true").lower() == "true",
+)
+@click.option(
+    "--create/--no-create",
+    "enable_create",
+    type=bool,
+    default=lambda: os.environ.get("ENABLE_CREATE", "false").lower() == "true",
+)
 def load_to_vial(
     vial_server: str,
     vial_apikey: str,
@@ -196,7 +207,8 @@ def load_to_vial(
     output_dir: pathlib.Path,
     dry_run: bool,
     sites: Optional[Sequence[str]],
-    match: bool,
+    enable_match: bool,
+    enable_create: bool,
 ) -> None:
     """Load specified sites to vial server."""
     site_dirs = site.get_site_dirs(state, sites)
@@ -206,7 +218,7 @@ def load_to_vial(
 
         for site_dir in site_dirs:
             locations = None
-            if match:
+            if enable_match or enable_create:
                 locations = list(vial.retrieve_existing_locations(vial_http))
 
             load.run_load_to_vial(
@@ -215,7 +227,9 @@ def load_to_vial(
                 output_dir,
                 import_run_id,
                 locations,
-                dry_run,
+                enable_match=enable_match,
+                enable_create=enable_create,
+                dry_run=dry_run,
             )
 
 
