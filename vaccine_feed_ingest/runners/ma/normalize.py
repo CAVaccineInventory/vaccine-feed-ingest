@@ -5,6 +5,7 @@ import json
 import pathlib
 import sys
 
+
 def normalize(site: dict, timestamp: str) -> dict:
     # addresses are typically formatted like this: 800 Boylston Street, Boston, MA 02199
     # sometimes, "MA" is not included, so there's a handler below for that
