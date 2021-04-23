@@ -196,7 +196,7 @@ def _match_source_to_existing_locations(
     if len(candidates) == 1:
         logger.info("%s is an existing location", source.name)
         return schema.ImportMatchAction(
-            action="match",
+            action="existing",
             id=candidates[0]["properties"]["id"],
         )
 

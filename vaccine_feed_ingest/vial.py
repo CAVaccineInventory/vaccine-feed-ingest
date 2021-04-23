@@ -62,7 +62,9 @@ def import_source_locations(
     import_locations: Iterable[schema.ImportSourceLocation],
 ) -> urllib3.response.HTTPResponse:
     """Import source locations"""
-    encoded_ndjson = "\n".join([loc.json() for loc in import_locations])
+    encoded_ndjson = "\n".join(
+        [loc.json(exclude_none=True) for loc in import_locations]
+    )
 
     return vial_http.request(
         "POST",
