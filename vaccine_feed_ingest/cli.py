@@ -207,7 +207,7 @@ def load_to_vial(
         for site_dir in site_dirs:
             locations = None
             if match:
-                locations = vial.retrieve_existing_locations(vial_http)
+                locations = list(vial.retrieve_existing_locations(vial_http))
 
             load.run_load_to_vial(
                 vial_http,

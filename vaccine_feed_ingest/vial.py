@@ -4,7 +4,7 @@ import contextlib
 import json
 from typing import Iterable, Iterator
 
-import geopandas as gpd
+import geojson
 import urllib3
 from vaccine_feed_ingest.schema import schema
 
@@ -74,15 +74,13 @@ def import_source_locations(
 
 def retrieve_existing_locations(
     vial_http: urllib3.connectionpool.ConnectionPool,
-) -> gpd.GeoDataFrame:
+) -> Iterator[dict]:
     """Verifies that header contains valid authorization token"""
     resp = vial_http.request(
         "GET", "/api/searchLocations?format=nlgeojson&all=1", preload_content=False
     )
 
-    locations = gpd.read_file(resp, driver="GeoJSONSeq")
-    locations.set_index("id", inplace=True)
+    for line in resp:
+        yield geojson.loads(line)
 
     resp.release_conn()
-
-    return locations

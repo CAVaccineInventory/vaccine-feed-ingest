@@ -1,9 +1,10 @@
 import logging
 import pathlib
-from typing import Optional
+from typing import Callable, Iterable, Iterator, List, Optional
 
 import geopandas as gpd
 import pydantic
+import shapely
 import urllib3
 from vaccine_feed_ingest import vial
 from vaccine_feed_ingest.schema import schema
@@ -14,12 +15,19 @@ from .common import PipelineStage
 logger = logging.getLogger("load")
 
 
+# Collect locations that are within .1 degrees = 11.1 km = 6.9 mi
+CANDIDATE_DEGREES_DISTANCE = 0.1
+
+# Disabling create new for now
+ENABLE_CREATE_NEW = False
+
+
 def run_load_to_vial(
     vial_http: urllib3.connectionpool.ConnectionPool,
     site_dir: pathlib.Path,
     output_dir: pathlib.Path,
     import_run_id: str,
-    locations: Optional[gpd.GeoDataFrame],
+    locations: Optional[List[dict]],
     dry_run: bool = False,
 ) -> bool:
     """Load source to vial source locations"""
@@ -58,10 +66,8 @@ def run_load_to_vial(
 
                 match_action = None
                 if locations is not None:
-                    match_action = (  # pylint: disable=E1111
-                        _match_source_to_existing_locations(
-                            normalized_location, locations
-                        )
+                    match_action = _match_source_to_existing_locations(
+                        normalized_location, locations
                     )
 
                 import_location = _create_import_location(
@@ -103,12 +109,80 @@ def run_load_to_vial(
     return bool(num_imported_locations)
 
 
+def _find_candidates(
+    source: schema.NormalizedLocation,
+    existing: Iterable[dict],
+) -> Iterator[dict]:
+    """Return a slice of existing locations"""
+    src_point = shapely.geometry.Point(
+        source.location.latitude,
+        source.location.longitude,
+    )
+
+    for loc in existing:
+        if "geometry" not in loc:
+            continue
+
+        loc_point = shapely.geometry.shape(loc["geometry"])
+
+        if loc_point.distance(src_point) < CANDIDATE_DEGREES_DISTANCE:
+            yield loc
+
+
+def _is_different(source: schema.NormalizedLocation) -> Callable[[gpd.GeoSeries], bool]:
+    """Return True if candidate is so different it couldn't be a match"""
+
+    def _fn(candidate: dict) -> bool:
+        return False
+
+    return _fn
+
+
+def _is_match(source: schema.NormalizedLocation) -> Callable[[gpd.GeoSeries], bool]:
+    """Return True if candidate is so similar it must be a match"""
+
+    def _fn(candidate: dict) -> bool:
+        return False
+
+    return _fn
+
+
 def _match_source_to_existing_locations(
-    source_location: schema.NormalizedLocation,
-    existing_locations: gpd.GeoDataFrame,
+    source: schema.NormalizedLocation,
+    existing: Iterable[dict],
 ) -> Optional[schema.ImportMatchAction]:
     """Attempt to match source location to existing locations"""
-    pass
+    if not source.location:
+        return None
+
+    candidates = list(_find_candidates(source, existing))
+
+    if not candidates:
+        if ENABLE_CREATE_NEW:
+            return schema.ImportMatchAction(action="new")
+        else:
+            return None
+
+    # Filter out candidates that are too different to be a match
+    candidates = [loc for loc in candidates if not _is_different(source)]
+
+    if not candidates:
+        if ENABLE_CREATE_NEW:
+            return schema.ImportMatchAction(action="new")
+        else:
+            return None
+
+    # Filter to candidates that are similar enough to be the same
+    candidates = [loc for loc in candidates if _is_match(source)]
+
+    # If there is one remaining high confidant match then use it.
+    if len(candidates) == 1:
+        return schema.ImportMatchAction(
+            action="match",
+            id=candidates.iloc[0]["id"],
+        )
+
+    return None
 
 
 def _create_import_location(

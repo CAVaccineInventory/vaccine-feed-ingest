@@ -17,9 +17,9 @@ isort = "^5.8.0"
 arcgis = "^1.8.5"
 PyYAML = "^5.4.1"
 pydantic = "^1.8.1"
-geopandas = {extras = ["rtree"], version = "^0.9.0"}
 Rtree = "^0.9.7"
 Shapely = "^1.7.1"
+geojson = "^2.5.0"
 
 [tool.poetry.dev-dependencies]
 
