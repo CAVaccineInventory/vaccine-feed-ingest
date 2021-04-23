@@ -54,7 +54,7 @@ def normalize(site: dict, timestamp: str) -> dict:
         "fetched_at": timestamp,
         "source": {
             "source": "vaxfinder",
-            "fetched_from_uri": "https://www.mass.gov/doc/covid-19-vaccine-locations-for-currently-eligible-recipients-csv/download",
+            "fetched_from_uri": "https://www.mass.gov/doc/covid-19-vaccine-locations-for-currently-eligible-recipients-csv/download",  # noqa: E501
             "fetched_at": timestamp,
             "data": site,
         },
