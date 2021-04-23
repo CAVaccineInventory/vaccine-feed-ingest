@@ -1,3 +1,4 @@
 ---
 state: al
 site: arcgis
+parser: arcgis_features

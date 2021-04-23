@@ -5,6 +5,7 @@ import logging
 import os
 import pathlib
 import sys
+from typing import List
 
 import yaml
 
@@ -20,51 +21,83 @@ OUTPUT_DIR = pathlib.Path(sys.argv[1])
 INPUT_DIR = pathlib.Path(sys.argv[2])
 YML_CONFIG = pathlib.Path(sys.argv[3])
 
-with open(YML_CONFIG, "r") as stream:
-    try:
-        config = yaml.safe_load(stream)
-    except yaml.YAMLError as exc:
-        print(exc)
 
-try:
-    state = config["state"]
-except KeyError as e:
-    logger.error(
-        "config file must have key 'state'. This config does not - %s", YML_CONFIG
+def _enforce_keys(config: dict, keys: List[str]) -> None:
+    for key in keys:
+        if key not in config:
+            logger.error("config file must have key 'state'. This config does not.")
+            raise KeyError(f"{key} not found")
+
+
+def _get_config(yml_config: pathlib.Path) -> dict:
+    with open(yml_config, "r") as stream:
+        try:
+            config = yaml.safe_load(stream)
+        except yaml.YAMLError as exc:
+            print(exc)
+
+    _enforce_keys(config, ["state", "site", "parser"])
+
+    return config
+
+
+def _get_out_filepath(in_filepath: pathlib.Path, out_dir: pathlib.Path) -> pathlib.Path:
+    filename, _ = os.path.splitext(in_filepath.name)
+    return out_dir.joinpath(f"{filename}.parsed.ndjson")
+
+
+def _log_activity(
+    state: str, site: str, in_filepath: pathlib.Path, out_filepath: pathlib.Path
+) -> None:
+    logger.info(
+        "(%s/%s) parsing %s => %s",
+        state.upper(),
+        site.lower(),
+        in_filepath,
+        out_filepath,
     )
-    raise e
 
-try:
-    site = config["site"]
-except KeyError as e:
-    logger.error(
-        "config file must have key 'site'. This config does not - %s", YML_CONFIG
-    )
-    raise e
 
-if site == "arcgis":
+def _output_ndjson(json_list: List[dict], out_filepath: pathlib.Path) -> None:
+    with out_filepath.open("w") as fout:
+        for obj in json_list:
+            json.dump(obj, fout)
+            fout.write("\n")
+
+
+config = _get_config(YML_CONFIG)
+
+if config["parser"] == "arcgis_features":
+    """
+    ArcGIS FeatureServers fetch as a json object containing a "features"
+    attribute which contains a list of json objects.
+
+    Parse files of this structure.
+    """
     json_filepaths = INPUT_DIR.glob("*.json")
-
     for in_filepath in json_filepaths:
         with in_filepath.open() as fin:
             arcgis_feature_json = json.load(fin)
 
-        filename, _ = os.path.splitext(in_filepath.name)
-        out_filepath = OUTPUT_DIR.joinpath(f"{filename}.parsed.ndjson")
+        out_filepath = _get_out_filepath(in_filepath, OUTPUT_DIR)
+        _log_activity(config["state"], config["site"], in_filepath, out_filepath)
 
-        logger.info(
-            "(%s/%s) parsing %s => %s",
-            state.upper(),
-            site.lower(),
-            in_filepath,
-            out_filepath,
-        )
-        with out_filepath.open("w") as fout:
-            for feature in arcgis_feature_json["features"]:
-                json.dump(feature, fout)
-                fout.write("\n")
+        _output_ndjson(arcgis_feature_json["features"], out_filepath)
+
+if config["parser"] == "json_list":
+    """
+    Parse files containing lists of json objects.
+    """
+    json_filepaths = INPUT_DIR.glob("*.json")
+    for in_filepath in json_filepaths:
+        with in_filepath.open() as fin:
+            json_list = json.load(fin)
+
+        out_filepath = _get_out_filepath(in_filepath, OUTPUT_DIR)
+        _log_activity(config["state"], config["site"], in_filepath, out_filepath)
+
+        _output_ndjson(json_list, out_filepath)
+
 else:
-    logger.error("Site '%s' was not recognized.", site)
-    raise NotImplementedError(
-        f"Sites of type '{site}' are not parse-able via the shared parser."
-    )
+    logger.error("Parser '%s' was not recognized.", config["parser"])
+    raise NotImplementedError(f"No shared parser available for '{config['parser']}'.")

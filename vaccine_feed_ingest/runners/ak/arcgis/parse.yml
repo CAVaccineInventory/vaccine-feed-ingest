@@ -1,3 +1,4 @@
 ---
 state: ak
 site: arcgis
+parser: arcgis_features

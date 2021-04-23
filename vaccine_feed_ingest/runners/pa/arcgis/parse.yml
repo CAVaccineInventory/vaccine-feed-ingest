@@ -1,3 +1,4 @@
 ---
 state: pa
 site: arcgis
+parser: arcgis_features
