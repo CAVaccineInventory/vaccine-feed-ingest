@@ -17,7 +17,7 @@ Store it (without processing) in a new file created in the directory passed as t
 
 Check the wiki to learn more about the purpose of the fetch stage and how to get set up for development!
 
-### Tips:
+### Tips
 
 1. While working on your code, run it at any point:
     ```sh

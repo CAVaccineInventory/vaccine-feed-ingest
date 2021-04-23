@@ -15,7 +15,7 @@ Read all files in the directory passed as the first argument (`sys.argv[1]`), tr
 
 Check the wiki to learn more about the purpose of the normalize stage and how to get set up for development!
 
-### Tips:
+### Tips
 
 1. Fetch and parse data for this site before you start developing:
     ```sh
