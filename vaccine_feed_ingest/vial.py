@@ -6,7 +6,6 @@ from typing import Iterable, Iterator
 
 import geojson
 import urllib3
-
 from vaccine_feed_ingest.schema import schema
 
 
