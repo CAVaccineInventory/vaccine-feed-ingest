@@ -25,8 +25,8 @@ def normalize(site_blob: dict, timestamp: str) -> dict:
             "zip": site["postal_code"],
         },
         "location": {
-            "latitude": geometry["coordinates"][0],
-            "longitude": geometry["coordinates"][1],
+            "latitude": geometry["coordinates"][1],
+            "longitude": geometry["coordinates"][0],
         },
         "contact": [
             {
