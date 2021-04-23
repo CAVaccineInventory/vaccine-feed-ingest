@@ -5,7 +5,6 @@ from typing import Callable, Iterable, Iterator, List, Optional
 import pydantic
 import shapely.geometry
 import urllib3
-
 from vaccine_feed_ingest import vial
 from vaccine_feed_ingest.schema import schema
 
