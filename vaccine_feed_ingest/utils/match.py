@@ -17,7 +17,7 @@ def get_full_address(address: Optional[Address]) -> str:
         )
 
 
-def canonicalize_address(address: str):
+def canonicalize_address(address: str) -> str:
     """
     >>> canonicalize("460 W San Ysidro Blvd, San Ysidro, CA 92173, United States")
     '460 west san ysidro boulevard, san ysidro, ca 92173'
@@ -107,7 +107,7 @@ def canonicalize_address(address: str):
     return a
 
 
-def canonicalize_phone_number(phone_number: str):
+def canonicalize_phone_number(phone_number: str) -> str:
     p = phone_number.strip()
     p = re.sub(r"^\+?1", "", p)  # remove leading 1/+1 if present
     p = re.sub(r"[^0-9]", "", p)  # remove all non-numeric characters

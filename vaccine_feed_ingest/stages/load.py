@@ -1,4 +1,3 @@
-import json
 import logging
 import pathlib
 from typing import Callable, Iterable, Iterator, List, Optional
