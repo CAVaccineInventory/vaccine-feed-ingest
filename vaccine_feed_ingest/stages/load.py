@@ -17,8 +17,8 @@ from .common import PipelineStage
 logger = logging.getLogger("load")
 
 
-# Collect locations that are within .1 degrees = 11.1 km = 6.9 mi
-CANDIDATE_DEGREES_DISTANCE = 0.5
+# Collect locations that are within .6 degrees = 66.6 km = 41 mi
+CANDIDATE_DEGREES_DISTANCE = 0.6
 
 
 def run_load_to_vial(
