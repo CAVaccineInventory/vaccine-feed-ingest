@@ -20,6 +20,8 @@ pydantic = "^1.8.1"
 Rtree = "^0.9.7"
 Shapely = "^1.7.1"
 geojson = "^2.5.0"
+us = "^2.0.2"
+jellyfish = "0.6.1"
 
 [tool.poetry.dev-dependencies]
 
