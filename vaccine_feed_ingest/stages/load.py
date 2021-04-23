@@ -2,9 +2,11 @@ import logging
 import pathlib
 from typing import Iterable, Iterator, List, Optional
 
+import jellyfish
 import pydantic
 import shapely.geometry
 import urllib3
+import us
 from vaccine_feed_ingest import vial
 from vaccine_feed_ingest.schema import schema
 
@@ -133,6 +135,52 @@ def _find_candidates(
 
 def _is_different(source: schema.NormalizedLocation, candidate: dict) -> bool:
     """Return True if candidate is so different it couldn't be a match"""
+    candidate_props = candidate.get("properties", {})
+
+    # Must be in same state to be considered the same location
+    if source.address and source.address.state and candidate_props.get("state"):
+        src_state = us.states.lookup(source.address.state)
+        cand_state = us.states.lookup(candidate_props["state"])
+
+        if src_state != cand_state:
+            return True
+
+    # City name must be slightly similiar to match.
+    if source.address and source.address.city and candidate_props.get("city"):
+        src_city = source.address.city
+        cand_city = candidate_props["city"]
+
+        if jellyfish.jaro_winkler(src_city, cand_city) < 0.1:
+            return True
+
+    # Parent organization must be slightly similar to match.
+    if source.parent_organization and candidate_props.get("provider"):
+        src_org = source.parent_organization.name or source.parent_organization.id
+        cand_org = candidate_props["provider"]
+
+        if jellyfish.jaro_winkler(src_org, cand_org) < 0.1:
+            return True
+
+    # Must not have any conflicting links/concordances
+    if source.links and candidate_props.get("concordances"):
+        src_link_map = {link.authority: link.id for link in source.links}
+
+        for link in candidate_props["concordances"]:
+            if ":" not in link:
+                continue
+
+            link_authority, link_id = link.split(":", maxsplit=1)
+            if not link_id:
+                continue
+
+            src_link_id = src_link_map.get(link_authority)
+
+            if not src_link_id:
+                continue
+
+            if src_link_id != link_id:
+                return True
+
     return False
 
 
