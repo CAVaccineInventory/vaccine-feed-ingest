@@ -1,10 +1,10 @@
 import logging
 import pathlib
-from typing import Callable, Optional, List, Iterable, Iterator
+from typing import Callable, Iterable, Iterator, List, Optional
 
 import geopandas as gpd
-import shapely
 import pydantic
+import shapely
 import urllib3
 from vaccine_feed_ingest import vial
 from vaccine_feed_ingest.schema import schema
