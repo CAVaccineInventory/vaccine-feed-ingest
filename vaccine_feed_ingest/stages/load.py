@@ -18,7 +18,7 @@ logger = logging.getLogger("load")
 
 
 # Collect locations that are within .1 degrees = 11.1 km = 6.9 mi
-CANDIDATE_DEGREES_DISTANCE = 0.1
+CANDIDATE_DEGREES_DISTANCE = 0.5
 
 
 def run_load_to_vial(
