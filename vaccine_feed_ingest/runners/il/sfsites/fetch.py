@@ -1,10 +1,9 @@
 #!/usr/bin/env python3
 
-import os
-import sys
-
 import json
+import os
 import requests
+import sys
 
 if len(sys.argv) < 2:
     print("Must pass an output_dir as first argument")
