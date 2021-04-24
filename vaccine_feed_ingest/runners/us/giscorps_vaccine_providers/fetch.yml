@@ -1,0 +1,7 @@
+---
+state: us
+arcgis:
+# https://covid-19-giscorps.hub.arcgis.com/app/3b4bd11928ec488281b0280d4d45533a
+- id: c50a1a352e944a66aed98e61952051ef
+  layer_names:
+  - Testing Locations # this seems strange that the layer is called testing locations but the data seems accurate
