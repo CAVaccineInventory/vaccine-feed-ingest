@@ -56,7 +56,7 @@ def get_data_html_from_website_driver(driver, search_term):
     except Exception as e:
         text_input.clear()
         return (
-            "Failed to collect data for this search term. This might be due to no results. Exception: " 
+            "Failed to collect data for this search term. This might be due to no results. Exception: "
             + str(e)
         )
 
