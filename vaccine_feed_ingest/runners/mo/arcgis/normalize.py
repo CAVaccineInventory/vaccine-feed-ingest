@@ -56,7 +56,9 @@ def _get_contacts(site: dict) -> Optional[List[schema.Contact]]:
         contacts.append(schema.Contact(email=site["attributes"]["USER_Contact_Email"]))
 
     if site["attributes"]["USER_Contact_Website"]:
-        contacts.append(schema.Contact(website=site["attributes"]["USER_Contact_Website"]))
+        contacts.append(
+            schema.Contact(website=site["attributes"]["USER_Contact_Website"])
+        )
 
     if len(contacts) > 0:
         return contacts
