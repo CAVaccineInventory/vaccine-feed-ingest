@@ -88,7 +88,7 @@ def _get_contacts(site: dict) -> Optional[List[schema.Contact]]:
         # Copied from SO: https://stackoverflow.com/questions/3809401/what-is-a-good-regular-expression-to-match-a-url
         promote_url_match = re.search(
             "https?://(www\\.)?[-a-zA-Z0-9@:%._+~#=]{1,256}\\.[a-zA-Z0-9()]{1,6}\\b([-a-zA-Z0-9()@:%_+.~#?&/=]*)",
-            promote_name
+            promote_name,
         )
         if promote_url_match:
             contacts.append(schema.Contact(website=promote_url_match.string))
