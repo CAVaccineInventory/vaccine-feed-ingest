@@ -1,0 +1,12 @@
+---
+state: tn
+arcgis:
+- id: 0000e236dfae4ba188a4fd85bc65d628
+  layer_names:
+  - TN_COVID_19_Assessment_Sites
+- id: 3889a93fc4954314bd856da48200874b
+  layer_names:
+  - TN_COVID_19_Assessment_Sites
+- id: f491eed4a4d546c88610ac44ed65d698
+  layer_names:
+  - TN_Covid_Counties
