@@ -3,8 +3,9 @@
 import datetime
 import json
 import pathlib
-import pytz
 import sys
+
+import pytz
 
 input_dir = pathlib.Path(sys.argv[2])
 output_dir = pathlib.Path(sys.argv[1])
