@@ -24,6 +24,7 @@ us = "^2.0.2"
 jellyfish = "0.6.1"
 pandas = "^1.2.4"
 openpyxl = "^3.0.7"
+beautifulsoup4 = "^4.9.3"
 
 [tool.poetry.dev-dependencies]
 
