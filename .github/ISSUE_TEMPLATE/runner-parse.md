@@ -11,7 +11,7 @@ assignees: ''
 
 Parse existing data into [`.ndjson`](http://ndjson.org/).
 
-Read all files in the directory passed as the first argument (`sys.argv[1]`), convert them to `.ndjson`, and then output them to new files in the directory passed as the second argument (`sys.argv[2]`).
+Read all files in the directory passed as the second argument (`sys.argv[2]`), convert them to `.ndjson`, and then output them to new files in the directory passed as the first argument (`sys.argv[1]`).
 
 Check the wiki to learn more about the purpose of the parse stage and how to get set up for development!
 
