@@ -1,5 +1,5 @@
 FROM python:3.9.2-buster
-LABEL name vaccine-feed-ingest
+LABEL name=vaccine-feed-ingest
 
 RUN apt-get update && apt-get install -y \
     libbz2-dev liblzma-dev libreadline-dev libsqlite3-dev
@@ -10,7 +10,7 @@ USER vaccine
 
 RUN git clone https://github.com/CAVaccineInventory/vaccine-feed-ingest.git
 
-WORKDIR vaccine-feed-ingest
+WORKDIR /vaccine-feed-ingest
 
 RUN curl -sSL https://raw.githubusercontent.com/python-poetry/poetry/master/get-poetry.py | python -
 ENV PATH "/home/vaccine/.poetry/bin:$PATH"
