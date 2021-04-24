@@ -1,0 +1,4 @@
+---
+state: us
+site: giscorps_vaccine_providers
+parser: arcgis_features
