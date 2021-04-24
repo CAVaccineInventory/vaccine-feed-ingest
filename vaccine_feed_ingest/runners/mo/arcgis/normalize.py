@@ -24,7 +24,7 @@ logging.basicConfig(
     format="%(asctime)s %(levelname)s:%(name)s:%(message)s",
     datefmt="%m/%d/%Y %H:%M:%S",
 )
-logger = logging.getLogger("in/arcgis/normalize.py")
+logger = logging.getLogger("mo/arcgis/normalize.py")
 
 
 def _get_id(site: dict) -> str:
@@ -33,11 +33,11 @@ def _get_id(site: dict) -> str:
     # Could parse these from directory traversal, but do not for now to avoid
     # accidental mutation.
     site = "arcgis"
-    runner = "in"
+    runner = "mo"
 
     # Could parse these from the input file name, but do not for now to avoid
     # accidental mutation.
-    arcgis = "97135bbb1bec488e9717aca061c03e41"
+    arcgis = "46630b2520ce44a68a9f42f8343d3518"
     layer = 0
 
     return f"{runner}:{site}:{arcgis}_{layer}:{data_id}"
