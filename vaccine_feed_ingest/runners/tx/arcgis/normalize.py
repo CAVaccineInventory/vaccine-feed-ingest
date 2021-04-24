@@ -17,7 +17,7 @@ runner_dir = state_dir.parent
 root_dir = runner_dir.parent
 sys.path.append(str(root_dir))
 
-from schema import schema
+from schema import schema  # noqa: E402
 
 
 def _get_id(site: dict) -> str:
