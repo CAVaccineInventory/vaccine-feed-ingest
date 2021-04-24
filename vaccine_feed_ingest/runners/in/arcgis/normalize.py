@@ -26,6 +26,7 @@ logging.basicConfig(
 )
 logger = logging.getLogger("ak/arcgis/normalize.py")
 
+
 def _get_id(site: dict) -> str:
     data_id = site["attributes"]["GlobalId"]
 
