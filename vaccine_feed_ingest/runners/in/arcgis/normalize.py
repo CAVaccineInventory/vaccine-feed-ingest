@@ -76,14 +76,10 @@ def _get_contacts(site: dict) -> Optional[List[schema.Contact]]:
         contacts.append(schema.Contact(phone=phone))
 
     if site["attributes"]["Site_Zotec_Link"]:
-        contacts.append(
-            schema.Contact(website=site["attributes"]["Site_Zotec_Link"])
-        )
+        contacts.append(schema.Contact(website=site["attributes"]["Site_Zotec_Link"]))
 
     if site["attributes"]["Site_Location_Info"]:
-        contacts.append(
-            schema.Contact(other=site["attributes"]["Site_Location_Info"])
-        )
+        contacts.append(schema.Contact(other=site["attributes"]["Site_Location_Info"]))
 
     if len(contacts) > 0:
         return contacts
