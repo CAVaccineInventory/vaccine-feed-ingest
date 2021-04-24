@@ -7,9 +7,9 @@ for each zip code.
 
 import os
 import re
-import requests
 import sys
 
+import requests
 from selenium import webdriver
 from selenium.common.exceptions import NoSuchElementException
 from selenium.webdriver.common.by import By
@@ -20,16 +20,19 @@ from selenium.webdriver.support.ui import WebDriverWait
 
 def connect_to_website(website_link):
     options = webdriver.ChromeOptions()
-    options.add_argument('--ignore-certificate-errors')
+    options.add_argument("--ignore-certificate-errors")
     options.add_argument("--test-type")
     driver = webdriver.Chrome(options=options)
     driver.get(website_link)
 
     timeout_in_secs = 20
     try:
-        spinner_xpath = '/html/body/app-root/ngx-spinner/div/div[1]'
+        spinner_xpath = "/html/body/app-root/ngx-spinner/div/div[1]"
         WebDriverWait(driver, timeout_in_secs).until(
-            expected_conditions.invisibility_of_element_located((By.XPATH, spinner_xpath)))
+            expected_conditions.invisibility_of_element_located(
+                (By.XPATH, spinner_xpath)
+            )
+        )
     except NoSuchElementException:
         # Spinner element is no longer there, leading to an exception being thrown.
         pass
@@ -49,10 +52,13 @@ def get_data_html_from_website_driver(driver, search_term):
         data_element = driver.find_element_by_xpath(data_xpath)
 
         text_input.clear()
-        return data_element.get_attribute('innerHTML')
+        return data_element.get_attribute("innerHTML")
     except Exception as e:
         text_input.clear()
-        return "Failed to collect data for this search term. This might be due to no results. Exception: " + str(e)
+        return (
+            "Failed to collect data for this search term. This might be due to no results. Exception: " 
+            + str(e)
+        )
 
 
 # Prints raw html to a file. Should be relatively easy to parse.
@@ -71,7 +77,9 @@ def get_nc_zip_codes(zip_code_website="https://www.zip-codes.com/state/nc.asp"):
     nc_zip_codes_html_data = requests.get(zip_code_website)
     zip_code_regex = "ZIP[ ]Code[ ]\\d{5}"
     zip_codes_as_strings = re.findall(zip_code_regex, nc_zip_codes_html_data.text)
-    unique_zip_codes_as_strings = list(set([x.replace("ZIP Code ", "") for x in zip_codes_as_strings]))
+    unique_zip_codes_as_strings = list(
+        set([x.replace("ZIP Code ", "") for x in zip_codes_as_strings])
+    )
     unique_zip_codes_as_strings.sort()
     return unique_zip_codes_as_strings
 
@@ -79,7 +87,7 @@ def get_nc_zip_codes(zip_code_website="https://www.zip-codes.com/state/nc.asp"):
 output_directory = sys.argv[1]
 
 # Official North Carolina website. Requires querying per location.
-nc_driver = connect_to_website('https://myspot.nc.gov')
+nc_driver = connect_to_website("https://myspot.nc.gov")
 
 # Runs through all the zip codes in North Carolina. Takes a few minutes to run.
 # Note 1 - Duplicate locations might appear between zip codes that are near each other.
