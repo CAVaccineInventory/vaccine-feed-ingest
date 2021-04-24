@@ -58,7 +58,7 @@ def _get_inventory(site: dict) -> Optional[List[schema.Vaccine]]:
 
     for vf in vaccines_field:
         try:
-            if vf != '-' and vf != '\x08':  # '-' is listed when no data given
+            if vf != "-" and vf != "\x08":  # "-" is listed when no data given
                 inventory.append(potentials[vf])
         except KeyError as e:
             logger.error("Unexpected vaccine type: %s", e)
