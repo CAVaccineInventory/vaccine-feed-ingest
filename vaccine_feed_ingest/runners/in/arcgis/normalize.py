@@ -37,7 +37,7 @@ def _get_id(site: dict) -> str:
 
     # Could parse these from the input file name, but do not for now to avoid
     # accidental mutation.
-    arcgis = "97135bbb1bec488e9717aca061c03e41"
+    arcgis = "46630b2520ce44a68a9f42f8343d3518"
     layer = 0
 
     return f"{runner}:{site}:{arcgis}_{layer}:{data_id}"
@@ -50,14 +50,16 @@ def _get_inventory(site: dict) -> Optional[List[schema.Vaccine]]:
         "Pfizer": schema.Vaccine(vaccine="pfizer"),
         "Moderna": schema.Vaccine(vaccine="moderna"),
         "Johnson & Johnson": schema.Vaccine(vaccine="janssen"),
-        "FRPP": schema.Vaccine(vaccine="frpp"),
+        "FRPP": None,
     }
 
     inventory = []
 
     for vf in vaccines_field:
         try:
-            inventory.append(potentials[vf])
+            vaccine = potentials[vf]
+            if vaccine:
+                inventory.append(vaccine)
         except KeyError as e:
             logger.error("Unexpected vaccine type: %s", e)
 
@@ -78,6 +80,18 @@ def _get_contacts(site: dict) -> Optional[List[schema.Contact]]:
 
     if site["attributes"]["Site_Zotec_Link"]:
         contacts.append(schema.Contact(website=site["attributes"]["Site_Zotec_Link"]))
+    elif site["attributes"]["Promote_Name"]:
+        # Sometimes Promote_Name also contains URLs. These are probably worse
+        #   than Site_Zotec_Link, but if they're all that we have we mine as
+        #   well use them
+        promote_name = site["attributes"]["Promote_Name"]
+        # Copied from SO: https://stackoverflow.com/questions/3809401/what-is-a-good-regular-expression-to-match-a-url
+        promote_url_match = re.search(
+            "https?://(www\\.)?[-a-zA-Z0-9@:%._+~#=]{1,256}\\.[a-zA-Z0-9()]{1,6}\\b([-a-zA-Z0-9()@:%_+.~#?&/=]*)",
+            promote_name
+        )
+        if promote_url_match:
+            contacts.append(schema.Contact(website=promote_url_match.string))
 
     if site["attributes"]["Site_Location_Info"]:
         contacts.append(schema.Contact(other=site["attributes"]["Site_Location_Info"]))
@@ -89,8 +103,14 @@ def _get_contacts(site: dict) -> Optional[List[schema.Contact]]:
 
 
 def _get_notes(site: dict) -> Optional[List[str]]:
+    notes = []
     if site["attributes"]["Site_Special_Inst"]:
-        return [site["attributes"]["Site_Special_Inst"]]
+        notes.append(site["attributes"]["Site_Special_Inst"])
+    if site["attributes"]["Site_Location_Info"]:
+        notes.append(site["attributes"]["Site_Location_Info"])
+
+    if len(notes) > 0:
+        return notes
 
     return None
 
@@ -136,7 +156,7 @@ def _get_normalized_location(site: dict, timestamp: str) -> schema.NormalizedLoc
         source=schema.Source(
             source="arcgis",
             id=site["attributes"]["GlobalID"],
-            fetched_from_uri="https://services1.arcgis.com/WzFsmainVTuD5KML/ArcGIS/rest/services/COVID19_Vaccine_Site_Survey_API/FeatureServer/0",  # noqa: E501
+            fetched_from_uri="https://experience.arcgis.com/experience/24159814f1dd4f69b6c22e7e87bca65b",  # noqa: E501
             fetched_at=timestamp,
             published_at=None,
             data=site,
