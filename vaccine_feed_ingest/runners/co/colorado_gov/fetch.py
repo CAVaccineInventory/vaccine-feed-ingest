@@ -2,6 +2,7 @@
 
 import pathlib
 import sys
+
 import requests
 
 output_dir = pathlib.Path(sys.argv[1])
