@@ -2,8 +2,9 @@
 
 import json
 import os
-import requests
 import sys
+
+import requests
 
 if len(sys.argv) < 2:
     print("Must pass an output_dir as first argument")
