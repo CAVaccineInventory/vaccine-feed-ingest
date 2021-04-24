@@ -6,9 +6,7 @@ import pathlib
 import re
 import sys
 
-from vaccine_feed_ingest.utils.normalize import provider_id_from_name
-
-CITY_RE = re.compile("^([\w ]+), NY$")
+CITY_RE = re.compile(r"^([\w ]+), NY$")
 # the providerName field smells like it's being parsed from someplace else,
 # a good number of them have leading \u1d42 and/or *, which we want to clean.
 # there's a bunch with a city name in them, but no real pattern to it, so
@@ -20,7 +18,7 @@ def normalize(site_blob: dict, timestamp: str) -> dict:
     """
     sample entry:
 
-    {"providerId": 1013, "providerName": "\u1d42**York College - Health and Physical Education Complex - Queens", "vaccineBrand": "Pfizer", "address": "Jamaica, NY", "availableAppointments": "Y", "isShowable": true}
+    {"providerId": 1013, "providerName": "\u1d42**York College - Health and Physical Education Complex - Queens", "vaccineBrand": "Pfizer", "address": "Jamaica, NY", "availableAppointments": "Y", "isShowable": true, "lastUpdated": "2021-04-23T20:04:24"} # noqa: E501
     """
     name = NAME_CLEAN_RE.sub("", site_blob["providerName"]).strip()
     city = CITY_RE.search(site_blob["address"]).group(1)
