@@ -72,9 +72,19 @@ def _get_fallback_city(address) -> Optional[str]:
 
 def _get_address(site_attributes: dict) -> Optional[schema.Address]:
     address = site_attributes["ADDRESS"]
-    street = site_attributes["STREET"] if site_attributes["STREET"] else _get_fallback_street(address)
-    city = site_attributes["CITY"] if site_attributes["CITY"] else _get_fallback_city(address)
-    zipcode = site_attributes["ZIP"] if site_attributes["ZIP"] else _get_fallback_zip(address)
+    street = (
+        site_attributes["STREET"]
+        if site_attributes["STREET"]
+        else _get_fallback_street(address)
+    )
+    city = (
+        site_attributes["CITY"]
+        if site_attributes["CITY"]
+        else _get_fallback_city(address)
+    )
+    zipcode = (
+        site_attributes["ZIP"] if site_attributes["ZIP"] else _get_fallback_zip(address)
+    )
     try:
         return schema.Address(
             street1=street,
@@ -117,10 +127,18 @@ def _get_contacts(site_attributes: dict) -> Optional[List[schema.Contact]]:
 def _get_inventory(site_attributes: dict) -> List[schema.Vaccine]:
     return [
         schema.Vaccine(vaccine="jj", supply_level=site_attributes["JJ_AVAILABLE"]),
-        schema.Vaccine(vaccine="pfizer", supply_level=site_attributes["PFIZER_AVAILABLE"]),
-        schema.Vaccine(vaccine="pfizer_2", supply_level=site_attributes["PFIZER_AVAILABLE2"]),
-        schema.Vaccine(vaccine="moderna", supply_level=site_attributes["MODERNA_AVAILABLE"]),
-        schema.Vaccine(vaccine="moderna_2", supply_level=site_attributes["MODERNA_AVAILABLE2"]),
+        schema.Vaccine(
+            vaccine="pfizer", supply_level=site_attributes["PFIZER_AVAILABLE"]
+        ),
+        schema.Vaccine(
+            vaccine="pfizer_2", supply_level=site_attributes["PFIZER_AVAILABLE2"]
+        ),
+        schema.Vaccine(
+            vaccine="moderna", supply_level=site_attributes["MODERNA_AVAILABLE"]
+        ),
+        schema.Vaccine(
+            vaccine="moderna_2", supply_level=site_attributes["MODERNA_AVAILABLE2"]
+        ),
     ]
 
 
@@ -133,7 +151,9 @@ def _get_published_at(site_attributes: dict) -> Optional[str]:
         combined_date = datetime.datetime.combine(update_date, update_time)
         return combined_date.isoformat()
     except ValueError as e:
-        logging.error(f"Error parsing date update_date_str={update_date_str}, update_time_str={update_time_str}: {e}")
+        logging.error(
+            f"Error parsing date update_date_str={update_date_str}, update_time_str={update_time_str}: {e}"
+        )
         return None
 
 
@@ -201,7 +221,9 @@ for in_filepath in input_dir.glob("*.ndjson"):
             for site_json in fin:
                 parsed_site = json.loads(site_json)
 
-                normalized_site = _get_normalized_location(parsed_site, parsed_at_timestamp)
+                normalized_site = _get_normalized_location(
+                    parsed_site, parsed_at_timestamp
+                )
 
                 json.dump(normalized_site.dict(), fout)
                 fout.write("\n")
