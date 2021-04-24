@@ -1,9 +1,10 @@
 import logging
 import pathlib
-from typing import Iterable, Iterator, List, Optional
+from typing import Iterator, Optional
 
 import jellyfish
 import pydantic
+import rtree
 import shapely.geometry
 import urllib3
 import us
@@ -26,7 +27,7 @@ def run_load_to_vial(
     site_dir: pathlib.Path,
     output_dir: pathlib.Path,
     import_run_id: str,
-    locations: Optional[List[dict]],
+    locations: Optional[rtree.index.Index],
     enable_match: bool = True,
     enable_create: bool = False,
     dry_run: bool = False,
@@ -115,7 +116,7 @@ def run_load_to_vial(
 
 def _find_candidates(
     source: schema.NormalizedLocation,
-    existing: Iterable[dict],
+    existing: rtree.index.Index,
 ) -> Iterator[dict]:
     """Return a slice of existing locations"""
     src_point = shapely.geometry.Point(
@@ -123,14 +124,11 @@ def _find_candidates(
         source.location.latitude,
     )
 
-    for loc in existing:
-        if "geometry" not in loc:
-            continue
+    search_bounds = src_point.buffer(CANDIDATE_DEGREES_DISTANCE).bounds
 
-        loc_point = shapely.geometry.shape(loc["geometry"])
-
-        if loc_point.distance(src_point) < CANDIDATE_DEGREES_DISTANCE:
-            yield loc
+    result = existing.intersection(search_bounds, objects=True)
+    for row in result:
+        yield row.object
 
 
 def _is_different(source: schema.NormalizedLocation, candidate: dict) -> bool:
@@ -214,7 +212,7 @@ def _is_match(source: schema.NormalizedLocation, candidate: dict) -> bool:
 
 def _match_source_to_existing_locations(
     source: schema.NormalizedLocation,
-    existing: Iterable[dict],
+    existing: rtree.index.Index,
     enable_match: bool = True,
     enable_create: bool = False,
 ) -> Optional[schema.ImportMatchAction]:
