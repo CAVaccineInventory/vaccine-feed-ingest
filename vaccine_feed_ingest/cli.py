@@ -221,7 +221,7 @@ def load_to_vial(
 
         for site_dir in site_dirs:
             if (enable_match or enable_create) and refresh_locations:
-                locations = list(vial.retrieve_existing_locations(vial_http))
+                locations = vial.retrieve_existing_locations_as_index(vial_http)
                 refresh_locations = False
 
             success = load.run_load_to_vial(

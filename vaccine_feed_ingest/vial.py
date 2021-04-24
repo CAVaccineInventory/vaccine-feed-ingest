@@ -5,6 +5,8 @@ import json
 from typing import Iterable, Iterator
 
 import geojson
+import rtree
+import shapely.geometry
 import urllib3
 from vaccine_feed_ingest.schema import schema
 
@@ -86,3 +88,18 @@ def retrieve_existing_locations(
         yield geojson.loads(line)
 
     resp.release_conn()
+
+
+def retrieve_existing_locations_as_index(
+    vial_http: urllib3.connectionpool.ConnectionPool,
+) -> rtree.index.Index:
+    """Verifies that header contains valid authorization token"""
+    locations = retrieve_existing_locations(vial_http)
+
+    def generate_index_row(i: int, loc: dict) -> tuple:
+        loc_point = shapely.geometry.shape(loc["geometry"])
+        return (i, loc_point.bounds, loc)
+
+    return rtree.index.Index(
+        generate_index_row(i, loc) for i, loc in enumerate(locations)
+    )
