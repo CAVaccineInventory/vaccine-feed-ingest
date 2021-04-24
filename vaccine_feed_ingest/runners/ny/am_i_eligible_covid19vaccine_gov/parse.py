@@ -3,6 +3,7 @@
 import datetime
 import json
 import pathlib
+import pytz
 import sys
 
 input_dir = pathlib.Path(sys.argv[2])
@@ -15,9 +16,9 @@ output_file = output_dir / "data.parsed.ndjson"
 with input_file.open() as fin:
     data = json.load(fin)
 
-# TODO: if we want to pull in pytz, we can add in the eastern tz here
-last_updated = datetime.datetime.strptime(
-    data["lastUpdated"], "%m/%d/%Y, %I:%M:%S %p"
+eastern = pytz.timezone("US/Eastern")
+last_updated = eastern.localize(
+    datetime.datetime.strptime(data["lastUpdated"], "%m/%d/%Y, %I:%M:%S %p")
 ).isoformat()
 
 with output_file.open("w") as fout:
