@@ -5,16 +5,17 @@ my personal computer and produces an html file
 for each zip code.
 """
 
+import os
+import re
+import requests
+import sys
+
 from selenium import webdriver
 from selenium.common.exceptions import NoSuchElementException
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support import expected_conditions
 from selenium.webdriver.support.ui import WebDriverWait
-import os
-import re
-import requests
-import sys
 
 
 def connect_to_website(website_link):
