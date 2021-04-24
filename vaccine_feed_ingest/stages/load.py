@@ -154,9 +154,9 @@ def _is_different(source: schema.NormalizedLocation, candidate: dict) -> bool:
     # Parent organization must be slightly similar to match.
     if source.parent_organization and candidate_props.get("provider"):
         src_org = source.parent_organization.name or source.parent_organization.id
-        cand_org = candidate_props["provider"]
+        cand_org = candidate_props["provider"].get("name")
 
-        if src_org and jellyfish.jaro_winkler(src_org, cand_org) < 0.1:
+        if src_org and cand_org and jellyfish.jaro_winkler(src_org, cand_org) < 0.1:
             return True
 
     # Must not have any conflicting links/concordances
