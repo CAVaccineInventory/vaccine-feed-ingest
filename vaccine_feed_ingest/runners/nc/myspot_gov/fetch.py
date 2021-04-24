@@ -1,6 +1,6 @@
 '''
-This script uses Selenium to collect data from the NC official website, by querying per NC zip code. The zip codes 
-are collected through the requests library via a third party website. The script takes about 4 minutes to run on 
+This script uses Selenium to collect data from the NC official website, by querying per NC zip code. The zip codes
+are collected through the requests library via a third party website. The script takes about 4 minutes to run on
 my personal computer and produces an html file
 for each zip code.
 '''
