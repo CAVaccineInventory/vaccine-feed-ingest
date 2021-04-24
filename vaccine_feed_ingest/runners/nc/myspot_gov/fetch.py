@@ -1,6 +1,7 @@
 '''
-This script uses Selenium to collect data from the NC official website, by querying per NC zip code. The zip codes are collected through
-the requests library via a third party website. The script takes about 4 minutes to run on my personal computer and produces an html file
+This script uses Selenium to collect data from the NC official website, by querying per NC zip code. The zip codes 
+are collected through the requests library via a third party website. The script takes about 4 minutes to run on 
+my personal computer and produces an html file
 for each zip code.
 '''
 
@@ -25,8 +26,9 @@ def connect_to_website(website_link):
 
     timeout_in_secs = 20
     try:
+        spinner_xpath = '/html/body/app-root/ngx-spinner/div/div[1]'
         WebDriverWait(driver, timeout_in_secs).until(
-            expected_conditions.invisibility_of_element_located((By.XPATH, '/html/body/app-root/ngx-spinner/div/div[1]')))
+            expected_conditions.invisibility_of_element_located((By.XPATH, spinner_xpath)))
     except NoSuchElementException:
         # Spinner element is no longer there, leading to an exception being thrown.
         pass
