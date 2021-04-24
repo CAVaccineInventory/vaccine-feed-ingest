@@ -260,7 +260,7 @@ def _get_normalized_location(site: dict, timestamp: str) -> schema.NormalizedLoc
         source=schema.Source(
             source="arcgis",
             id=site["attributes"]["globalid"],
-            fetched_from_uri="https://services1.arcgis.com/WzFsmainVTuD5KML/ArcGIS/rest/services/COVID19_Vaccine_Site_Survey_API/FeatureServer/0",  # noqa: E501
+            fetched_from_uri="https://adhsgis.maps.arcgis.com/apps/opsdashboard/index.html#/5d636af4d5134a819833b1a3b906e1b6",  # noqa: E501
             fetched_at=timestamp,
             data=site,
         ),
