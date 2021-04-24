@@ -11,7 +11,7 @@ assignees: ''
 
 Normalize existing [`.ndjson`](http://ndjson.org/) records into [the Vaccinate The States data schema](https://github.com/CAVaccineInventory/vaccine-feed-ingest/blob/main/vaccine_feed_ingest/schema/schema.py).
 
-Read all files in the directory passed as the first argument (`sys.argv[1]`), transform each record into the normalized schema (filling in as much detail as possible), then output them to new files in the directory passed as the second argument (`sys.argv[2]`).
+Read all files in the directory passed as the second argument (`sys.argv[2]`), transform each record into the normalized schema (filling in as much detail as possible), then output them to new files in the directory passed as the first argument (`sys.argv[1]`).
 
 Check the wiki to learn more about the purpose of the normalize stage and how to get set up for development!
 
