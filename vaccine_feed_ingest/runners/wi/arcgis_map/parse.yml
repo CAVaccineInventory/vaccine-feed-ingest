@@ -1,0 +1,4 @@
+---
+state: wi
+site: wi_arcgis_map
+parser: arcgis_features
