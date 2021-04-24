@@ -74,7 +74,7 @@ def _get_normalized_location(site: dict, timestamp: str) -> schema.NormalizedLoc
             street1=site["attributes"]["USER_Address"],
             street2=site["attributes"]["USER_Address_2"],
             city=site["attributes"]["USER_City"],
-            state=site["attributes"]["USER_STATE"],
+            state=site["attributes"]["USER_State"],
             zip=site["attributes"]["USER_Zip_Code"],
         ),
         location=schema.LatLng(
@@ -94,7 +94,7 @@ def _get_normalized_location(site: dict, timestamp: str) -> schema.NormalizedLoc
         active=None,
         source=schema.Source(
             source="arcgis",
-            id=site["attributes"]["GlobalId"],
+            id=site["attributes"]["GlobalID"],
             fetched_from_uri="https://services1.arcgis.com/WzFsmainVTuD5KML/ArcGIS/rest/services/COVID19_Vaccine_Site_Survey_API/FeatureServer/0",  # noqa: E501
             fetched_at=timestamp,
             published_at=None,
