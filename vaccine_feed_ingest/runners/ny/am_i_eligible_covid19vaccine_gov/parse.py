@@ -18,4 +18,4 @@ with input_file.open() as fin:
 with output_file.open("w") as fout:
     for site in data["providerList"]:
         json.dump(site, fout)
-        fout.write("\r\n")
+        fout.write("\n")
