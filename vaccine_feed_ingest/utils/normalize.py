@@ -33,5 +33,8 @@ def provider_id_from_name(name: str) -> Optional[Tuple[str, str]]:
     m = re.search(r"WALMART PHARMACY 10-(\d+)", name, re.I)
     if m:
         return "walmart", m.group(1)
+    m = re.search(r"CVS\s(?:STORE)?(?:PHARMACY)?(?:, INC)?.?\s?#?(\d+)", name, re.I)
+    if m:
+        return "cvs", str(int(m.group(1)))
 
     return None
