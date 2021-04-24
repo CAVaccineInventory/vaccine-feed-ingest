@@ -4,7 +4,6 @@ import json
 import pathlib
 import sys
 
-
 input_dir = pathlib.Path(sys.argv[2])
 output_dir = pathlib.Path(sys.argv[1])
 
