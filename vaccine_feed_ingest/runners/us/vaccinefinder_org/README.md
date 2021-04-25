@@ -1,4 +1,4 @@
-# us/vaccinefinder
+# us/vaccinefinder_org
 
 Some data is provided to Vaccinate The States by [VaccineFinder](https://vaccinefinder.org/).
 
