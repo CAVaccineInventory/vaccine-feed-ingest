@@ -35,7 +35,7 @@ with output_file.open("w") as fout:
         for title in soup.select(".text-xl.font-black"):
             parent = title.parent
             combined_name = title.get_text().strip()
-            name, date = combined_name.split(' on ')
+            name, date = combined_name.split(" on ")
             address = title.find_next_sibling("p").get_text().strip()
             vaccines = find_data_item(parent, "Vaccinations offered", -2)
             ages = find_data_item(parent, "Age groups served", -1)
