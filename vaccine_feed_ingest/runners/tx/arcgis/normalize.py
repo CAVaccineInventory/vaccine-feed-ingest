@@ -125,21 +125,21 @@ def _get_contacts(site_attributes: dict) -> Optional[List[schema.Contact]]:
 
 
 def _get_inventory(site_attributes: dict) -> List[schema.Vaccine]:
-    return [
-        schema.Vaccine(vaccine="jj", supply_level=site_attributes["JJ_AVAILABLE"]),
-        schema.Vaccine(
-            vaccine="pfizer", supply_level=site_attributes["PFIZER_AVAILABLE"]
-        ),
-        schema.Vaccine(
-            vaccine="pfizer_2", supply_level=site_attributes["PFIZER_AVAILABLE2"]
-        ),
-        schema.Vaccine(
-            vaccine="moderna", supply_level=site_attributes["MODERNA_AVAILABLE"]
-        ),
-        schema.Vaccine(
-            vaccine="moderna_2", supply_level=site_attributes["MODERNA_AVAILABLE2"]
-        ),
-    ]
+
+    normalized_vaccines = {
+        "pfizer_biontech": ["PFIZER_AVAILABLE", "PFIZER_AVAILABLE2"],
+        "moderna": ["MODERNA_AVAILABLE", "MODERNA_AVAILABLE2"],
+        "johnson_johnson_janssen": ["JJ_AVAILABLE"],
+    }
+    inventory = []
+    for normalized_vaccine, vaccine_keys in normalized_vaccines.items():
+        supply_level = sum(
+            [int(site_attributes[vaccine_key]) for vaccine_key in vaccine_keys]
+        )
+        inventory.append(
+            schema.Vaccine(vaccine=normalized_vaccine, supply_level=supply_level)
+        )
+    return inventory
 
 
 def _get_published_at(site_attributes: dict) -> Optional[str]:
@@ -189,7 +189,7 @@ def _get_normalized_location(site: dict, timestamp: str) -> schema.NormalizedLoc
         source=schema.Source(
             source="arcgis",
             id=site_attributes["OBJECTID"],
-            fetched_from_uri="UNKNOWN",  # TODO where is this from? Hard to tell from fetch.yaml
+            fetched_from_uri="https://tdem.maps.arcgis.com/apps/webappviewer/index.html?id=3700a84845c5470cb0dc3ddace5c376b",
             fetched_at=timestamp,
             published_at=_get_published_at(site_attributes),
             data=site,
