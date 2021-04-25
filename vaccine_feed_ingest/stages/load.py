@@ -126,9 +126,7 @@ def _find_candidates(
 
     search_bounds = src_point.buffer(CANDIDATE_DEGREES_DISTANCE).bounds
 
-    result = existing.intersection(search_bounds, objects=True)
-    for row in result:
-        yield row.object
+    yield from existing.intersection(search_bounds, objects="raw")
 
 
 def _is_different(source: schema.NormalizedLocation, candidate: dict) -> bool:
