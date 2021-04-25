@@ -109,14 +109,14 @@ def _get_published_at(site: dict) -> Optional[str]:
 
 
 def _get_address(site: dict) -> Optional[schema.Address]:
-    if site["attributes"]["ADDRESS"] == None:
+    if site["attributes"]["ADDRESS"] is None:
         return None
 
     address_field = site["attributes"]["ADDRESS"].replace(",", "").split(" ")
     city_starts = 0
     city_ends = 0
 
-    if site["attributes"]["CITY"] == None:
+    if site["attributes"]["CITY"] is None:
         # Some sites put all address data in a single field.
         # In this case, he data seems to uppercase all characters in the address.
         # But the city only capitalizes the first letter
@@ -140,7 +140,11 @@ def _get_address(site: dict) -> Optional[schema.Address]:
 
     else:
         # Sometimes the zip can be None, even though the rest of the address has been entered
-        zip = site["attributes"]["ZIP"] if site["attributes"]["ZIP"] != None else 00000
+        zip = (
+            site["attributes"]["ZIP"]
+            if site["attributes"]["ZIP"] is not None
+            else 00000
+        )
 
         return schema.Address(
             street1=site["attributes"]["ADDRESS"].strip(),
