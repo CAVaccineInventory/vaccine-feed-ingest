@@ -139,7 +139,10 @@ def run_parse(
             parse_output_dir, suffix=STAGE_OUTPUT_SUFFIX[PipelineStage.PARSE]
         ):
             logger.warning(
-                "%s for %s returned no data files.", parse_path.name, site_dir.name
+                "%s for %s returned no data files with expected extension %s.",
+                parse_path.name,
+                site_dir.name,
+                STAGE_OUTPUT_SUFFIX[PipelineStage.PARSE],
             )
             return False
 
@@ -188,8 +191,14 @@ def run_normalize(
         )
         return False
 
-    if not outputs.data_exists(parse_run_dir):
-        logger.warning("No parse data available to normalize for %s.", site_dir.name)
+    if not outputs.data_exists(
+        parse_run_dir, suffix=STAGE_OUTPUT_SUFFIX[PipelineStage.PARSE]
+    ):
+        logger.warning(
+            "No parse data available to normalize for %s with extension %s.",
+            site_dir.name,
+            STAGE_OUTPUT_SUFFIX[PipelineStage.PARSE],
+        )
         return False
 
     with tempfile.TemporaryDirectory(
@@ -210,9 +219,14 @@ def run_normalize(
             check=True,
         )
 
-        if not outputs.data_exists(normalize_output_dir):
+        if not outputs.data_exists(
+            normalize_output_dir, suffix=STAGE_OUTPUT_SUFFIX[PipelineStage.NORMALIZE]
+        ):
             logger.warning(
-                "%s for %s returned no data files.", normalize_path.name, site_dir.name
+                "%s for %s returned no data files with expected extension %s.",
+                normalize_path.name,
+                site_dir.name,
+                STAGE_OUTPUT_SUFFIX[PipelineStage.NORMALIZE],
             )
             return False
 
