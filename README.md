@@ -35,15 +35,15 @@ Results are also periodically committed to [`vaccine-feed-ingest-results`](https
 
 1. Authenticate to gcloud with an account that has access to `vaccine-feeds-dev` bucket.
 
-    ```sh
-    gcloud auth application-default login
-    ```
+  ```sh
+  gcloud auth application-default login
+  ```
 
 1. Run ingestion with an GCS `--output-dir`
 
-    ```sh
-    poetry run vaccine-feed-ingest all-stages --output-dir=gs://vaccine-feeds-dev/locations/
-    ```
+  ```sh
+  poetry run vaccine-feed-ingest all-stages --output-dir=gs://vaccine-feeds-dev/locations/
+  ```
 
 ### Load Source Locations
 
@@ -59,6 +59,6 @@ Results are also periodically committed to [`vaccine-feed-ingest-results`](https
 
 - Load SF.GOV source feed to VIAL
 
-    ```sh
-    poetry run vaccine-feed-ingest load-to-vial ca/sf_gov
-    ```
+  ```sh
+  poetry run vaccine-feed-ingest load-to-vial ca/sf_gov
+  ```
