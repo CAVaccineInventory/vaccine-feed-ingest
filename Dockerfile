@@ -2,9 +2,11 @@ FROM python:3.9.2-buster
 LABEL name=vaccine-feed-ingest
 
 RUN useradd -m vaccine && mkdir vaccine-feed-ingest && chown vaccine:vaccine vaccine-feed-ingest
-USER vaccine
 
 COPY ./ /vaccine-feed-ingest/
+RUN rm -rf /vaccine-feed-ingest/.venv/ && mkdir /vaccine-feed-ingest/out && chown vaccine:vaccine /vaccine-feed-ingest/out
+
+USER vaccine
 
 WORKDIR /vaccine-feed-ingest
 
