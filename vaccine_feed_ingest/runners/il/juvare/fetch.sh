@@ -15,7 +15,7 @@ cd "${output_dir}"
 
 # Build ID changes frequently.
 curl --silent -o index.html "https://covidvaccination.dph.illinois.gov/"
-BUILD_ID=$(sed -ne 's/.*"buildId":"\([^"]\+\)".*/\1/p' index.html)
+BUILD_ID=$(sed -Ene 's/.*"buildId":"([^"]+)".*/\1/p' index.html)
 echo "Build ID is ${BUILD_ID}"
 
 curl --silent -o events.json "https://covidvaccination.dph.illinois.gov/_next/data/${BUILD_ID}/events.json"
