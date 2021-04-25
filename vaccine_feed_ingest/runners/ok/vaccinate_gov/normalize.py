@@ -31,21 +31,21 @@ def _get_address(site: dict) -> schema.Address:
     if len(sections) == 1:
         sections = raw_address.split("\n")
 
-    # if after the second split attempt there still isn't more than one section, it's highly probable that there isn't an address for this loc
+    # if there still isn't more than one section, it's likely there isn't an address for this loc
     if len(sections) == 1:
         return None
 
     adr2 = sections[1] if len(sections) == 3 else None
-    csz_sec = sections[1] if adr2 == None else sections[2]
+    csz_sec = sections[1] if adr2 is None else sections[2]
 
     adr1 = sections[0]
     city = CITY_RE.search(csz_sec).group(1)
     zip_search = ZIP_RE.search(csz_sec)
 
-    zipc = None if zip_search == None else zip_search.group(1)
+    zipc = None if zip_search is None else zip_search.group(1)
 
     # no zip, no valid address
-    if zipc == None:
+    if zipc is None:
         return None
     else:
         return schema.Address(
@@ -63,7 +63,7 @@ def _get_contact(site: dict) -> schema.Contact:
     contact_section = sections[-1]
     phone_num_search = PHONE_RE.search(contact_section)
 
-    if phone_num_search == None:
+    if phone_num_search is None:
         return None
 
     # sometimes the numbers come formatted in some way - the replacement is undoing that formatting
@@ -77,7 +77,7 @@ def _get_contact(site: dict) -> schema.Contact:
     phone_num_format = PHONE_FORMAT_RE.search(phone_num_string)
 
     # less than 10 digit number
-    if phone_num_format == None:
+    if phone_num_format is None:
         return None
 
     phone_num = f"({phone_num_format.group(1)}) {phone_num_format.group(2)}-{phone_num_format.group(3)}"
@@ -88,7 +88,7 @@ def _get_contact(site: dict) -> schema.Contact:
 def normalize(site: dict, timestamp: str) -> str:
     """
     sample:
-    {"Description": "608 NW 9th St\r\nSuite 1100\r\nOklahoma City, Oklahoma 73102 <br>Phone No: 405-425-4489 <br> ", "Distance": 0.6, "Id": "6953713d-7e6a-eb11-a812-001dd800ac9e", "Latitude": 35.47689, "Location": "35.47689,-97.52351", "Longitude": -97.52351, "PushpinImageHeight": 39, "PushpinImageUrl": "", "PushpinImageWidth": 32, "Title": "1st Dose- Pfizer- OKC- SSM Health Family Medicine Center", "Url": ""}
+    {"Description": "608 NW 9th St\r\nSuite 1100\r\nOklahoma City, Oklahoma 73102 <br>Phone No: 405-425-4489 <br> ", "Distance": 0.6, "Id": "6953713d-7e6a-eb11-a812-001dd800ac9e", "Latitude": 35.47689, "Location": "35.47689,-97.52351", "Longitude": -97.52351, "PushpinImageHeight": 39, "PushpinImageUrl": "", "PushpinImageWidth": 32, "Title": "1st Dose- Pfizer- OKC- SSM Health Family Medicine Center", "Url": ""} # noqa: E501
     """
     normalized = schema.NormalizedLocation(
         id=f"ok_vaccinate_gov:{site['Id']}",
