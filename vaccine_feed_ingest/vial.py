@@ -122,3 +122,16 @@ def retrieve_existing_locations_as_index(
     """Return all existing locations in VIAL as rtree indexed geojson"""
     locations = retrieve_existing_locations(vial_http)
     return rtree.index.Index(_generate_index_row(loc) for loc in locations)
+
+
+def update_existing_locations(
+    vial_http: urllib3.connectionpool.ConnectionPool,
+    locations: rtree.index.Index,
+    source_ids: Iterable[str],
+) -> None:
+    """Updates rtree index with locations with source ids"""
+    for chunked_ids in misc.batch(source_ids, 50):
+        updated_locations = search_locations(vial_http, idref=chunked_ids)
+
+        for loc in updated_locations:
+            locations.insert(_generate_index_row(loc))
