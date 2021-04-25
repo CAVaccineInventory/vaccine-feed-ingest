@@ -24,10 +24,10 @@ def _get_inventory(raw: str) -> Optional[List[schema.Vaccine]]:
     # we've only seen "Pfizer", but no reason not to use the rest of the
     # potentials from `ak/arcgis/normalize.py`
     potentials = {
-        "pfizer": schema.Vaccine(vaccine="pfizer"),
+        "pfizer": schema.Vaccine(vaccine="pfizer_biontech"),
         "moderna": schema.Vaccine(vaccine="moderna"),
-        "janssen": schema.Vaccine(vaccine="janssen"),
-        "jjj": schema.Vaccine(vaccine="janssen"),
+        "janssen": schema.Vaccine(vaccine="johnson_johnson_janssen"),
+        "jjj": schema.Vaccine(vaccine="johnson_johnson_janssen"),
     }
     try:
         return [potentials[raw.lower()]]
