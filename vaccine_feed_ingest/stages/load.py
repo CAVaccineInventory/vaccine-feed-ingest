@@ -1,6 +1,6 @@
 import logging
 import pathlib
-from typing import Iterator, Optional
+from typing import Iterator, List, Optional
 
 import jellyfish
 import pydantic
