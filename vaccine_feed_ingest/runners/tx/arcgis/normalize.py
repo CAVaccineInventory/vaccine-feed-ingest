@@ -24,7 +24,7 @@ logging.basicConfig(
     format="%(asctime)s %(levelname)s:%(name)s:%(message)s",
     datefmt="%m/%d/%Y %H:%M:%S",
 )
-logger = logging.getLogger("ak/arcgis/normalize.py")
+logger = logging.getLogger("tx/arcgis/normalize.py")
 
 VACCINES_FIELD = {
     "JJ_AVAILABLE": schema.Vaccine(vaccine="janssen"),
@@ -41,8 +41,8 @@ def _get_availability(site: dict) -> schema.Availability:
         try:
             if site["attributes"][field] > 0:
                 return schema.Availability(appointments=True)
-        except KeyError as e:
-            logger.error("Vaccine field not available: %s", e)
+        except KeyError:
+            pass
 
     return None
 
@@ -70,8 +70,8 @@ def _get_inventory(site: dict) -> Optional[List[schema.Vaccine]]:
         try:
             if site["attributes"][field] > 0 and vaccine not in inventory:
                 inventory.append(vaccine)
-        except KeyError as e:
-            logger.error("Vaccine field not available: %s", e)
+        except KeyError:
+            pass
 
     if len(inventory) > 0:
         return inventory
@@ -122,9 +122,12 @@ def _get_address(site: dict) -> Optional[schema.Address]:
         # But the city only capitalizes the first letter
         for index, field in enumerate(address_field):
             try:
-                if field[1].islower() and city_starts == 0:
+                if len(field) > 1 and field[1].islower() and city_starts == 0:
                     city_starts = index
                 if field == "TX":
+                    city_ends = index
+                if index == len(address_field) - 1 and city_starts == 0:
+                    city_starts = index - 1
                     city_ends = index
             except IndexError as ie:
                 logger.error("Unable to parse address: %s", ie)
