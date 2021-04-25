@@ -111,7 +111,7 @@ def _get_contacts(site_attributes: dict) -> Optional[List[schema.Contact]]:
     if public_phone:
         # Strip whitespace, remove USA +1 or 1- and strip whitespace again
         cleaned_phone = public_phone.strip()
-        cleaned_phone = cleaned_phone.removeprefix("+1").removeprefix("1-").strip()
+        cleaned_phone = cleaned_phone.removeprefix("+1").removeprefix("1-").removeprefix("1").strip()
         # Match observed phone patterns. Support delimiters of dash, period, space, empty_string.
         # Allow for parentheses around area code
         match = re.match(
