@@ -24,7 +24,7 @@ logging.basicConfig(
     format="%(asctime)s %(levelname)s:%(name)s:%(message)s",
     datefmt="%m/%d/%Y %H:%M:%S",
 )
-logger = logging.getLogger("ak/arcgis/normalize.py")
+logger = logging.getLogger("ri/arcgis/normalize.py")
 
 
 def _get_id(site: dict) -> str:
@@ -51,7 +51,7 @@ def _get_inventory(site: dict) -> Optional[List[schema.Vaccine]]:
         "moderna covid-19 vaccine": schema.Vaccine(vaccine="moderna"),
         "janssen": schema.Vaccine(vaccine="janssen"),
         "jjj": schema.Vaccine(vaccine="janssen"),
-        "varies": schema.Vaccine(vaccine="varies"),
+        "janssen (johnson & johnson) covid-19 vaccine": schema.Vaccine(vaccine="janssen"),
     }
 
     inventory = []
@@ -95,7 +95,6 @@ def _get_notes(site: dict) -> Optional[List[str]]:
 
 
 def _get_normalized_location(site: dict, timestamp: str) -> schema.NormalizedLocation:
-    breakpoint()
     return schema.NormalizedLocation(
         id=_get_id(site),
         name=site["attributes"]["USER_Name"],
@@ -124,7 +123,7 @@ def _get_normalized_location(site: dict, timestamp: str) -> schema.NormalizedLoc
         source=schema.Source(
             source="arcgis",
             id=site["attributes"]["OBJECTID"],
-            fetched_from_uri="",  # noqa: E501
+            fetched_from_uri="https://rihealth.maps.arcgis.com/apps/instant/nearby/index.html?appid=a25f35833533498bac3f724f92a84b4e",  # noqa: E501
             fetched_at=timestamp,
             published_at=None,
             data=site,
