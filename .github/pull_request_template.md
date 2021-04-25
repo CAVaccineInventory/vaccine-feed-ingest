@@ -1,3 +1,5 @@
+# <!-- <stage> <site> for <state> (e.g.,  Normalize ArcGIS for MD) -->
+
 | Key Details |
 |-|
 | Resolves #<!-- ISSUE_NUM --> |
@@ -16,5 +18,5 @@ Site: <!-- name of site, like vaccinespotter_org or arcgis--> |
 ## Before Opening a PR
 - [ ] I tested this using the CLI (e.g., `poetry run vaccine-feed-ingest <state>/<site>`)
 - [ ] I ran auto-formatting:
-  - [ ] `poetry run black vaccine_feed_ingest`
-  - [ ] `poetry run isort vaccine_feed_ingest`
+    - [ ] `poetry run black vaccine_feed_ingest`
+    - [ ] `poetry run isort vaccine_feed_ingest`
