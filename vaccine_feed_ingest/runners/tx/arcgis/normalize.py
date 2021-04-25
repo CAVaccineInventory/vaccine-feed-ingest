@@ -109,14 +109,19 @@ def _get_contacts(site_attributes: dict) -> Optional[List[schema.Contact]]:
     contacts = []
     public_phone = site_attributes["PublicPhone"]
     if public_phone:
-        source_phone = re.sub("[^0-9]", "", public_phone)
-        if len(source_phone) == 11:
-            source_phone = source_phone[1:]
-        if len(source_phone) == 10:
-            phone = f"({source_phone[0:3]}) {source_phone[3:6]}-{source_phone[6:]}"
+        # Strip whitespace, remove USA +1 or 1- and strip whitespace again
+        cleaned_phone = public_phone.strip()
+        cleaned_phone = cleaned_phone.removeprefix("+1").removeprefix("1-").strip()
+        # Match observed phone patterns. Support delimiters of dash, period, space, empty_string.
+        # Allow for parentheses around area code
+        match = re.match(
+            r"\(*([0-9]{3})\)*[\-.\s]*([0-9]{3})[\-.\s]*([0-9]{4})", cleaned_phone
+        )
+        if match:
+            phone = f"({match.group(1)}) {match.group(2)}-{match.group(3)}"
             contacts.append(schema.Contact(phone=phone))
         else:
-            logging.warning(f"Phone Number is unexpected size:{public_phone}")
+            logging.warning(f"Phone Number is unexpected size or format:{public_phone}")
             contacts.append(schema.Contact(other=public_phone))
 
     if site_attributes["WEBSITE"]:
