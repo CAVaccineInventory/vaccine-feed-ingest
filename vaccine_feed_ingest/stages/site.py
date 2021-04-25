@@ -83,6 +83,10 @@ def find_executeable(
     if not cmd:
         return None
 
+    # yml files do not need to be executable
+    if cmd.name.endswith(".yml"):
+        return None
+
     if not os.access(cmd, os.X_OK):
         logger.warn("%s in %s is not marked as executable.", cmd.name, str(site_dir))
         return None

@@ -1,9 +1,10 @@
 import logging
 import pathlib
-from typing import Iterable, Iterator, List, Optional
+from typing import Iterator, List, Optional
 
 import jellyfish
 import pydantic
+import rtree
 import shapely.geometry
 import urllib3
 import us
@@ -12,7 +13,7 @@ from vaccine_feed_ingest.schema import schema
 
 from ..utils.match import canonicalize_address, get_full_address
 from . import outputs
-from .common import PipelineStage
+from .common import STAGE_OUTPUT_SUFFIX, PipelineStage
 
 logger = logging.getLogger("load")
 
@@ -26,11 +27,11 @@ def run_load_to_vial(
     site_dir: pathlib.Path,
     output_dir: pathlib.Path,
     import_run_id: str,
-    locations: Optional[List[dict]],
+    locations: Optional[rtree.index.Index],
     enable_match: bool = True,
     enable_create: bool = False,
     dry_run: bool = False,
-) -> bool:
+) -> Optional[List[schema.ImportSourceLocation]]:
     """Load source to vial source locations"""
     normalize_run_dir = outputs.find_latest_run_dir(
         output_dir, site_dir.parent.name, site_dir.name, PipelineStage.NORMALIZE
@@ -40,28 +41,29 @@ def run_load_to_vial(
             "Skipping load for %s because there is no data from normalize stage",
             site_dir.name,
         )
-        return False
+        return None
 
-    if not outputs.data_exists(normalize_run_dir):
+    if not outputs.data_exists(
+        normalize_run_dir, suffix=STAGE_OUTPUT_SUFFIX[PipelineStage.NORMALIZE]
+    ):
         logger.warning("No normalize data available to load for %s.", site_dir.name)
-        return False
+        return None
 
     num_imported_locations = 0
 
-    for filepath in outputs.iter_data_paths(normalize_run_dir):
-        if not filepath.name.endswith(".normalized.ndjson"):
-            continue
-
+    for filepath in outputs.iter_data_paths(
+        normalize_run_dir, suffix=STAGE_OUTPUT_SUFFIX[PipelineStage.NORMALIZE]
+    ):
         import_locations = []
-        with filepath.open("rb") as src_file:
+        with filepath.open() as src_file:
             for line in src_file:
                 try:
                     normalized_location = schema.NormalizedLocation.parse_raw(line)
-                except pydantic.ValidationError:
+                except pydantic.ValidationError as e:
                     logger.warning(
-                        "Skipping source location because it is invalid: %s",
+                        "Skipping source location because it is invalid: %s\n%s",
                         line,
-                        exc_info=True,
+                        str(e),
                     )
                     continue
 
@@ -110,12 +112,12 @@ def run_load_to_vial(
         site_dir.name,
     )
 
-    return bool(num_imported_locations)
+    return import_locations
 
 
 def _find_candidates(
     source: schema.NormalizedLocation,
-    existing: Iterable[dict],
+    existing: rtree.index.Index,
 ) -> Iterator[dict]:
     """Return a slice of existing locations"""
     src_point = shapely.geometry.Point(
@@ -123,14 +125,9 @@ def _find_candidates(
         source.location.latitude,
     )
 
-    for loc in existing:
-        if "geometry" not in loc:
-            continue
+    search_bounds = src_point.buffer(CANDIDATE_DEGREES_DISTANCE).bounds
 
-        loc_point = shapely.geometry.shape(loc["geometry"])
-
-        if loc_point.distance(src_point) < CANDIDATE_DEGREES_DISTANCE:
-            yield loc
+    yield from existing.intersection(search_bounds, objects="raw")
 
 
 def _is_different(source: schema.NormalizedLocation, candidate: dict) -> bool:
@@ -156,9 +153,9 @@ def _is_different(source: schema.NormalizedLocation, candidate: dict) -> bool:
     # Parent organization must be slightly similar to match.
     if source.parent_organization and candidate_props.get("provider"):
         src_org = source.parent_organization.name or source.parent_organization.id
-        cand_org = candidate_props["provider"]
+        cand_org = candidate_props["provider"].get("name")
 
-        if jellyfish.jaro_winkler(src_org, cand_org) < 0.1:
+        if src_org and cand_org and jellyfish.jaro_winkler(src_org, cand_org) < 0.1:
             return True
 
     # Must not have any conflicting links/concordances
@@ -214,7 +211,7 @@ def _is_match(source: schema.NormalizedLocation, candidate: dict) -> bool:
 
 def _match_source_to_existing_locations(
     source: schema.NormalizedLocation,
-    existing: Iterable[dict],
+    existing: rtree.index.Index,
     enable_match: bool = True,
     enable_create: bool = False,
 ) -> Optional[schema.ImportMatchAction]:

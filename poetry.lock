@@ -1755,7 +1755,7 @@ lint = ["flake8", "black", "mypy"]
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.9"
-content-hash = "f1d12cc33cf236e5b98e7520af55e001c8ad8b3f1bb794eaeb69ac5d190c1d47"
+content-hash = "b2e978b29181a45df65803076fa46aeb76a68ea717882f5fd7204e1e0c4f7035"
 
 [metadata.files]
 anyio = [
