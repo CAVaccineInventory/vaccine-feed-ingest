@@ -2,9 +2,9 @@
 
 import contextlib
 import json
-import urllib.parse
 import logging
-from typing import Iterable, Iterator, Tuple
+import urllib.parse
+from typing import Iterable, Iterator, Tuple, Any
 
 import geojson
 import rtree
@@ -12,7 +12,6 @@ import shapely.geometry
 import urllib3
 from vaccine_feed_ingest.schema import schema
 from vaccine_feed_ingest.utils import misc
-
 
 logger = logging.getLogger("vial")
 
@@ -84,7 +83,7 @@ def import_source_locations(
 
 def search_locations(
     vial_http: urllib3.connectionpool.ConnectionPool,
-    **kwds,
+    **kwds: Any,
 ) -> Iterator[dict]:
     """Wrapper around search locations api. Returns geojson."""
     params = {
@@ -114,7 +113,7 @@ def retrieve_existing_locations(
     return search_locations(vial_http, all=1)
 
 
-def _generate_index_row(loc: dict) -> Tuple[str, tuple, dict]:
+def _generate_index_row(loc: dict) -> Tuple[int, tuple, dict]:
     """Generate a rtree index entry from geojson entry"""
     loc_id = hash(loc["properties"]["id"])
     loc_shape = shapely.geometry.shape(loc["geometry"])
