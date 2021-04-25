@@ -3,6 +3,7 @@
 import contextlib
 import json
 import urllib.parse
+import logging
 from typing import Iterable, Iterator, Tuple
 
 import geojson
@@ -11,6 +12,9 @@ import shapely.geometry
 import urllib3
 from vaccine_feed_ingest.schema import schema
 from vaccine_feed_ingest.utils import misc
+
+
+logger = logging.getLogger("vial")
 
 
 @contextlib.contextmanager
@@ -95,7 +99,10 @@ def search_locations(
     )
 
     for line in resp:
-        yield geojson.loads(line)
+        try:
+            yield geojson.loads(line)
+        except json.JSONDecodeError:
+            logger.warning("Invalid json record in search response: %s", line)
 
     resp.release_conn()
 
@@ -130,8 +137,8 @@ def update_existing_locations(
     source_ids: Iterable[str],
 ) -> None:
     """Updates rtree index with locations with source ids"""
-    for chunked_ids in misc.batch(source_ids, 50):
-        updated_locations = search_locations(vial_http, idref=chunked_ids)
+    for chunked_ids in misc.batch(source_ids, 20):
+        updated_locations = search_locations(vial_http, idref=list(chunked_ids))
 
         for loc in updated_locations:
             locations.insert(_generate_index_row(loc))

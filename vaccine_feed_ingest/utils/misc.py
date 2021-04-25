@@ -3,7 +3,7 @@ import itertools
 from typing import Iterable, Iterator
 
 
-def batch(iterable: Iterable, size: int) -> Iterator:
+def batch(iterable: Iterable, size: int) -> Iterator[Iterator]:
     """Batch an interable into chunks of specified size"""
     iterator = iter(iterable)
     while True:
