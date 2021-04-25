@@ -49,8 +49,8 @@ def generate_run_dir(
     return base_output_dir / state / site / STAGE_OUTPUT_NAME[stage] / timestamp
 
 
-def iter_data_paths(data_dir: pathlib.Path) -> Iterator[pathlib.Path]:
-    """Return paths to data files in data_dir.
+def iter_data_paths(data_dir: pathlib.Path, suffix: Optional[str] = None) -> Iterator[pathlib.Path]:
+    """Return paths to data files in data_dir with suffix.
 
     Directories and files that start with `_` or `.` are ignored.
     """
@@ -58,14 +58,18 @@ def iter_data_paths(data_dir: pathlib.Path) -> Iterator[pathlib.Path]:
         if filepath.name.startswith("_") or filepath.name.startswith("."):
             continue
 
+        if suffix and not filepath.name.endswith(suffix):
+            continue
+
         yield filepath
 
 
-def data_exists(data_dir: pathlib.Path) -> bool:
-    """Returns true if there are data files in data_dir.
+def data_exists(data_dir: pathlib.Path, suffix: Optional[str] = None) -> bool:
+    """Returns true if there are data files in data_dir with suffix.
 
-    Directories and files that start with `_` or `.` are ignored."""
-    return bool(next(iter_data_paths(data_dir), None))
+    Directories and files that start with `_` or `.` are ignored.
+    """
+    return bool(next(iter_data_paths(data_dir, suffix=suffix), None))
 
 
 def copy_files(src_dir: pathlib.Path, dst_dir: pathlib.Path) -> None:
