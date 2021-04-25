@@ -143,10 +143,8 @@ def _filter_name(site: dict) -> str:
 
     # this is arbitrary but if the resulting string is less than 5 chars it probably makes sense to use the original
     if len(clean) <= 5:
-        print("clean: " + name)
         return name
 
-    print("clean: " + clean)
     return clean
 
 
