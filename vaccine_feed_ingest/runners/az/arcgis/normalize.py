@@ -220,11 +220,11 @@ def _get_inventory(site: dict) -> Optional[List[schema.Vaccine]]:
 
     return [
         {
-            "Pfizer_BioNTech": schema.Vaccine(vaccine="pfizer"),
-            "Pfizer-BioNTech": schema.Vaccine(vaccine="pfizer"),
-            "Pfizer": schema.Vaccine(vaccine="pfizer"),
+            "Pfizer_BioNTech": schema.Vaccine(vaccine="pfizer_biontech"),
+            "Pfizer-BioNTech": schema.Vaccine(vaccine="pfizer_biontech"),
+            "Pfizer": schema.Vaccine(vaccine="pfizer_biontech"),
             "Moderna": schema.Vaccine(vaccine="moderna"),
-            "J_J": schema.Vaccine(vaccine="janssen"),
+            "J_J": schema.Vaccine(vaccine="johnson_johnson_janssen"),
         }[vaccine.lstrip("\u200b").strip()]
         for vaccine in inventory
     ]

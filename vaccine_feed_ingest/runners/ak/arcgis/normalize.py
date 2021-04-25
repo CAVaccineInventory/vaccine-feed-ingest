@@ -63,10 +63,10 @@ def _get_inventory(site: dict) -> Optional[List[schema.Vaccine]]:
     vaccines_field = site["attributes"]["flu_vaccinations"].lower().split(",")
 
     potentials = {
-        "pfizer": schema.Vaccine(vaccine="pfizer"),
+        "pfizer": schema.Vaccine(vaccine="pfizer_biontech"),
         "moderna": schema.Vaccine(vaccine="moderna"),
-        "janssen": schema.Vaccine(vaccine="janssen"),
-        "jjj": schema.Vaccine(vaccine="janssen"),
+        "janssen": schema.Vaccine(vaccine="johnson_johnson_janssen"),
+        "jjj": schema.Vaccine(vaccine="johnson_johnson_janssen"),
     }
 
     inventory = []
