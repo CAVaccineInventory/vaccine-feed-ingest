@@ -4,7 +4,7 @@ import contextlib
 import json
 import logging
 import urllib.parse
-from typing import Iterable, Iterator, Tuple, Any
+from typing import Any, Iterable, Iterator, Tuple
 
 import geojson
 import rtree
