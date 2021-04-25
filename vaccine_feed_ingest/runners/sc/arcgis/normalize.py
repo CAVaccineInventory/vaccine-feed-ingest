@@ -101,17 +101,6 @@ def _get_contacts(site: dict) -> Optional[List[schema.Contact]]:
 
 # Using "Appointments" field though unclear whether this should be interpreted as
 # "An appointment is required" or "An appointment is available"
-def _get_availability(site: dict) -> schema.Availability:
-    if site["attributes"]["Appointments"] == "Yes":
-        return schema.Availability(appointments=True)
-    if site["attributes"]["Appointments"] == "No":
-        return schema.Availability(appointments=False)
-    else:
-        return None
-
-
-# Using "Appointments" field though unclear whether this should be interpreted as
-# "An appointment is required" or "An appointment is available"
 def _get_activated(site: dict) -> bool:
     if site["attributes"]["Activated1"] == "No":
         return False
@@ -163,7 +152,10 @@ def _get_normalized_location(site: dict, timestamp: str) -> schema.NormalizedLoc
         languages=None,
         opening_dates=None,
         opening_hours=None,
-        availability=_get_availability(site),
+        # There is an "Appointments" field in the data though it is unclear whether this should be interpreted as
+        # "An appointment is required" or "An appointment is available". Leaving blank as this information
+        # will likely need phone bankers and/or web team to find availability
+        availability=None,
         inventory=_get_inventory(site),
         access=None,
         parent_organization=None,
