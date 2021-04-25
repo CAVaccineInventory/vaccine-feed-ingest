@@ -13,7 +13,7 @@ from vaccine_feed_ingest.schema import schema
 
 from ..utils.match import canonicalize_address, get_full_address
 from . import outputs
-from .common import PipelineStage, STAGE_OUTPUT_SUFFIX
+from .common import STAGE_OUTPUT_SUFFIX, PipelineStage
 
 logger = logging.getLogger("load")
 

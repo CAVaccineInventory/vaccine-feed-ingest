@@ -10,7 +10,7 @@ import pydantic
 from vaccine_feed_ingest.schema import schema
 
 from . import outputs, site
-from .common import RUNNERS_DIR, PipelineStage, STAGE_OUTPUT_SUFFIX
+from .common import RUNNERS_DIR, STAGE_OUTPUT_SUFFIX, PipelineStage
 
 logger = logging.getLogger("ingest")
 
