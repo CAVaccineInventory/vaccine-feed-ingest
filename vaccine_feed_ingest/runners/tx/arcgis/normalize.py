@@ -128,6 +128,7 @@ def _get_address(site: dict) -> Optional[schema.Address]:
                     city_ends = index
             except IndexError as ie:
                 logger.error("Unable to parse address: %s", ie)
+                return None
 
         return schema.Address(
             street1=" ".join(address_field[0:city_starts]),
@@ -151,6 +152,7 @@ def _get_address(site: dict) -> Optional[schema.Address]:
 
 
 def _get_normalized_location(site: dict, timestamp: str) -> schema.NormalizedLocation:
+    # Sometimes geometry is not included in the site data
     if site.get("geometry", None):
         location = schema.LatLng(
             latitude=site["geometry"]["y"],
