@@ -53,16 +53,19 @@ def _get_id(site: dict) -> str:
 # This currently tosses any address if it doesn't have a street address or zip because
 # the schema doesn't allow optionals for those
 def _get_address(site: dict) -> Optional[schema.Address]:
-    if parsed_site["attributes"]["SiteAddress"] is None or parsed_site["attributes"]["SiteZip"] is None:
+    if (
+        parsed_site["attributes"]["SiteAddress"] is None
+        or parsed_site["attributes"]["SiteZip"] is None
+    ):
         return None
 
     return schema.Address(
-            street1=site["attributes"]["SiteAddress"],
-            street2=site["attributes"]["SiteAddressDetail"],
-            city=site["attributes"]["SiteCity"],
-            state="SC",
-            zip=site["attributes"]["SiteZip"],
-        )
+        street1=site["attributes"]["SiteAddress"],
+        street2=site["attributes"]["SiteAddressDetail"],
+        city=site["attributes"]["SiteCity"],
+        state="SC",
+        zip=site["attributes"]["SiteZip"],
+    )
 
 
 def _get_contacts(site: dict) -> Optional[List[schema.Contact]]:
@@ -96,7 +99,7 @@ def _get_contacts(site: dict) -> Optional[List[schema.Contact]]:
     return None
 
 
-# Using "Appointments" field though unclear whether this should be interpreted as 
+# Using "Appointments" field though unclear whether this should be interpreted as
 # "An appointment is required" or "An appointment is available"
 def _get_availability(site: dict) -> schema.Availability:
     if site["attributes"]["Appointments"] == "Yes":
@@ -107,7 +110,7 @@ def _get_availability(site: dict) -> schema.Availability:
         return None
 
 
-# Using "Appointments" field though unclear whether this should be interpreted as 
+# Using "Appointments" field though unclear whether this should be interpreted as
 # "An appointment is required" or "An appointment is available"
 def _get_activated(site: dict) -> bool:
     if site["attributes"]["Activated1"] == "No":
@@ -118,7 +121,10 @@ def _get_activated(site: dict) -> bool:
 
 def _get_inventory(site: dict) -> Optional[List[schema.Vaccine]]:
     if site["attributes"]["V_Manufacturer"]:
-        vaccines_field = map(lambda str: str.strip(), site["attributes"]["V_Manufacturer"].lower().split(","))
+        vaccines_field = map(
+            lambda str: str.strip(),
+            site["attributes"]["V_Manufacturer"].lower().split(","),
+        )
 
         potentials = {
             "pzr": schema.Vaccine(vaccine="pfizer"),
@@ -167,7 +173,7 @@ def _get_normalized_location(site: dict, timestamp: str) -> schema.NormalizedLoc
         source=schema.Source(
             source="arcgis",
             id=site["attributes"]["GlobalID"],
-            fetched_from_uri="https://services1.arcgis.com/WzFsmainVTuD5KML/ArcGIS/rest/services/COVID19_Vaccine_Site_Survey_API/FeatureServer/0",  # noqa: E501
+            fetched_from_uri="https://opendata.arcgis.com/datasets/bbd8924909264baaa1a5a1564b393063_0.geojson",  # noqa: E501
             fetched_at=timestamp,
             data=site,
         ),
