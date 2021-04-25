@@ -93,7 +93,7 @@ def _get_normalized_location(site: dict, timestamp: str) -> schema.NormalizedLoc
         source=schema.Source(
             source="arcgis",
             id=site["attributes"]["Clinic_ID"],
-            fetched_from_uri="https://services1.arcgis.com/Nifc7wlHaBPig3Q3/arcgis/rest/services/Vaccine_Provider_Information/FeatureServer/0",  # noqa: E501
+            fetched_from_uri="https://padoh.maps.arcgis.com/apps/webappviewer/index.html?id=e6f78224c6fe4313a1f70b56f553c357",  # noqa: E501
             fetched_at=timestamp,
             published_at=None,
             data=site,
