@@ -30,3 +30,10 @@ STAGE_OUTPUT_NAME = {
     PipelineStage.PARSE: "parsed",
     PipelineStage.NORMALIZE: "normalized",
 }
+
+
+# Directory name for where to store data for each stage
+STAGE_OUTPUT_SUFFIX = {
+    PipelineStage.PARSE: ".parsed.ndjson",
+    PipelineStage.NORMALIZE: ".normalized.ndjson",
+}
