@@ -1,6 +1,6 @@
 import logging
 import pathlib
-from typing import Iterator, Optional
+from typing import Iterator, List, Optional
 
 import jellyfish
 import pydantic
@@ -31,7 +31,7 @@ def run_load_to_vial(
     enable_match: bool = True,
     enable_create: bool = False,
     dry_run: bool = False,
-) -> bool:
+) -> Optional[List[schema.ImportSourceLocation]]:
     """Load source to vial source locations"""
     normalize_run_dir = outputs.find_latest_run_dir(
         output_dir, site_dir.parent.name, site_dir.name, PipelineStage.NORMALIZE
@@ -41,11 +41,11 @@ def run_load_to_vial(
             "Skipping load for %s because there is no data from normalize stage",
             site_dir.name,
         )
-        return False
+        return None
 
     if not outputs.data_exists(normalize_run_dir):
         logger.warning("No normalize data available to load for %s.", site_dir.name)
-        return False
+        return None
 
     num_imported_locations = 0
 
@@ -111,7 +111,7 @@ def run_load_to_vial(
         site_dir.name,
     )
 
-    return bool(num_imported_locations)
+    return import_locations
 
 
 def _find_candidates(
@@ -126,9 +126,7 @@ def _find_candidates(
 
     search_bounds = src_point.buffer(CANDIDATE_DEGREES_DISTANCE).bounds
 
-    result = existing.intersection(search_bounds, objects=True)
-    for row in result:
-        yield row.object
+    yield from existing.intersection(search_bounds, objects="raw")
 
 
 def _is_different(source: schema.NormalizedLocation, candidate: dict) -> bool:
