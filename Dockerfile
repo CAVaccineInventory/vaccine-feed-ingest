@@ -4,7 +4,7 @@ LABEL name=vaccine-feed-ingest
 RUN useradd -m vaccine && mkdir vaccine-feed-ingest && chown vaccine:vaccine vaccine-feed-ingest
 USER vaccine
 
-RUN git clone https://github.com/CAVaccineInventory/vaccine-feed-ingest.git
+COPY ./ /vaccine-feed-ingest/
 
 WORKDIR /vaccine-feed-ingest
 
