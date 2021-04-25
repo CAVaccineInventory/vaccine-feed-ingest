@@ -8,6 +8,7 @@ import re
 import sys
 
 from vaccine_feed_ingest.schema import schema  # noqa: E402
+from typing import List
 
 
 def _get_source(site: dict, timestamp: str) -> schema.Source:
@@ -85,6 +86,69 @@ def _get_contact(site: dict) -> schema.Contact:
     return [schema.Contact(contact_type="general", phone=phone_num)]
 
 
+def _get_inventory(site: dict) -> List[schema.Vaccine]:
+    name = site["Title"]
+
+    inventory = []
+
+    pfizer = re.search("pfizer", name, re.IGNORECASE)
+    moderna = re.search("moderna", name, re.IGNORECASE)
+    johnson = re.search("janssen", name, re.IGNORECASE) or re.search(
+        "johnson", name, re.IGNORECASE
+    )
+        
+    if pfizer:
+        inventory.append(schema.Vaccine(vaccine="pfizer_biontech"))
+    elif moderna:
+        inventory.append(schema.Vaccine(vaccine="moderna"))
+    elif johnson:
+        inventory.append(schema.Vaccine(vaccine="johnson_johnson_janssen"))
+
+    if len(inventory) == 0:
+        return None
+
+    return inventory
+
+def _filter_name(site: dict) -> str:
+    name = site["Title"]
+
+    # various terms that are being used before the location
+    search_for = ["dose", "moderna", "pfizer", "johnson and johnson", "janssen", "only"]
+    largest_end_val = 0
+    largest_end_term = "dose"
+
+    for term in search_for:
+        reg = re.compile("^.*" + term, flags=re.I)
+        search = reg.search(name)
+
+        if search is None:
+            continue
+
+        num = search.end()
+        if num > largest_end_val:
+            largest_end_val = num
+            largest_end_term = term
+
+    if largest_end_val is None:
+        return name
+
+    replaced = re.sub(f"^.*{largest_end_term}", "", name, flags=re.IGNORECASE)
+    clean = re.sub(
+        r"^([a-zA-Z\d:]{0,1}[^a-zA-Z\d:]+?)([a-z,A-Z]{2})",
+        "\\2",
+        replaced,
+        flags=re.IGNORECASE,
+    )
+
+    # this is arbitrary but if the resulting string is less than 5 chars it probably makes sense to use the original
+    if len(clean) <= 5:
+        print("clean: " + name)
+        return name
+
+    print("clean: " + clean)
+    return clean
+
+
 def normalize(site: dict, timestamp: str) -> str:
     """
     sample:
@@ -92,9 +156,10 @@ def normalize(site: dict, timestamp: str) -> str:
     """
     normalized = schema.NormalizedLocation(
         id=f"ok_vaccinate_gov:{site['Id']}",
-        name=site["Title"],
+        name=_filter_name(site),
         address=_get_address(site),
         location={"latitude": site["Latitude"], "longitude": site["Longitude"]},
+        inventory=_get_inventory(site),
         contact=_get_contact(site),
         source=_get_source(site, timestamp),
     ).dict()
