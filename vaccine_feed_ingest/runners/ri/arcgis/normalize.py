@@ -51,7 +51,9 @@ def _get_inventory(site: dict) -> Optional[List[schema.Vaccine]]:
         "moderna covid-19 vaccine": schema.Vaccine(vaccine="moderna"),
         "janssen": schema.Vaccine(vaccine="janssen"),
         "jjj": schema.Vaccine(vaccine="janssen"),
-        "janssen (johnson & johnson) covid-19 vaccine": schema.Vaccine(vaccine="janssen"),
+        "janssen (johnson & johnson) covid-19 vaccine": schema.Vaccine(
+            vaccine="janssen"
+        ),
     }
 
     inventory = []
@@ -72,13 +74,17 @@ def _get_inventory(site: dict) -> Optional[List[schema.Vaccine]]:
 def _get_contacts(site: dict) -> Optional[List[schema.Contact]]:
     contacts = []
     if site["attributes"]["USER_Scheduling_by_Phone"]:
-        sourcePhone = re.sub("[^0-9]", "", site["attributes"]["USER_Scheduling_by_Phone"])
+        sourcePhone = re.sub(
+            "[^0-9]", "", site["attributes"]["USER_Scheduling_by_Phone"]
+        )
         if len(sourcePhone) == 10:
             phone = f"({sourcePhone[0:3]}) {sourcePhone[3:6]}-{sourcePhone[6:]}"
             contacts.append(schema.Contact(phone=phone))
 
     if site["attributes"]["USER_Link_to_Sign_Up"]:
-        contacts.append(schema.Contact(website=site["attributes"]["USER_Link_to_Sign_Up"]))
+        contacts.append(
+            schema.Contact(website=site["attributes"]["USER_Link_to_Sign_Up"])
+        )
 
     if len(contacts) > 0:
         return contacts
