@@ -1,10 +1,10 @@
 #!/usr/bin/env python
 
-import bs4
 import json
 import pathlib
 import sys
 
+import bs4
 
 output_dir = pathlib.Path(sys.argv[1])
 input_dir = pathlib.Path(sys.argv[2])
@@ -15,7 +15,7 @@ for in_filepath in html_filepaths:
     filename = in_filepath.name.split(".", maxsplit=1)[0]
     out_filepath = output_dir / f"{filename}.parsed.ndjson"
     with in_filepath.open("r") as fin:
-        soup = bs4.BeautifulSoup(fin, 'html.parser')
+        soup = bs4.BeautifulSoup(fin, "html.parser")
 
     sites = []
     for html_site in soup.find_all("div", class_="text-gray-800"):
@@ -42,7 +42,7 @@ for in_filepath in html_filepaths:
                         text = "".join(d.stripped_strings)
                         value_bits.append(text)
                 json_site[label] = "".join(value_bits)
-        
+
         sites.append(json_site)
 
     with out_filepath.open("w") as fout:
