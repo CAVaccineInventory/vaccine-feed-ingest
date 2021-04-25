@@ -6,9 +6,9 @@ import json
 import pathlib
 import re
 import sys
+from typing import List
 
 from vaccine_feed_ingest.schema import schema  # noqa: E402
-from typing import List
 
 
 def _get_source(site: dict, timestamp: str) -> schema.Source:
@@ -96,7 +96,7 @@ def _get_inventory(site: dict) -> List[schema.Vaccine]:
     johnson = re.search("janssen", name, re.IGNORECASE) or re.search(
         "johnson", name, re.IGNORECASE
     )
-        
+
     if pfizer:
         inventory.append(schema.Vaccine(vaccine="pfizer_biontech"))
     elif moderna:
@@ -108,6 +108,7 @@ def _get_inventory(site: dict) -> List[schema.Vaccine]:
         return None
 
     return inventory
+
 
 def _filter_name(site: dict) -> str:
     name = site["Title"]
