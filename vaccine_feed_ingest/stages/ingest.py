@@ -48,6 +48,13 @@ def run_fetch(
         fetch_output_dir = tmp_dir / "output"
         fetch_output_dir.mkdir(parents=True, exist_ok=True)
 
+        logger.info(
+            "Fetching %s/%s and saving fetched output to %s",
+            site_dir.parent.name,
+            site_dir.name,
+            fetch_output_dir,
+        )
+
         subprocess.run(
             [str(fetch_path), str(fetch_output_dir), str(yml_path)], check=True
         )
@@ -66,6 +73,8 @@ def run_fetch(
                 PipelineStage.FETCH,
                 timestamp,
             )
+
+            logger.info("Copying files from %s to %s", fetch_output_dir, fetch_run_dir)
 
             outputs.copy_files(fetch_output_dir, fetch_run_dir)
 
@@ -125,6 +134,13 @@ def run_parse(
 
         outputs.copy_files(fetch_run_dir, parse_input_dir)
 
+        logger.info(
+            "Parsing %s/%s and saving parsed output to %s",
+            site_dir.parent.name,
+            site_dir.name,
+            parse_output_dir,
+        )
+
         subprocess.run(
             [
                 str(parse_path),
@@ -163,6 +179,8 @@ def run_parse(
                 PipelineStage.PARSE,
                 timestamp,
             )
+
+            logger.info("Copying files from %s to %s", parse_output_dir, parse_run_dir)
 
             outputs.copy_files(parse_output_dir, parse_run_dir)
 
@@ -214,6 +232,13 @@ def run_normalize(
 
         outputs.copy_files(parse_run_dir, normalize_input_dir)
 
+        logger.info(
+            "Normalizing %s/%s and saving normalized output to %s",
+            site_dir.parent.name,
+            site_dir.name,
+            normalize_output_dir,
+        )
+
         subprocess.run(
             [str(normalize_path), normalize_output_dir, normalize_input_dir],
             check=True,
@@ -246,6 +271,10 @@ def run_normalize(
                 site_dir.name,
                 PipelineStage.NORMALIZE,
                 timestamp,
+            )
+
+            logger.info(
+                "Copying files from %s to %s", normalize_output_dir, normalize_run_dir
             )
 
             outputs.copy_files(normalize_output_dir, normalize_run_dir)
