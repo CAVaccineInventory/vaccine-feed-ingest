@@ -16,12 +16,12 @@ def parse_address(address_el):
     text = address_el.text
     address_parts = [s for s in address_el.stripped_strings]
     if len(address_parts) != 2:
-        logger.warn(f"failed to parse address: {text}")
+        logger.error(f"failed to parse address: {text}")
         return None
     pat = re.compile(r"\s*(?P<city>.*?)\s*,?\s*(?P<state>[A-Z]{2})\s+(?P<zip>[0-9]+)")
     match = pat.search(address_parts[1])
     if match is None:
-        logger.warn(f"failed to parse address: {text}")
+        logger.error(f"failed to parse address: {text}")
         return None
     return {
         "street1": address_parts[0],
@@ -38,9 +38,21 @@ def sanitize_lat_long(s: str) -> int:
 
 def parse_county(county_el):
     """Parse a location div under #VaccineLocations"""
-    name = county_el.select("button h5")[0].text
+    data_id = county_el.attrs["data-id"]
+
+    name_els = county_el.select("h5")
+    name = None
+    if len(name_els) == 0:
+        logger.error("No 'h5' tag found for county with data-id: {data_id}")
+    else:
+        if len(name_els) > 1:
+            logger.warn(
+                "Multiple 'h5' tags found for county with data-id: {data_id}, using the first."
+            )
+        name = name_els[0].text
+
     result = {
-        "id": county_el.attrs["data-id"],
+        "id": data_id,
         "name": name,
         "county": county_el.attrs["data-county"],
         "lat": sanitize_lat_long(county_el.attrs["data-lat"]),
@@ -55,16 +67,27 @@ def parse_county(county_el):
         # tel:###-###-####
         result["register_phone"] = action_phone_el.attrs["href"]
 
-    address_el = county_el.select("address")[0]
-    if address_el is not None:
-        result["address"] = parse_address(address_el)
+    address_els = county_el.select("address")
+    if len(address_els) == 0:
+        logger.error("No 'address' tag found for {data_id} {name}")
     else:
-        logger.warn(f"No address found for {name}")
+        if len(address_els) > 1:
+            logger.warn(
+                "Multiple 'address' tags found for {data_id} {name}, using the first."
+            )
+        address_el = address_els[0]
+        result["address"] = parse_address(address_el)
+
     return result
 
 
 def parse_locations(document):
-    locations_el = document.select("#VaccineLocations")[0]
+    locations_els = document.select("#VaccineLocations")
+    if len(locations_els) == 0:
+        raise Exception("No tag found with id '#VaccineLocations'")
+    elif len(locations_els) > 1:
+        logger.warn("Multiple tags found with id '#VaccineLocations', using the first")
+    locations_el = locations_els[0]
     locations = [
         parse_county(county_el)
         for county_el in locations_el.find_all(attrs={"data-county": True})
