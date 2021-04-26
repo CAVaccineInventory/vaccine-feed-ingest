@@ -83,11 +83,11 @@ def main(argv=None):
         doc = BeautifulSoup(f, "html.parser")
         locations = parse_locations(doc)
 
-    out_filepath = output_dir / "govstatus.parsed.ndjson"
-    with out_filepath.open("w") as f_out:
-        for row in locations:
-            json.dump(row, f_out)
-            f_out.write("\n")
+        out_filepath = output_dir / "govstatus.parsed.ndjson"
+        with out_filepath.open("w") as f_out:
+            for row in locations:
+                json.dump(row, f_out)
+                f_out.write("\n")
 
 
 if __name__ == "__main__":
