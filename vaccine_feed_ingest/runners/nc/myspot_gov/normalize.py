@@ -4,7 +4,6 @@ import datetime
 import json
 import logging
 import pathlib
-import re
 import sys
 
 from vaccine_feed_ingest.schema import schema  # noqa: E402
