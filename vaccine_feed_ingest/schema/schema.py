@@ -108,12 +108,12 @@ class Access(BaseModel):
     {
         "walk": bool,
         "drive": bool,
-        "wheelchair": bool,
+        "wheelchair": str,
     }
     """
 
-    walk: Optional[str]
-    drive: Optional[str]
+    walk: Optional[bool]
+    drive: Optional[bool]
     wheelchair: Optional[str]
 
 
