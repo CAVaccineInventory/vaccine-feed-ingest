@@ -126,7 +126,7 @@ def normalize(site: dict, timestamp: str) -> str:
         location=_get_location(site),
         contact=_get_contacts(site),
         opening_dates=_get_opening_dates(site),
-        invetory=_get_inventories(site),
+        inventory=_get_inventories(site),
         parent_organization=_get_organization(site),
         notes=_get_notes(site),
         source=_get_source(site, timestamp),
