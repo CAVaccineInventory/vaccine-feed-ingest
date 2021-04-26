@@ -7,6 +7,7 @@ import subprocess
 import tempfile
 
 import pydantic
+
 from vaccine_feed_ingest.schema import schema
 
 from . import outputs, site

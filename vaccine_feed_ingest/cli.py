@@ -12,6 +12,7 @@ from typing import Callable, Optional, Sequence
 import click
 import dotenv
 import pathy
+
 from vaccine_feed_ingest import vial
 from vaccine_feed_ingest.stages import common, ingest, load, site
 

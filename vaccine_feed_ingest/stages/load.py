@@ -8,6 +8,7 @@ import rtree
 import shapely.geometry
 import urllib3
 import us
+
 from vaccine_feed_ingest import vial
 from vaccine_feed_ingest.schema import schema
 
