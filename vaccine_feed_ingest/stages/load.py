@@ -10,10 +10,10 @@ import urllib3
 import us
 
 from .. import vial
+from ..schema import schema
 from ..utils.match import canonicalize_address, get_full_address
 from . import outputs
 from .common import STAGE_OUTPUT_SUFFIX, PipelineStage
-from .schema import schema
 
 logger = logging.getLogger("load")
 
