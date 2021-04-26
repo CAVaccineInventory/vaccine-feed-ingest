@@ -27,8 +27,11 @@ for filename in input_filenames:
         longname = str(cells[0].renderContents())[2:-1]
         site_name = longname.split(" <br/> ")[0]
         address_tokens = re.search("(.*), (.*)", longname.split(" <br/> ")[1])
-        site_address = address_tokens.group(1)
-        site_city = address_tokens.group(2)
+
+        site_address, site_city = None, None
+        if address_tokens is not None:
+            site_address = address_tokens.group(1)
+            site_city = address_tokens.group(2)
 
         site = {
             "name": site_name,
