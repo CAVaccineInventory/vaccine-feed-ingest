@@ -82,8 +82,9 @@ def available_sites(state: Optional[str]) -> None:
     """Print list of available sites, optionally filtered by state"""
 
     for site_dir in site.get_site_dirs_for_state(state):
-        has_fetch = bool(site.find_executeable(site_dir, common.PipelineStage.FETCH))
-        has_parse = bool(site.find_executeable(site_dir, common.PipelineStage.PARSE))
+        is_arcgis_site = site_dir.name.endswith('arcgis')
+        has_fetch = _compute_has_fetch(site_dir, is_arcgis_site)
+        has_parse = _compute_has_parse(site_dir, is_arcgis_site)
         has_normalize = bool(
             site.find_executeable(site_dir, common.PipelineStage.NORMALIZE)
         )
@@ -94,6 +95,20 @@ def available_sites(state: Optional[str]) -> None:
             "parse" if has_parse else "no-parse",
             "normalize" if has_normalize else "no-normalize",
         )
+
+
+def _compute_has_fetch(site_dir: str, is_arcgis_site: bool) -> bool:
+    if is_arcgis_site:
+        return bool(site.find_yml(site_dir, common.PipelineStage.FETCH))
+    else:
+        return bool(site.find_executeable(site_dir, common.PipelineStage.FETCH))
+
+
+def _compute_has_parse(site_dir: str, is_arcgis_site: bool) -> bool:
+    if is_arcgis_site:
+        return bool(site.find_yml(site_dir, common.PipelineStage.PARSE))
+    else:
+        return bool(site.find_executeable(site_dir, common.PipelineStage.PARSE))
 
 
 @cli.command()
