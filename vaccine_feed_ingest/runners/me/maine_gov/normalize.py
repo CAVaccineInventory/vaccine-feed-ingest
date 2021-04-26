@@ -6,7 +6,6 @@ import logging
 import pathlib
 import re
 import sys
-from typing import List, Optional
 
 from vaccine_feed_ingest.schema import schema  # noqa: E402
 
