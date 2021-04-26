@@ -31,9 +31,9 @@ def parse_address(address_el):
     }
 
 
-def sanitize_lat_long(s: str) -> int:
+def sanitize_lat_long(s: str) -> float:
     """Clean up an input to only keep numeric characters and minus (`-`) symbol"""
-    return int(re.sub(r"[^0-9-]", "", s))
+    return float(re.sub(r"[^0-9-\.,\+]", "", s))
 
 
 def parse_county(county_el):
