@@ -3,6 +3,7 @@
 import html.parser
 import json
 import pathlib
+import re
 import sys
 
 
@@ -77,6 +78,33 @@ def extract_locator_data(json_data):
     return result
 
 
+def generate_id(name):
+    """Generate a stable ID for a location from the name.
+
+    We don't want duplicate entries for the same location. If the
+    same location is listed multiple times with minor differences
+    in the name (extra space, or age info in parentheses), we want
+    to produce a single, consistent ID.
+
+    """
+    # Strip off parenthetical age info in the name, like "(16+)".
+    id = re.sub(r"\([0-9+]+\)", "", name)
+
+    # Strip whitespace from ends.
+    id = id.strip()
+
+    # Lower-case.
+    id = id.lower()
+
+    # Only keep alphanumeric characters, hyphens, and spaces.
+    id = re.sub(r"[^a-z0-9 -]", "", id)
+
+    # Replace interior whitespace with hyphens
+    id = re.sub(r"\s+", "-", id)
+
+    return id
+
+
 def main(argv=None):
     if argv is None:
         argv = sys.argv[1:]
@@ -98,6 +126,7 @@ def main(argv=None):
         with open(output_file, "w") as out_fh:
             parsed = parser.result
             for k in sorted(parsed.keys()):
+                parsed[k]["id"] = generate_id(parsed[k]["title"])
                 line = json.dumps(parsed[k])
                 out_fh.write(line)
                 out_fh.write("\n")

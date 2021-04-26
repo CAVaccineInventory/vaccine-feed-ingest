@@ -11,7 +11,7 @@ from vaccine_feed_ingest.utils.normalize import provider_id_from_name
 
 
 def _get_id(site: dict) -> str:
-    return f"immunizenevada_org:{site['title']}"
+    return f"immunizenevada_org:{site['id']}"
 
 
 def _get_address(address: str) -> schema.Address:
