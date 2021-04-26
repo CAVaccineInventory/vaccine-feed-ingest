@@ -53,6 +53,14 @@ def _dry_run_option() -> Callable:
     return click.option("--dry-run/--no-dry-run", type=bool, default=False)
 
 
+def _validate_option() -> Callable:
+    return click.option(
+        "--validate/--no-validate",
+        type=bool,
+        default=lambda: os.environ.get("ENABLE_VALIDATE", "true").lower() == "true",
+    )
+
+
 def _state_option() -> Callable:
     return click.option("--state", "state", type=str)
 
@@ -109,11 +117,13 @@ def fetch(
 @cli.command()
 @_state_option()
 @_output_dir_option()
+@_validate_option()
 @_dry_run_option()
 @_sites_argument()
 def parse(
     state: Optional[str],
     output_dir: pathlib.Path,
+    validate: bool,
     dry_run: bool,
     sites: Optional[Sequence[str]],
 ) -> None:
@@ -122,17 +132,19 @@ def parse(
     site_dirs = site.get_site_dirs(state, sites)
 
     for site_dir in site_dirs:
-        ingest.run_parse(site_dir, output_dir, timestamp, dry_run)
+        ingest.run_parse(site_dir, output_dir, timestamp, validate, dry_run)
 
 
 @cli.command()
 @_state_option()
 @_output_dir_option()
+@_validate_option()
 @_dry_run_option()
 @_sites_argument()
 def normalize(
     state: Optional[str],
     output_dir: pathlib.Path,
+    validate: bool,
     dry_run: bool,
     sites: Optional[Sequence[str]],
 ) -> None:
@@ -141,15 +153,19 @@ def normalize(
     site_dirs = site.get_site_dirs(state, sites)
 
     for site_dir in site_dirs:
-        ingest.run_normalize(site_dir, output_dir, timestamp, dry_run)
+        ingest.run_normalize(site_dir, output_dir, timestamp, validate, dry_run)
 
 
 @cli.command()
 @_state_option()
+@_validate_option()
 @_output_dir_option()
 @_sites_argument()
 def all_stages(
-    state: Optional[str], output_dir: pathlib.Path, sites: Optional[Sequence[str]]
+    state: Optional[str],
+    validate: bool,
+    output_dir: pathlib.Path,
+    sites: Optional[Sequence[str]],
 ) -> None:
     """Run all stages in succession for specified sites."""
     timestamp = _generate_run_timestamp()
@@ -161,12 +177,12 @@ def all_stages(
         if not fetch_success:
             continue
 
-        parse_success = ingest.run_parse(site_dir, output_dir, timestamp)
+        parse_success = ingest.run_parse(site_dir, output_dir, timestamp, validate)
 
         if not parse_success:
             continue
 
-        ingest.run_normalize(site_dir, output_dir, timestamp)
+        ingest.run_normalize(site_dir, output_dir, timestamp, validate)
 
 
 @cli.command()
@@ -216,15 +232,11 @@ def load_to_vial(
     with vial.vial_client(vial_server, vial_apikey) as vial_http:
         import_run_id = vial.start_import_run(vial_http)
 
-        refresh_locations = True
-        locations = None
+        if enable_match or enable_create:
+            locations = vial.retrieve_existing_locations_as_index(vial_http)
 
         for site_dir in site_dirs:
-            if (enable_match or enable_create) and refresh_locations:
-                locations = vial.retrieve_existing_locations_as_index(vial_http)
-                refresh_locations = False
-
-            success = load.run_load_to_vial(
+            imported_locations = load.run_load_to_vial(
                 vial_http,
                 site_dir,
                 output_dir,
@@ -236,8 +248,15 @@ def load_to_vial(
             )
 
             # If data was loaded then refresh existing locations
-            if success:
-                refresh_locations = True
+            if locations is not None and imported_locations:
+                source_ids = [
+                    loc.source_uid
+                    for loc in imported_locations
+                    if loc.match and loc.match.action == "new"
+                ]
+
+                if source_ids:
+                    vial.update_existing_locations(vial_http, locations, source_ids)
 
 
 @cli.command()

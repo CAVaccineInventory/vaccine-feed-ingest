@@ -93,6 +93,9 @@ elif config["parser"] == "json_list":
         with in_filepath.open() as fin:
             json_list = json.load(fin)
 
+        for path_element in config.get("path", []):
+            json_list = json_list[path_element]
+
         out_filepath = _get_out_filepath(in_filepath, OUTPUT_DIR)
         _log_activity(config["state"], config["site"], in_filepath, out_filepath)
 
