@@ -72,7 +72,7 @@ def _get_links(site: dict) -> Optional[List[schema.Link]]:
     return links
 
 
-def _get_normalized_location(site: dict, timestamp: str) -> schema.NormalizedLocation:
+def normalize(site: dict, timestamp: str) -> schema.NormalizedLocation:
     return schema.NormalizedLocation(
         id=_get_id(site),
         name=site["title"],
@@ -118,11 +118,8 @@ def main(argv=None):
         with input_file.open() as in_fh:
             with output_file.open("w") as out_fh:
                 for site_json in in_fh:
-                    parsed_site = json.loads(site_json)
-                    normalized_site = _get_normalized_location(
-                        parsed_site,
-                        parsed_at_timestamp,
-                    )
+                    site = json.loads(site_json)
+                    normalized_site = normalize(site, parsed_at_timestamp)
                     line = normalized_site.json()
                     out_fh.write(line)
                     out_fh.write("\n")
