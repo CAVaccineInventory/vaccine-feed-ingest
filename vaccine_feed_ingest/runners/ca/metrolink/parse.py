@@ -7,8 +7,6 @@ import os
 
 from bs4 import BeautifulSoup
 
-import re
-
 input_dir = pathlib.Path(sys.argv[2])
 output_dir = pathlib.Path(sys.argv[1])
 
@@ -33,8 +31,7 @@ for filename in input_filenames:
         }
         sites.append(site)
     
-    print(os.path.basename(filename))
     with (output_dir / (os.path.basename(filename) + '.parsed.ndjson')).open('w') as fout:
         for site in sites:
-            fout.write(str(site))
+            json.dump(site, fout)
             fout.write('\n')
