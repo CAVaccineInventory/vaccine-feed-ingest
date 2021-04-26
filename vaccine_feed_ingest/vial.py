@@ -10,7 +10,6 @@ import geojson
 import rtree
 import shapely.geometry
 import urllib3
-
 from vaccine_feed_ingest.schema import schema
 from vaccine_feed_ingest.utils import misc
 
