@@ -96,6 +96,15 @@ def _get_opening_hours(site: dict) -> List[schema.OpenHour]:
     ]
 
 
+def _get_contact(site: dict) -> List[schema.Contact]:
+    return [
+        schema.Contact(
+            contact_type="booking",
+            website=f"https://prepmod.doh.wa.gov/client/registration?clinic_id={site['clinic_id']}",
+        )
+    ]
+
+
 def normalize(site: dict, timestamp: str) -> str:
     """
     sample:
@@ -106,6 +115,7 @@ def normalize(site: dict, timestamp: str) -> str:
         name=site["name"],
         address=_get_address(site),
         availability=schema.Availability(appointments=True),
+        contact=_get_contact(site),
         inventory=_get_inventory(site),
         opening_dates=_get_opening_dates(site),
         opening_hours=_get_opening_hours(site),
