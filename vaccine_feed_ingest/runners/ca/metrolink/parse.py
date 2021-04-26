@@ -3,11 +3,10 @@
 import json
 import os
 import pathlib
+import re
 import sys
 
 from bs4 import BeautifulSoup
-
-import re
 
 input_dir = pathlib.Path(sys.argv[2])
 output_dir = pathlib.Path(sys.argv[1])
@@ -24,13 +23,13 @@ for filename in input_filenames:
     table = soup.find(id="vaxLocationsTable")
     for row in table.find("tbody").find_all("tr"):
         cells = row.find_all("td")
-        
+
         longname = str(cells[0].renderContents())[2:-1]
         site_name = longname.split(" <br/> ")[0]
         address_tokens = re.search("(.*), (.*)", longname.split(" <br/> ")[1])
         site_address = address_tokens.group(1)
         site_city = address_tokens.group(2)
-        
+
         site = {
             "name": site_name,
             "address": site_address,
