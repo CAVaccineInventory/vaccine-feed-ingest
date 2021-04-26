@@ -47,12 +47,12 @@ def _get_inventory(site: dict) -> Optional[List[schema.Vaccine]]:
     vaccines_field = site["attributes"]["USER_VaxType"].lower().split(",")
 
     potentials = {
-        "pfizer-biontech covid-19 vaccine": schema.Vaccine(vaccine="pfizer"),
+        "pfizer-biontech covid-19 vaccine": schema.Vaccine(vaccine="pfizer_biontech"),
         "moderna covid-19 vaccine": schema.Vaccine(vaccine="moderna"),
-        "janssen": schema.Vaccine(vaccine="janssen"),
-        "jjj": schema.Vaccine(vaccine="janssen"),
+        "janssen": schema.Vaccine(vaccine="johnson_johnson_janssen"),
+        "jjj": schema.Vaccine(vaccine="johnson_johnson_janssen"),
         "janssen (johnson & johnson) covid-19 vaccine": schema.Vaccine(
-            vaccine="janssen"
+            vaccine="johnson_johnson_janssen"
         ),
     }
 
