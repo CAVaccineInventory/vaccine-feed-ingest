@@ -100,7 +100,10 @@ def _get_organization(site: dict):
 
 def _get_notes(site: dict):
     ret = []
-    ret.append("cvms_scheduling:" + site["CVMS Scheduling"])
+    ret.append("cvms_scheduling__nc_specific:" + site["CVMS Scheduling"])
+    ret.append(
+        "cvms_info__nc_specific:https://covid19.ncdhhs.gov/vaccines/providers/covid-19-vaccine-management-system-cvms"
+    )
     ret.append("county:" + site["County"])
     if site["Event Type"] != "" and site["Event Type"] != "Not Applicable":
         ret.append("event_type:" + site["Event Type"])
