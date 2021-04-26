@@ -27,12 +27,12 @@ logging.basicConfig(
 logger = logging.getLogger("tx/arcgis/normalize.py")
 
 VACCINES_FIELD = {
-    "JJ_AVAILABLE": schema.Vaccine(vaccine="janssen"),
-    "JJ_AVAILABLE2": schema.Vaccine(vaccine="janssen"),
+    "JJ_AVAILABLE": schema.Vaccine(vaccine="johnson_johnson_janssen"),
+    "JJ_AVAILABLE2": schema.Vaccine(vaccine="johnson_johnson_janssen"),
     "MODERNA_AVAILABLE": schema.Vaccine(vaccine="moderna"),
     "MODERNA_AVAILABLE2": schema.Vaccine(vaccine="moderna"),
-    "PFIZER_AVAILABLE": schema.Vaccine(vaccine="pfizer"),
-    "PFIZER_AVAILABLE2": schema.Vaccine(vaccine="pfizer"),
+    "PFIZER_AVAILABLE": schema.Vaccine(vaccine="pfizer_biontech"),
+    "PFIZER_AVAILABLE2": schema.Vaccine(vaccine="pfizer_biontech"),
 }
 
 
