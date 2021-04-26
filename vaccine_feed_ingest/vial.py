@@ -10,8 +10,9 @@ import geojson
 import rtree
 import shapely.geometry
 import urllib3
-from vaccine_feed_ingest.schema import schema
-from vaccine_feed_ingest.utils import misc
+
+from .schema import schema
+from .utils import misc
 
 logger = logging.getLogger("vial")
 
@@ -69,16 +70,17 @@ def import_source_locations(
     import_locations: Iterable[schema.ImportSourceLocation],
 ) -> urllib3.response.HTTPResponse:
     """Import source locations"""
-    encoded_ndjson = "\n".join(
-        [loc.json(exclude_none=True) for loc in import_locations]
-    )
+    for import_locations_batch in misc.batch(import_locations, 1_000):
+        encoded_ndjson = "\n".join(
+            [loc.json(exclude_none=True) for loc in import_locations_batch]
+        )
 
-    return vial_http.request(
-        "POST",
-        f"/api/importSourceLocations?import_run_id={import_run_id}",
-        headers={**vial_http.headers, "Content-Type": "application/x-ndjson"},
-        body=encoded_ndjson.encode("utf-8"),
-    )
+        return vial_http.request(
+            "POST",
+            f"/api/importSourceLocations?import_run_id={import_run_id}",
+            headers={**vial_http.headers, "Content-Type": "application/x-ndjson"},
+            body=encoded_ndjson.encode("utf-8"),
+        )
 
 
 def search_locations(

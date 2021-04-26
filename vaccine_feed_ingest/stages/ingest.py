@@ -1,12 +1,16 @@
 """Code for running ingestion stage"""
 
+import json
 import logging
 import pathlib
 import subprocess
 import tempfile
 
+import pydantic
+
+from ..schema import schema
 from . import outputs, site
-from .common import RUNNERS_DIR, PipelineStage
+from .common import RUNNERS_DIR, STAGE_OUTPUT_SUFFIX, PipelineStage
 
 logger = logging.getLogger("ingest")
 
@@ -44,6 +48,13 @@ def run_fetch(
         fetch_output_dir = tmp_dir / "output"
         fetch_output_dir.mkdir(parents=True, exist_ok=True)
 
+        logger.info(
+            "Fetching %s/%s and saving fetched output to %s",
+            site_dir.parent.name,
+            site_dir.name,
+            fetch_output_dir,
+        )
+
         subprocess.run(
             [str(fetch_path), str(fetch_output_dir), str(yml_path)], check=True
         )
@@ -63,6 +74,8 @@ def run_fetch(
                 timestamp,
             )
 
+            logger.info("Copying files from %s to %s", fetch_output_dir, fetch_run_dir)
+
             outputs.copy_files(fetch_output_dir, fetch_run_dir)
 
     return True
@@ -72,6 +85,7 @@ def run_parse(
     site_dir: pathlib.Path,
     output_dir: pathlib.Path,
     timestamp: str,
+    validate: bool = True,
     dry_run: bool = False,
 ) -> bool:
     parse_path = site.find_executeable(site_dir, PipelineStage.PARSE)
@@ -120,6 +134,13 @@ def run_parse(
 
         outputs.copy_files(fetch_run_dir, parse_input_dir)
 
+        logger.info(
+            "Parsing %s/%s and saving parsed output to %s",
+            site_dir.parent.name,
+            site_dir.name,
+            parse_output_dir,
+        )
+
         subprocess.run(
             [
                 str(parse_path),
@@ -130,11 +151,25 @@ def run_parse(
             check=True,
         )
 
-        if not outputs.data_exists(parse_output_dir):
+        if not outputs.data_exists(
+            parse_output_dir, suffix=STAGE_OUTPUT_SUFFIX[PipelineStage.PARSE]
+        ):
             logger.warning(
-                "%s for %s returned no data files.", parse_path.name, site_dir.name
+                "%s for %s returned no data files with expected extension %s.",
+                parse_path.name,
+                site_dir.name,
+                STAGE_OUTPUT_SUFFIX[PipelineStage.PARSE],
             )
             return False
+
+        if validate:
+            if not _validate_parsed(parse_output_dir):
+                logger.warning(
+                    "%s for %s returned invalid ndjson files.",
+                    parse_path.name,
+                    site_dir.name,
+                )
+                return False
 
         if not dry_run:
             parse_run_dir = outputs.generate_run_dir(
@@ -145,6 +180,8 @@ def run_parse(
                 timestamp,
             )
 
+            logger.info("Copying files from %s to %s", parse_output_dir, parse_run_dir)
+
             outputs.copy_files(parse_output_dir, parse_run_dir)
 
     return True
@@ -154,6 +191,7 @@ def run_normalize(
     site_dir: pathlib.Path,
     output_dir: pathlib.Path,
     timestamp: str,
+    validate: bool = True,
     dry_run: bool = False,
 ) -> bool:
     normalize_path = site.find_executeable(site_dir, PipelineStage.NORMALIZE)
@@ -171,8 +209,14 @@ def run_normalize(
         )
         return False
 
-    if not outputs.data_exists(parse_run_dir):
-        logger.warning("No parse data available to normalize for %s.", site_dir.name)
+    if not outputs.data_exists(
+        parse_run_dir, suffix=STAGE_OUTPUT_SUFFIX[PipelineStage.PARSE]
+    ):
+        logger.warning(
+            "No parse data available to normalize for %s with extension %s.",
+            site_dir.name,
+            STAGE_OUTPUT_SUFFIX[PipelineStage.PARSE],
+        )
         return False
 
     with tempfile.TemporaryDirectory(
@@ -188,16 +232,37 @@ def run_normalize(
 
         outputs.copy_files(parse_run_dir, normalize_input_dir)
 
+        logger.info(
+            "Normalizing %s/%s and saving normalized output to %s",
+            site_dir.parent.name,
+            site_dir.name,
+            normalize_output_dir,
+        )
+
         subprocess.run(
             [str(normalize_path), normalize_output_dir, normalize_input_dir],
             check=True,
         )
 
-        if not outputs.data_exists(normalize_output_dir):
+        if not outputs.data_exists(
+            normalize_output_dir, suffix=STAGE_OUTPUT_SUFFIX[PipelineStage.NORMALIZE]
+        ):
             logger.warning(
-                "%s for %s returned no data files.", normalize_path.name, site_dir.name
+                "%s for %s returned no data files with expected extension %s.",
+                normalize_path.name,
+                site_dir.name,
+                STAGE_OUTPUT_SUFFIX[PipelineStage.NORMALIZE],
             )
             return False
+
+        if validate:
+            if not _validate_normalized(normalize_output_dir):
+                logger.warning(
+                    "%s for %s returned invalid source location ndjson files.",
+                    normalize_path.name,
+                    site_dir.name,
+                )
+                return False
 
         if not dry_run:
             normalize_run_dir = outputs.generate_run_dir(
@@ -208,6 +273,53 @@ def run_normalize(
                 timestamp,
             )
 
+            logger.info(
+                "Copying files from %s to %s", normalize_output_dir, normalize_run_dir
+            )
+
             outputs.copy_files(normalize_output_dir, normalize_run_dir)
+
+    return True
+
+
+def _validate_parsed(output_dir: pathlib.Path) -> bool:
+    """Validate output files are valid ndjson records."""
+    for filepath in outputs.iter_data_paths(
+        output_dir, suffix=STAGE_OUTPUT_SUFFIX[PipelineStage.PARSE]
+    ):
+        with filepath.open() as ndjson_file:
+            for line_no, content in enumerate(ndjson_file):
+                try:
+                    json.loads(content)
+                except json.JSONDecodeError:
+                    logger.warning(
+                        "Invalid json record in %s at line %d: %s",
+                        filepath,
+                        line_no,
+                        content,
+                    )
+                    return False
+
+    return True
+
+
+def _validate_normalized(output_dir: pathlib.Path) -> bool:
+    """Validate output files are valid normalized locations."""
+    for filepath in outputs.iter_data_paths(
+        output_dir, suffix=STAGE_OUTPUT_SUFFIX[PipelineStage.NORMALIZE]
+    ):
+        with filepath.open() as ndjson_file:
+            for line_no, content in enumerate(ndjson_file):
+                try:
+                    schema.NormalizedLocation.parse_raw(content)
+                except pydantic.ValidationError as e:
+                    logger.warning(
+                        "Invalid source location in %s at line %d: %s\n%s",
+                        filepath,
+                        line_no,
+                        content,
+                        str(e),
+                    )
+                    return False
 
     return True

@@ -12,8 +12,9 @@ from typing import Callable, Optional, Sequence
 import click
 import dotenv
 import pathy
-from vaccine_feed_ingest import vial
-from vaccine_feed_ingest.stages import common, ingest, load, site
+
+from . import vial
+from .stages import common, ingest, load, site
 
 # Configure logger
 logging.basicConfig(
@@ -51,6 +52,14 @@ def _output_dir_option() -> Callable:
 
 def _dry_run_option() -> Callable:
     return click.option("--dry-run/--no-dry-run", type=bool, default=False)
+
+
+def _validate_option() -> Callable:
+    return click.option(
+        "--validate/--no-validate",
+        type=bool,
+        default=lambda: os.environ.get("ENABLE_VALIDATE", "true").lower() == "true",
+    )
 
 
 def _state_option() -> Callable:
@@ -109,11 +118,13 @@ def fetch(
 @cli.command()
 @_state_option()
 @_output_dir_option()
+@_validate_option()
 @_dry_run_option()
 @_sites_argument()
 def parse(
     state: Optional[str],
     output_dir: pathlib.Path,
+    validate: bool,
     dry_run: bool,
     sites: Optional[Sequence[str]],
 ) -> None:
@@ -122,17 +133,19 @@ def parse(
     site_dirs = site.get_site_dirs(state, sites)
 
     for site_dir in site_dirs:
-        ingest.run_parse(site_dir, output_dir, timestamp, dry_run)
+        ingest.run_parse(site_dir, output_dir, timestamp, validate, dry_run)
 
 
 @cli.command()
 @_state_option()
 @_output_dir_option()
+@_validate_option()
 @_dry_run_option()
 @_sites_argument()
 def normalize(
     state: Optional[str],
     output_dir: pathlib.Path,
+    validate: bool,
     dry_run: bool,
     sites: Optional[Sequence[str]],
 ) -> None:
@@ -141,15 +154,19 @@ def normalize(
     site_dirs = site.get_site_dirs(state, sites)
 
     for site_dir in site_dirs:
-        ingest.run_normalize(site_dir, output_dir, timestamp, dry_run)
+        ingest.run_normalize(site_dir, output_dir, timestamp, validate, dry_run)
 
 
 @cli.command()
 @_state_option()
+@_validate_option()
 @_output_dir_option()
 @_sites_argument()
 def all_stages(
-    state: Optional[str], output_dir: pathlib.Path, sites: Optional[Sequence[str]]
+    state: Optional[str],
+    validate: bool,
+    output_dir: pathlib.Path,
+    sites: Optional[Sequence[str]],
 ) -> None:
     """Run all stages in succession for specified sites."""
     timestamp = _generate_run_timestamp()
@@ -161,12 +178,12 @@ def all_stages(
         if not fetch_success:
             continue
 
-        parse_success = ingest.run_parse(site_dir, output_dir, timestamp)
+        parse_success = ingest.run_parse(site_dir, output_dir, timestamp, validate)
 
         if not parse_success:
             continue
 
-        ingest.run_normalize(site_dir, output_dir, timestamp)
+        ingest.run_normalize(site_dir, output_dir, timestamp, validate)
 
 
 @cli.command()

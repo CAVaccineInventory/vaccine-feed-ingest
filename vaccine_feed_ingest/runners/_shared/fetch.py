@@ -12,7 +12,7 @@ runner_dir = shared_dir.parent
 root_dir = runner_dir.parent
 sys.path.append(str(root_dir))
 
-from ingestors import arcgis  # noqa: E402
+from ingestors import arcgis_ingest  # noqa: E402
 
 # Configure logger
 logging.basicConfig(
@@ -49,7 +49,7 @@ try:
     )
     for service_item in config["arcgis"]:
         if len(service_item["layer_names"]) > 0:
-            arcgis.fetch_geojson(
+            arcgis_ingest.fetch_geojson(
                 service_item["id"], output_dir, service_item["layer_names"]
             )
 except KeyError as e:

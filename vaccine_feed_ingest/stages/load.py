@@ -8,12 +8,12 @@ import rtree
 import shapely.geometry
 import urllib3
 import us
-from vaccine_feed_ingest import vial
-from vaccine_feed_ingest.schema import schema
 
+from .. import vial
+from ..schema import schema
 from ..utils.match import canonicalize_address, get_full_address
 from . import outputs
-from .common import PipelineStage
+from .common import STAGE_OUTPUT_SUFFIX, PipelineStage
 
 logger = logging.getLogger("load")
 
@@ -43,26 +43,27 @@ def run_load_to_vial(
         )
         return None
 
-    if not outputs.data_exists(normalize_run_dir):
+    if not outputs.data_exists(
+        normalize_run_dir, suffix=STAGE_OUTPUT_SUFFIX[PipelineStage.NORMALIZE]
+    ):
         logger.warning("No normalize data available to load for %s.", site_dir.name)
         return None
 
     num_imported_locations = 0
 
-    for filepath in outputs.iter_data_paths(normalize_run_dir):
-        if not filepath.name.endswith(".normalized.ndjson"):
-            continue
-
+    for filepath in outputs.iter_data_paths(
+        normalize_run_dir, suffix=STAGE_OUTPUT_SUFFIX[PipelineStage.NORMALIZE]
+    ):
         import_locations = []
-        with filepath.open("rb") as src_file:
+        with filepath.open() as src_file:
             for line in src_file:
                 try:
                     normalized_location = schema.NormalizedLocation.parse_raw(line)
-                except pydantic.ValidationError:
+                except pydantic.ValidationError as e:
                     logger.warning(
-                        "Skipping source location because it is invalid: %s",
+                        "Skipping source location because it is invalid: %s\n%s",
                         line,
-                        exc_info=True,
+                        str(e),
                     )
                     continue
 
