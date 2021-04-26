@@ -8,12 +8,12 @@ import rtree
 import shapely.geometry
 import urllib3
 import us
-from vaccine_feed_ingest import vial
-from vaccine_feed_ingest.schema import schema
 
+from .. import vial
 from ..utils.match import canonicalize_address, get_full_address
 from . import outputs
 from .common import STAGE_OUTPUT_SUFFIX, PipelineStage
+from .schema import schema
 
 logger = logging.getLogger("load")
 
