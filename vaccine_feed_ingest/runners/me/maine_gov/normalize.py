@@ -20,61 +20,6 @@ NAME_CLEAN_RE = re.compile("^[\u1d42*]+")
 logger = logging.getLogger(__name__)
 
 
-def _deprecated_get_inventory(raw: str) -> Optional[List[schema.Vaccine]]:
-    # we've only seen "Pfizer", but no reason not to use the rest of the
-    # potentials from `ak/arcgis/normalize.py`
-    potentials = {
-        "pfizer": schema.Vaccine(vaccine="pfizer_biontech"),
-        "moderna": schema.Vaccine(vaccine="moderna"),
-        "janssen": schema.Vaccine(vaccine="johnson_johnson_janssen"),
-        "jjj": schema.Vaccine(vaccine="johnson_johnson_janssen"),
-    }
-    try:
-        return [potentials[raw.lower()]]
-    except KeyError:
-        logger.error(f"Unexpected vaccine brand: {raw}")
-        return None
-
-
-def _deprecated_get_source(site_blob: dict, timestamp: str) -> schema.Source:
-    return schema.Source(
-        data=site_blob,
-        fetched_at=timestamp,
-        fetched_from_uri="https://am-i-eligible.covid19vaccine.health.ny.gov/api/list-providers",
-        id=site_blob["providerId"],
-        published_at=site_blob["lastUpdated"],
-        source="am_i_eligible_covid19vaccine_gov",
-    )
-
-
-def _deprecated_normalize(site_blob: dict, timestamp: str) -> str:
-    """
-    sample entry:
-
-    {"providerId": 1013, "providerName": "\u1d42**York College - Health and Physical Education Complex - Queens", "vaccineBrand": "Pfizer", "address": "Jamaica, NY", "availableAppointments": "Y", "isShowable": true, "lastUpdated": "2021-04-23T20:04:24"} # noqa: E501
-    """
-    name = NAME_CLEAN_RE.sub("", site_blob["providerName"]).strip()
-    city = CITY_RE.search(site_blob["address"]).group(1)
-    appts_available = True if site_blob["availableAppointments"] == "Y" else False
-
-    normalized = schema.NormalizedLocation(
-        id=f"am_i_eligible_covid19vaccine_gov:{site_blob['providerId']}",
-        name=name,
-        availability=schema.Availability(appointments=appts_available),
-        inventory=_get_inventory(site_blob["vaccineBrand"]),
-        links=[
-            schema.Link(
-                authority="am_i_eligible_covid19vaccine_gov", id=site_blob["providerId"]
-            ),
-        ],
-        fetched_at=timestamp,
-        published_at=site_blob["lastUpdated"],
-        source=_get_source(site_blob, timestamp),
-    ).dict()
-    normalized["address"] = {"city": city, "state": "NY"}
-    return normalized
-
-
 def _get_name(site: dict) -> str:
     return site["providerName"]
 
