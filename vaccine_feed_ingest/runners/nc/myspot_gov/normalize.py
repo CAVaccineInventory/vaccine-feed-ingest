@@ -52,15 +52,15 @@ def _get_contacts(site: dict):
         else:
             phone = raw_phone[0:14]
             phone_notes = raw_phone[14:]
-        
+
         if phone_notes == "":
             ret.append(schema.Contact(phone=phone))
         else:
             phone_notes = phone_notes.lstrip(",")
             phone_notes = phone_notes.lstrip(";")
             phone_notes = phone_notes.lstrip(" ")
-            ret.append(schema.Contact(phone=phone,other=f"phone_notes:{phone_notes}"))
-        
+            ret.append(schema.Contact(phone=phone, other=f"phone_notes:{phone_notes}"))
+
     if site["Web Address"] != "":
         ret.append(schema.Contact(website=site["Web Address"]))
     return ret
