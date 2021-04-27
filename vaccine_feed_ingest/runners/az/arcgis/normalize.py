@@ -7,16 +7,9 @@ import pathlib
 import re
 import sys
 from datetime import datetime
-from typing import List, Optional
+from typing import List, Optional, Tuple
 
-# import schema
-site_dir = pathlib.Path(__file__).parent
-state_dir = site_dir.parent
-runner_dir = state_dir.parent
-root_dir = runner_dir.parent
-sys.path.append(str(root_dir))
-
-from schema import schema  # noqa: E402
+from vaccine_feed_ingest_schema import schema
 
 # Configure logger
 logging.basicConfig(
@@ -39,7 +32,7 @@ def _get_id(site: dict) -> str:
 
     # Could parse these from directory traversal, but do not for now to avoid
     # accidental mutation.
-    site = "arcgis"
+    site_name = "arcgis"
     runner = "az"
 
     # Could parse these from the input file name, but do not for now to avoid
@@ -47,7 +40,7 @@ def _get_id(site: dict) -> str:
     arcgis = "128ead309d754558ad81bccd99188dc9"
     layer = 0
 
-    return f"{runner}:{site}:{arcgis}_{layer}:{data_id}"
+    return f"{runner}:{site_name}:{arcgis}_{layer}:{data_id}"
 
 
 def _get_contacts(site: dict) -> Optional[List[schema.Contact]]:
@@ -113,7 +106,7 @@ def _get_opening_dates(site: dict) -> Optional[List[schema.OpenDate]]:
     ]
 
 
-def _parse_time(human_readable_time: str) -> (int, int):
+def _parse_time(human_readable_time: str) -> Tuple[int, int]:
     match = re.match(r"^(?P<hour>\d+):(?P<minute>\d+) ?AM?$", human_readable_time)
     if match:
         return int(match.group("hour")), int(match.group("minute"))

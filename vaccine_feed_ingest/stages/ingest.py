@@ -7,8 +7,8 @@ import subprocess
 import tempfile
 
 import pydantic
+from vaccine_feed_ingest_schema import schema
 
-from ..schema import schema
 from . import outputs, site
 from .common import RUNNERS_DIR, STAGE_OUTPUT_SUFFIX, PipelineStage
 

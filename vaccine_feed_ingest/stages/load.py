@@ -8,9 +8,9 @@ import rtree
 import shapely.geometry
 import urllib3
 import us
+from vaccine_feed_ingest_schema import schema
 
 from .. import vial
-from ..schema import schema
 from ..utils.match import canonicalize_address, get_full_address
 from . import outputs
 from .common import STAGE_OUTPUT_SUFFIX, PipelineStage

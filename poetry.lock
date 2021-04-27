@@ -1793,6 +1793,21 @@ python-versions = "*"
 jellyfish = "0.6.1"
 
 [[package]]
+name = "vaccine-feed-ingest-schema"
+version = "0.1"
+description = "Normalized data schema for the output of the vaccine-feed-ingest pipeline."
+category = "main"
+optional = false
+python-versions = ">=3.9"
+
+[package.dependencies]
+pydantic = "*"
+
+[package.extras]
+lint = ["flake8", "black", "mypy", "isort"]
+test = ["pytest"]
+
+[[package]]
 name = "virtualenv"
 version = "20.4.4"
 description = "Virtual Python Environment builder"
@@ -1867,12 +1882,12 @@ testing = ["pytest (>=4.6)", "pytest-checkdocs (>=1.2.3)", "pytest-flake8", "pyt
 
 [extras]
 lint = ["flake8", "black", "mypy", "isort"]
-test = ["pytest"]
+test = ["pytest", "pytest-runner"]
 
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.9"
-content-hash = "db1b29ed28b4eda468bb7458aed58f7f5b57e09b93449374d77a64fca9981430"
+content-hash = "7a73d358d65640cbbbfd0df922f392d63cd5b2e9bb73763e428416f4c6b7aee0"
 
 [metadata.files]
 anyio = [
@@ -3024,6 +3039,10 @@ urllib3 = [
 ]
 us = [
     {file = "us-2.0.2.tar.gz", hash = "sha256:cb11ad0d43deff3a1c3690c74f0c731cff5b862c73339df2edd91133e1496fbc"},
+]
+vaccine-feed-ingest-schema = [
+    {file = "vaccine-feed-ingest-schema-0.1.tar.gz", hash = "sha256:f84963aac8b1a72da1d8f5d2c834251a78ad3de116110f76982442eb5b8f4758"},
+    {file = "vaccine_feed_ingest_schema-0.1-py3-none-any.whl", hash = "sha256:b666618ee144ce85324bed756d768f6671f5dc792f9b84b4d1690dcc372bbbaf"},
 ]
 virtualenv = [
     {file = "virtualenv-20.4.4-py2.py3-none-any.whl", hash = "sha256:a935126db63128861987a7d5d30e23e8ec045a73840eeccb467c148514e29535"},

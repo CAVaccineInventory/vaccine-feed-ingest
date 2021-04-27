@@ -1,10 +1,10 @@
 import re
 from typing import Optional
 
-from ..schema.schema import Address
+from vaccine_feed_ingest_schema import schema
 
 
-def get_full_address(address: Optional[Address]) -> str:
+def get_full_address(address: Optional[schema.Address]) -> str:
     if address is None:
         return ""
     if address.street2:

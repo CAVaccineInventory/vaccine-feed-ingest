@@ -1,0 +1,9 @@
+---
+state: il
+site: sfsites
+parser: json_list
+path:
+- actions
+- 0
+- returnValue
+- returnValue
