@@ -18,4 +18,4 @@ Site: <!-- name of site, like vaccinespotter_org or arcgis--> |
 ## Before Opening a PR
 - [ ] I tested this using the CLI (e.g., `poetry run vaccine-feed-ingest <state>/<site>`)
 - [ ] I ran auto-formatting: `poetry run tox -e lint-fix`
-- [ ] If this is a normalizer, I validated that the latitude/longitude in the output are not flipped. In the continental US the latitude ranges from ~25 to ~50, and the longitude ranges from ~-124 to ~-65
+- [ ] If this is a normalizer, I validated that the latitude/longitude in the output are not flipped. In the continental US the latitude ranges from ~`25` to ~`50`, and the longitude ranges from ~`-124` to ~`-65`
