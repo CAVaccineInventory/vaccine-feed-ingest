@@ -10,8 +10,8 @@ import geojson
 import rtree
 import shapely.geometry
 import urllib3
+from vaccine_feed_ingest_schema import schema
 
-from .schema import schema
 from .utils import misc
 
 logger = logging.getLogger("vial")
