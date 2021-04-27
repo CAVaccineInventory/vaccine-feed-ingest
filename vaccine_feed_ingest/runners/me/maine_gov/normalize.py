@@ -43,10 +43,26 @@ def _get_source(site: dict, timestamp: str) -> schema.Source:
     )
 
 
+def _normalize_phone(raw_phone: str) -> str:
+    raw_phone = raw_phone.lstrip("1")
+    raw_phone = raw_phone.lstrip("-")
+    raw_phone = raw_phone.lstrip(" ")
+    if raw_phone == "":
+        return None
+    elif len(raw_phone) == 8:
+        return "(???) " + raw_phone[0:3] + "-" + raw_phone[4:8]
+    elif raw_phone[3] == "-" or raw_phone[7] == "-":
+        return "(" + raw_phone[0:3] + ") " + raw_phone[4:7] + "-" + raw_phone[8:12]
+    # elif len(raw_phone) == 10:
+    #    return "(" + raw_phone[0:3] + ") " + raw_phone[3:6] + "-" + raw_phone[6:10]
+    else:
+        return raw_phone[0:14]
+
+
 def _get_contacts(site: dict):
     ret = []
-    for phone_number in site["phoneNumber"]:
-        ret.append(schema.Contact(phone=phone_number))
+    for raw_phone in site["phoneNumber"]:
+        ret.append(schema.Contact(phone=_normalize_phone(raw_phone)))
     for website in site["website"]:
         ret.append(schema.Contact(website=website))
 
@@ -74,22 +90,10 @@ def _get_contacts(site: dict):
         else:
             raw_phone = ""
 
-    raw_phone = raw_phone.lstrip("1-")
-    if raw_phone == "":
-        phone = None
-    elif len(raw_phone) == 8:
-        phone = "(???) " + raw_phone[0:3] + "-" + raw_phone[4:8]
-    elif raw_phone[3] == "-" or raw_phone[7] == "-":
-        phone = "(" + raw_phone[0:3] + ") " + raw_phone[4:7] + "-" + raw_phone[8:12]
-    # elif len(raw_phone) == 10:
-    #    phone = "(" + raw_phone[0:3] + ") " + raw_phone[3:6] + "-" + raw_phone[6:10]
-    else:
-        phone = raw_phone[0:14]
-
     ret.append(
         schema.Contact(
             contact_type="booking",
-            phone=phone,
+            phone=_normalize_phone(raw_phone),
             website=website,
             other=scheduling_info_raw,
         )
