@@ -21,7 +21,7 @@ logger = logging.getLogger("in/arcgis/normalize.py")
 
 
 def _get_id(site: dict) -> str:
-    data_id = site["attributes"]["GlobalId"]
+    data_id = site["attributes"]["GlobalID"]
 
     # Could parse these from directory traversal, but do not for now to avoid
     # accidental mutation.
