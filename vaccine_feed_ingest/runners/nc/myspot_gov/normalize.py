@@ -42,7 +42,23 @@ def _get_location(site: dict):
 def _get_contacts(site: dict):
     ret = []
     if site["Appointment Phone"] != "":
-        ret.append(schema.Contact(phone=site["Appointment Phone"]))
+        raw_phone = str(site["Appointment Phone"]).lstrip("1")
+        if raw_phone[3] == "-" or raw_phone[7] == "-":
+            phone = "(" + raw_phone[0:3] + ") " + raw_phone[4:7] + "-" + raw_phone[8:12]
+            phone_notes = raw_phone[12:]
+        elif len(raw_phone) == 10:
+            phone = "(" + raw_phone[0:3] + ") " + raw_phone[3:6] + "-" + raw_phone[6:10]
+            phone_notes = ""
+        else:
+            phone = raw_phone[0:14]
+            phone_notes = raw_phone[14:]
+        if phone_notes == "":
+            phone_notes = None
+        else:
+            phone_notes = phone_notes.lstrip(",")
+            phone_notes = phone_notes.lstrip(";")
+            phone_notes = phone_notes.lstrip(" ")
+        ret.append(schema.Contact(phone=phone,other=f"phone_notes:{phone_notes}"))
     if site["Web Address"] != "":
         ret.append(schema.Contact(website=site["Web Address"]))
     return ret
