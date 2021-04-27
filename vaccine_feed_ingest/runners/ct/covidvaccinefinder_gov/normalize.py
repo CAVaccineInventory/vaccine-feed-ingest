@@ -17,6 +17,14 @@ from vaccine_feed_ingest.utils.validation import BOUNDING_BOX
 logger = logging.getLogger("ct/covidvaccinefinder_gov")
 
 
+def _in_bounds(lat_lng: schema.LatLng) -> bool:
+    if BOUNDING_BOX.latitude.contains(
+        lat_lng.latitude
+    ) or BOUNDING_BOX.longitude.contains(lat_lng.longitude):
+        return True
+    return False
+
+
 def _get_lat_lng(site: dict) -> Optional[schema.LatLng]:
     try:
         source_lat_lng = schema.LatLng(latitude=site["lat"], longitude=site["lng"])
@@ -24,12 +32,18 @@ def _get_lat_lng(site: dict) -> Optional[schema.LatLng]:
         # In the CT data source, some lat/lng pairs are flipped.
         # If the lat/lng from the datasource is outside our expected boundaries,
         # flip them.
-        if not BOUNDING_BOX.latitude.contains(
-            source_lat_lng.latitude
-        ) or not BOUNDING_BOX.longitude.contains(source_lat_lng.longitude):
-            return schema.LatLng(
+        if not _in_bounds(source_lat_lng):
+            flipped_lat_lng = schema.LatLng(
                 latitude=source_lat_lng.longitude, longitude=source_lat_lng.latitude
             )
+            if not _in_bounds(flipped_lat_lng):
+                logger.warning(
+                    "Out of bounds and unflippable lat/lng for %s (%s)",
+                    site["_id"],
+                    source_lat_lng,
+                )
+                return None
+            return flipped_lat_lng
         return source_lat_lng
 
     except pydantic.ValidationError as e:
