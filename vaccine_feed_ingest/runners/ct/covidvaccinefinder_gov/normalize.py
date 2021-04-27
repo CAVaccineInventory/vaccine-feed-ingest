@@ -1,14 +1,62 @@
 #!/usr/bin/env python
+# isort: skip_file
 
 import datetime
 import json
+import logging
 import pathlib
 import sys
+from typing import Optional
+
+import pydantic
+from vaccine_feed_ingest_schema import schema
 
 from vaccine_feed_ingest.utils.normalize import provider_id_from_name
+from vaccine_feed_ingest.utils.validation import BOUNDING_BOX
+
+logger = logging.getLogger("ct/covidvaccinefinder_gov")
+
+
+def _in_bounds(lat_lng: schema.LatLng) -> bool:
+    if BOUNDING_BOX.latitude.contains(
+        lat_lng.latitude
+    ) or BOUNDING_BOX.longitude.contains(lat_lng.longitude):
+        return True
+    return False
+
+
+def _get_lat_lng(site: dict) -> Optional[schema.LatLng]:
+    try:
+        source_lat_lng = schema.LatLng(latitude=site["lat"], longitude=site["lng"])
+
+        # In the CT data source, some lat/lng pairs are flipped.
+        # If the lat/lng from the datasource is outside our expected boundaries,
+        # flip them.
+        if not _in_bounds(source_lat_lng):
+            flipped_lat_lng = schema.LatLng(
+                latitude=source_lat_lng.longitude, longitude=source_lat_lng.latitude
+            )
+            if not _in_bounds(flipped_lat_lng):
+                logger.warning(
+                    "Out of bounds and unflippable lat/lng for %s (%s)",
+                    site["_id"],
+                    source_lat_lng,
+                )
+                return None
+            return flipped_lat_lng
+        return source_lat_lng
+
+    except pydantic.ValidationError as e:
+        logger.warning("Invalid or missing lat/lng for %s: %s", site["_id"], str(e))
+
+    return None
 
 
 def normalize(site: dict, timestamp: str) -> dict:
+    lat_lng = _get_lat_lng(site)
+    if lat_lng:
+        lat_lng = lat_lng.dict()
+
     normalized = {
         "id": f"ct_gov:{site['_id']}",
         "name": site["displayName"],
@@ -19,10 +67,7 @@ def normalize(site: dict, timestamp: str) -> dict:
             "state": "CT",
             "zip": site["zip"],
         },
-        "location": {
-            "latitude": site["lat"],
-            "longitude": site["lng"],
-        },
+        "location": lat_lng,
         "contact": [
             {
                 "contact_type": "booking",

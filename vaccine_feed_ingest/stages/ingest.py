@@ -9,9 +9,9 @@ import tempfile
 import pydantic
 from vaccine_feed_ingest_schema import schema
 
+from ..utils.validation import BOUNDING_BOX
 from . import outputs, site
 from .common import RUNNERS_DIR, STAGE_OUTPUT_SUFFIX, PipelineStage
-from .validation import BOUNDING_BOX
 
 logger = logging.getLogger("ingest")
 
