@@ -20,7 +20,7 @@ logger = logging.getLogger("ct/covidvaccinefinder_gov")
 def _in_bounds(lat_lng: schema.LatLng) -> bool:
     if BOUNDING_BOX.latitude.contains(
         lat_lng.latitude
-    ) or BOUNDING_BOX.longitude.contains(lat_lng.longitude):
+    ) and BOUNDING_BOX.longitude.contains(lat_lng.longitude):
         return True
     return False
 
