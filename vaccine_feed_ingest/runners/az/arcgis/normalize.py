@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# isort: skip_file
 
 import json
 import logging
@@ -11,7 +12,7 @@ from typing import List, Optional, Tuple
 
 from vaccine_feed_ingest_schema import schema
 
-from vaccine_feed_ingest.utils.validation import BOUNDING_BOX  # noqa: E402
+from vaccine_feed_ingest.utils.validation import BOUNDING_BOX
 
 # Configure logger
 logging.basicConfig(

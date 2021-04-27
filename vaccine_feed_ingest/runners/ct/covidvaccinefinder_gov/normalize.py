@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# isort: skip_file
 
 import datetime
 import json
@@ -8,10 +9,10 @@ import sys
 from typing import Optional
 
 import pydantic
-from vaccine_feed_ingest_schema import schema  # noqa: E402
+from vaccine_feed_ingest_schema import schema
 
-from vaccine_feed_ingest.utils.normalize import provider_id_from_name  # noqa: E402
-from vaccine_feed_ingest.utils.validation import BOUNDING_BOX  # noqa: E402
+from vaccine_feed_ingest.utils.normalize import provider_id_from_name
+from vaccine_feed_ingest.utils.validation import BOUNDING_BOX
 
 logger = logging.getLogger("ct/covidvaccinefinder_gov")
 
