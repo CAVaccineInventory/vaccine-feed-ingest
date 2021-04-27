@@ -120,8 +120,6 @@ def _get_notes(site: dict):
         ret.append("minimum_age:" + site["minimumAge"])
     if site["audience"] != "":
         ret.append("audience:" + site["audience"])
-    if site["schedulingInfo"] != "":
-        ret.append("info:" + site["schedulingInfo"])
     return ret
 
 
