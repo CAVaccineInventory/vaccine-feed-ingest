@@ -110,9 +110,9 @@ def _get_inventory(site: dict) -> Optional[List[schema.Vaccine]]:
         inventory.append(
             schema.Vaccine(vaccine="pfizer_biontech", supply_level="in_stock")
         )
-    elif moderna:
+    if moderna:
         inventory.append(schema.Vaccine(vaccine="moderna", supply_level="in_stock"))
-    elif johnson:
+    if johnson:
         inventory.append(
             schema.Vaccine(vaccine="johnson_johnson_janssen", supply_level="in_stock")
         )
@@ -168,7 +168,7 @@ def _filter_name(building: str, site: dict) -> str:
 
     # Remove vaccine types.
     name = re.sub(
-        r"""\b(j&j|johnson\s+(and|&)\s+johnson|moderna|pfizer)\b""",
+        r"""\b(j&j|janssen|johnson\s+(and|&)\s+johnson|moderna|pfizer)\b""",
         "",
         name,
         flags=re.IGNORECASE | re.VERBOSE,
@@ -190,8 +190,9 @@ def _filter_name(building: str, site: dict) -> str:
     for name in possible_names:
         name = name.strip(" -\xa0")
         name = re.sub(r"(\s+[-]|[-]\s+)", r" \1 ", name)
-        name = re.sub(r":\s+-", ": ", name)
+        name = re.sub(r"([-:/])(\s+[-:/])+", r"\1 ", name)
         name = re.sub(r"\s+", " ", name)
+        name = name.strip(" -:/")
         # Short names are probably just "Clinic" or "Vaccine".
         if len(name) > 7:
             return name
