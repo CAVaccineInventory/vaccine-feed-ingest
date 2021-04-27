@@ -43,7 +43,7 @@ def _get_source(site: dict, timestamp: str) -> schema.Source:
     )
 
 
-def _normalize_phone(raw_phone: str) -> str:
+def _normalize_phone(raw_phone: str):
     raw_phone = raw_phone.lstrip("1")
     raw_phone = raw_phone.lstrip("-")
     raw_phone = raw_phone.lstrip(" ")
