@@ -32,7 +32,7 @@ def _get_id(site: dict) -> str:
 
     # Could parse these from directory traversal, but do not for now to avoid
     # accidental mutation.
-    site = "arcgis"
+    site_name = "arcgis"
     runner = "sc"
 
     # Could parse these from the input file name, but do not for now to avoid
@@ -40,7 +40,7 @@ def _get_id(site: dict) -> str:
     arcgis = "bbd8924909264baaa1a5a1564b393063"
     layer = 0
 
-    return f"{runner}:{site}:{arcgis}_{layer}:{data_id}"
+    return f"{runner}:{site_name}:{arcgis}_{layer}:{data_id}"
 
 
 # This currently tosses any address if it doesn't have a street address or zip because

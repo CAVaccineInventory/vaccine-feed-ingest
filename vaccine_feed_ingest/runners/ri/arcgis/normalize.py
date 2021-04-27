@@ -25,7 +25,7 @@ def _get_id(site: dict) -> str:
 
     # Could parse these from directory traversal, but do not for now to avoid
     # accidental mutation.
-    site = "arcgis"
+    site_name = "arcgis"
     runner = "ri"
 
     # Could parse these from the input file name, but do not for now to avoid
@@ -33,7 +33,7 @@ def _get_id(site: dict) -> str:
     arcgis = "da57e8c8663048a2a9893c636fef63d0"
     layer = 0
 
-    return f"{runner}:{site}:{arcgis}_{layer}:{data_id}"
+    return f"{runner}:{site_name}:{arcgis}_{layer}:{data_id}"
 
 
 def _get_inventory(site: dict) -> Optional[List[schema.Vaccine]]:

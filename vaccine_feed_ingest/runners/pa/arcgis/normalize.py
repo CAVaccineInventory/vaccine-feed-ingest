@@ -25,7 +25,7 @@ def _get_id(site: dict) -> str:
 
     # Could parse these from directory traversal, but do not for now to avoid
     # accidental mutation.
-    site = "arcgis"
+    site_name = "arcgis"
     runner = "pa"
 
     # Could parse these from the input file name, but do not for now to avoid
@@ -33,7 +33,7 @@ def _get_id(site: dict) -> str:
     arcgis = "5b874ac0947347e9be49f6847eb44604"
     layer = 0
 
-    return f"{runner}:{site}:{arcgis}_{layer}:{data_id}"
+    return f"{runner}:{site_name}:{arcgis}_{layer}:{data_id}"
 
 
 def _get_contacts(site: dict) -> Optional[List[schema.Contact]]:
