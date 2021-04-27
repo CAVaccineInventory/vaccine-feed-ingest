@@ -2,13 +2,46 @@
 
 import datetime
 import json
+import logging
 import pathlib
 import sys
+from typing import Optional
+
+import pydantic
+from vaccine_feed_ingest_schema import schema
 
 from vaccine_feed_ingest.utils.normalize import provider_id_from_name
+from vaccine_feed_ingest.utils.validation import BOUNDING_BOX
+
+logger = logging.getLogger("ct/covidvaccinefinder_gov")
+
+
+def _get_lat_lng(site: dict) -> Optional[schema.LatLng]:
+    try:
+        source_lat_lng = schema.LatLng(latitude=site["lat"], longitude=site["lng"])
+
+        # In the CT data source, some lat/lng pairs are flipped.
+        # If the lat/lng from the datasource is outside our expected boundaries,
+        # flip them.
+        if not BOUNDING_BOX.latitude.contains(
+            source_lat_lng.latitude
+        ) or not BOUNDING_BOX.longitude.contains(source_lat_lng.longitude):
+            return schema.LatLng(
+                latitude=source_lat_lng.longitude, longitude=source_lat_lng.latitude
+            )
+        return source_lat_lng
+
+    except pydantic.ValidationError as e:
+        logger.warning("Invalid or missing lat/lng for %s: %s", site["_id"], str(e))
+
+    return None
 
 
 def normalize(site: dict, timestamp: str) -> dict:
+    lat_lng = _get_lat_lng(site)
+    if lat_lng:
+        lat_lng = lat_lng.dict()
+
     normalized = {
         "id": f"ct_gov:{site['_id']}",
         "name": site["displayName"],
@@ -19,10 +52,7 @@ def normalize(site: dict, timestamp: str) -> dict:
             "state": "CT",
             "zip": site["zip"],
         },
-        "location": {
-            "latitude": site["lat"],
-            "longitude": site["lng"],
-        },
+        "location": lat_lng,
         "contact": [
             {
                 "contact_type": "booking",
