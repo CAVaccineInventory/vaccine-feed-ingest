@@ -62,9 +62,9 @@ def _normalize_phone(raw_phone: str) -> str:
 def _get_contacts(site: dict):
     ret = []
     for raw_phone in site["phoneNumber"]:
-        ret.append(schema.Contact(phone=_normalize_phone(raw_phone)))
+        ret.append(schema.Contact(phone=_normalize_phone(raw_phone),contact_type="general"))
     for website in site["website"]:
-        ret.append(schema.Contact(website=website))
+        ret.append(schema.Contact(website=website,contact_type="general"))
 
     scheduling_info_raw = site["schedulingInfo"]
 
