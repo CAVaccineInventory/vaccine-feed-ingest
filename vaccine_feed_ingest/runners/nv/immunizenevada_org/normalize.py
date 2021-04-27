@@ -45,22 +45,22 @@ def _get_address(address: str) -> schema.Address:
 def _get_contacts(site: dict) -> Optional[List[schema.Contact]]:
     contacts = None
 
-    phone = None
     if "contact-phone" in site:
-        phone = site["contact-phone"]
+        phone_contact = schema.Contact(
+            contact_type="general",
+            phone=site["contact-phone"],
+        )
+        contacts = [phone_contact]
 
     # Filter out sites with a url of "/"
-    website = None
     if site["url"].startswith("http"):
-        website = site["url"]
-
-    if phone or website:
-        general_contact = schema.Contact(
+        web_contact = schema.Contact(
             contact_type="general",
-            phone=phone,
-            website=website,
+            website=site["url"],
         )
-        contacts = [general_contact]
+        if contacts is None:
+            contacts = []
+        contacts.append(web_contact)
 
     return contacts
 
