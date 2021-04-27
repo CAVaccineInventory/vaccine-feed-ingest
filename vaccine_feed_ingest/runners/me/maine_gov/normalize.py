@@ -6,9 +6,9 @@ import logging
 import pathlib
 import re
 import sys
-
-from vaccine_feed_ingest.schema import schema  # noqa: E402
 from typing import List, Optional
+from vaccine_feed_ingest.schema import schema  # noqa: E402
+
 
 CITY_RE = re.compile(r"^([\w ]+), NY$")
 # the providerName field smells like it's being parsed from someplace else,
@@ -63,9 +63,9 @@ def _normalize_phone(raw_phone: str) -> Optional[str]:
 def _get_contacts(site: dict) -> List[schema.Contact]:
     ret = []
     for raw_phone in site["phoneNumber"]:
-        ret.append(
-            schema.Contact(phone=_normalize_phone(raw_phone), contact_type="general")
-        )
+        general_phone = _normalize_phone(raw_phone)
+        if general_phone is not None and "?" not in general_phone:
+            ret.append(schema.Contact(phone=general_phone, contact_type="general"))
     for website in site["website"]:
         ret.append(schema.Contact(website=website, contact_type="general"))
 
@@ -94,10 +94,13 @@ def _get_contacts(site: dict) -> List[schema.Contact]:
         else:
             raw_phone = ""
 
-    ret.append(
-        schema.Contact(contact_type="booking", phone=_normalize_phone(raw_phone))
-    )
-    ret.append(schema.Contact(contact_type="booking", website=website))
+    booking_phone = _normalize_phone(raw_phone)
+    if booking_phone is not None and "?" not in booking_phone:
+        ret.append(schema.Contact(contact_type="booking", phone=booking_phone))
+
+    if website is not None:
+        ret.append(schema.Contact(contact_type="booking", website=website))
+
     ret.append(schema.Contact(contact_type="booking", other=scheduling_info_raw))
 
     return ret
