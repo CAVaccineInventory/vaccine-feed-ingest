@@ -48,7 +48,7 @@ def normalize(site: dict, timestamp: str) -> dict:
         "access": {
             "walk": site["access_mode"]["walk"],
             "drive": site["access_mode"]["drive"],
-            "wheelchair": site["access"]["wheelchair"],
+            "wheelchair": "yes" if site["access"]["wheelchair"] else "no",
         },
         "languages": [k for k, v in site["access"]["languages"].items() if v],
         "links": [

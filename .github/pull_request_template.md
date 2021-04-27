@@ -17,6 +17,4 @@ Site: <!-- name of site, like vaccinespotter_org or arcgis--> |
 
 ## Before Opening a PR
 - [ ] I tested this using the CLI (e.g., `poetry run vaccine-feed-ingest <state>/<site>`)
-- [ ] I ran auto-formatting:
-  - [ ] `poetry run black vaccine_feed_ingest/runners`
-  - [ ] `poetry run isort vaccine_feed_ingest/runners`
+- [ ] I ran auto-formatting: `poetry run tox -e lint-fix`
