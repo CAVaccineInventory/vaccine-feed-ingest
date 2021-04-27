@@ -1,7 +1,7 @@
 import re
 from typing import Optional
 
-from vaccine_feed_ingest.schema.schema import Address
+from ..schema.schema import Address
 
 
 def get_full_address(address: Optional[Address]) -> str:
