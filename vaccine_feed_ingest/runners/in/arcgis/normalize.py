@@ -24,7 +24,7 @@ logging.basicConfig(
     format="%(asctime)s %(levelname)s:%(name)s:%(message)s",
     datefmt="%m/%d/%Y %H:%M:%S",
 )
-logger = logging.getLogger("ak/arcgis/normalize.py")
+logger = logging.getLogger("in/arcgis/normalize.py")
 
 
 def _get_id(site: dict) -> str:
