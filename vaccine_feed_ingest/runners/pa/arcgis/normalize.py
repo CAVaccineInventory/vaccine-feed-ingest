@@ -69,8 +69,8 @@ def _get_normalized_location(site: dict, timestamp: str) -> schema.NormalizedLoc
             zip=site["attributes"]["ZIP_Code"],
         ),
         location=schema.LatLng(
-            latitude=site["geometry"]["x"],
-            longitude=site["geometry"]["y"],
+            latitude=site["geometry"]["y"],
+            longitude=site["geometry"]["x"],
         ),
         contact=_get_contacts(site),
         languages=None,
