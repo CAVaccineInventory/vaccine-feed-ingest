@@ -94,7 +94,7 @@ def normalize(site: dict, timestamp: str) -> schema.NormalizedLocation:
         active=None,
         source=schema.Source(
             source="immunizenevada_org",
-            id=site["title"],
+            id=site["id"],
             fetched_at=timestamp,
             fetched_from_uri="https://www.immunizenevada.org/covid-19-vaccine-locator",
             data=site,
