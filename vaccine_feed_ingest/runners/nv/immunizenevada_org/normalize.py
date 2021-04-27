@@ -3,6 +3,7 @@
 import datetime
 import json
 import pathlib
+import re
 import sys
 from typing import List, Optional
 
@@ -12,6 +13,17 @@ from vaccine_feed_ingest.utils.normalize import provider_id_from_name
 
 def _get_id(site: dict) -> str:
     return f"immunizenevada_org:{site['id']}"
+
+
+def _get_title(title: str) -> str:
+    """Return normalized title.
+
+    Age restrictions in the form of "(16+)" will be removed. Otherwise,
+    the title will be returned unaltered.
+
+    """
+    title = re.sub(r"\([0-9]+\+\)", "", title)
+    return title
 
 
 def _get_address(address: str) -> schema.Address:
@@ -75,7 +87,7 @@ def _get_links(site: dict) -> Optional[List[schema.Link]]:
 def normalize(site: dict, timestamp: str) -> schema.NormalizedLocation:
     return schema.NormalizedLocation(
         id=_get_id(site),
-        name=site["title"],
+        name=_get_title(site["title"]),
         address=_get_address(site["address"]),
         location=schema.LatLng(
             latitude=site["lat"],
