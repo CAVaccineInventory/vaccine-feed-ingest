@@ -37,30 +37,27 @@ def _get_id(site: dict) -> str:
 
 
 def _get_inventory(site: dict) -> Optional[List[schema.Vaccine]]:
-    vaccines_field = site["attributes"]["Vaccine_Type"].lower().split(",")
-
-    potentials = {
-        "pfizer": schema.Vaccine(vaccine="pfizer_biontech"),
-        "moderna": schema.Vaccine(vaccine="moderna"),
-        "johnson & johnson": schema.Vaccine(vaccine="johnson_johnson_janssen"),
-        "frpp": None,
-        "multi": None,
-    }
+    vaccines = site["attributes"]["Vaccine_Type"]
 
     inventory = []
 
-    for vf in vaccines_field:
-        try:
-            vaccine = potentials[vf]
-            if vaccine:
-                inventory.append(vaccine)
-        except KeyError as e:
-            logger.error("Unexpected vaccine type: %s", e)
+    pfizer = re.search("pfizer", vaccines, re.IGNORECASE)
+    moderna = re.search("moderna", vaccines, re.IGNORECASE)
+    johnson = re.search("janssen", vaccines, re.IGNORECASE) or re.search(
+        "johnson", vaccines, re.IGNORECASE
+    )
 
-    if len(inventory) > 0:
-        return inventory
+    if pfizer:
+        inventory.append(schema.Vaccine(vaccine="pfizer_biontech"))
+    if moderna:
+        inventory.append(schema.Vaccine(vaccine="moderna"))
+    if johnson:
+        inventory.append(schema.Vaccine(vaccine="johnson_johnson_janssen"))
 
-    return None
+    if len(inventory) == 0:
+        return None
+
+    return inventory
 
 
 def _get_contacts(site: dict) -> Optional[List[schema.Contact]]:
