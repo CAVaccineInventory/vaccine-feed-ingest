@@ -40,12 +40,12 @@ def _get_location(site: dict):
 
 
 def _get_contacts(site: dict):
-    return [
-        schema.Contact(
-            phone=site["Appointment Phone"],
-            website=site["Web Address"],
-        )
-    ]
+    ret = []
+    if site["Appointment Phone"] != "":
+        ret.append(schema.Contact(phone=site["Appointment Phone"]))
+    if site["Web Address"] != "":
+        ret.append(schema.Contact(website=site["Web Address"]))
+    return ret
 
 
 def _normalize_date(dt: str):
@@ -104,7 +104,6 @@ def _get_notes(site: dict):
     ret.append(
         "cvms_info__nc_specific:https://covid19.ncdhhs.gov/vaccines/providers/covid-19-vaccine-management-system-cvms"
     )
-    ret.append("county:" + site["County"])
     if site["Event Type"] != "" and site["Event Type"] != "Not Applicable":
         ret.append("event_type:" + site["Event Type"])
     return ret
@@ -115,7 +114,7 @@ def _get_source(site: dict, timestamp: str) -> schema.Source:
         data=site,
         fetched_at=timestamp,
         fetched_from_uri="https://myspot.nc.gov/api/get-vaccine-locations",
-        id=_get_id(site),
+        id=site["Event Location Id"],
         source="nc:myspot_gov",
     )
 
