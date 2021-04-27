@@ -16,6 +16,16 @@ def parse_location(input_file: pathlib.Path) -> dict:
         doc = BeautifulSoup(f, "html.parser")
     if doc is None:
         raise Exception("failed to set up beautiful soup")
+
+    citation_el = doc.find("meta", attrs={"property": "ga:citation:metadata"})
+    if citation_el is None:
+        raise Exception(
+            "'ga:citation:metadata' meta tag not found, this element is used for a stable id"
+        )
+
+    result["node-id"] = citation_el.attrs["internal_url"]
+    result["last-updated"] = citation_el.attrs["last_updated"]
+
     main_el = doc.find(id="main-content")
     if main_el is None:
         raise Exception("main content block has changed classes")
