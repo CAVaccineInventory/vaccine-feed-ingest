@@ -87,8 +87,12 @@ def generate_id(name):
     to produce a single, consistent ID.
 
     """
-    # Strip off parenthetical age info in the name, like "(16+)".
-    id = re.sub(r"\([0-9+]+\)", "", name)
+    # Strip off parenthetical age info found in some NV location names.
+    #
+    # This regex only works if the age restriction follows the exact format
+    # where the numeric age is followed by a "+" and is contained in
+    # parentheses.
+    id = re.sub(r"\([0-9]+\+\)", "", name)
 
     # Strip whitespace from ends.
     id = id.strip()
