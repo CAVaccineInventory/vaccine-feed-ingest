@@ -5,9 +5,7 @@ import json
 import logging
 import os
 import pathlib
-import re
 import sys
-from typing import List, Optional
 
 # import schema
 site_dir = pathlib.Path(__file__).parent
@@ -30,10 +28,10 @@ logger = logging.getLogger("ga/dph/normalize.py")
 def _get_id(site: dict) -> str:
     # Could parse these from directory traversal, but do not for now to avoid
     # accidental mutation.
-    site = "dph"
+    org = "dph"
     runner = "ga"
 
-    return f"{runner}:{site}"
+    return f"{runner}:{org}"
 
 
 def _get_normalized_location(site: dict, timestamp: str) -> schema.NormalizedLocation:
