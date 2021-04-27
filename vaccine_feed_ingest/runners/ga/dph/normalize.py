@@ -98,5 +98,6 @@ for in_filepath in json_filepaths:
                 normalized_site = _get_normalized_location(
                     parsed_site, parsed_at_timestamp
                 )
+
                 json.dump(normalized_site.dict(), fout)
                 fout.write("\n")
