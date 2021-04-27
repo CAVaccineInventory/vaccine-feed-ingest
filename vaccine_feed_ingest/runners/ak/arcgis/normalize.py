@@ -9,7 +9,7 @@ import re
 import sys
 from typing import List, Optional
 
-from vaccine_feed_ingest_schema import schema
+from vaccine_feed_ingest_schema import schema  # noqa: E402
 
 # Configure logger
 logging.basicConfig(

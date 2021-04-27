@@ -1,8 +1,26 @@
 #!/usr/bin/env python3
 
+import warnings
 from typing import List, Optional
 
 from pydantic import BaseModel
+
+"""
+DEPRECATION NOTICE
+vaccine_feed_ingest/schema/schema.py is DEPRECATED. Instead of using this file,
+import the published package using the line:
+
+from vaccine_feed_ingest_schema import schema
+
+This file is maintained in the source so that currently open PRs will not break.
+It will be removed from source by 2021-05-01, potentially earlier.
+"""
+warnings.warn(
+    "vaccine_feed_ingest/schema/schema.py is deprecated. Use the the published vaccine_feed_ingest_schema"
+    + "package instead.",
+    DeprecationWarning,
+    stacklevel=2,
+)
 
 
 class Address(BaseModel):
