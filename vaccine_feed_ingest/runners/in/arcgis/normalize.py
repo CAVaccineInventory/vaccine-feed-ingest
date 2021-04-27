@@ -108,29 +108,28 @@ def _get_notes(site: dict) -> Optional[List[str]]:
     return None
 
 
-def _get_city(site: dict) -> Optional[str]:
+def _get_address(site: dict) -> schema.Address:
     address = site["attributes"]["Site_Address"]
+    address_split = address.split(",")
 
-    return re.search("^.*[.,]\\s(.+), IN (?:[0-9]|-)+$", address).group(0)
+    # TODO: improve address parsing to minimize unknown addresses
+    if len(address_split) != 3:
+        logger.warning(f"Unparseable address: {address}")
+        return None
 
-
-def _get_zip(site: dict) -> Optional[str]:
-    address = site["attributes"]["Site_Address"]
-
-    return re.search("^.*, IN ((?:[0-9]|-)+)$", address).group(0)
+    return schema.Address(
+        street1=address_split[0].strip(),
+        city=address_split[-2].strip(),
+        state="IN",
+        zip=address_split[-1].replace("IN", "").strip(),
+    )
 
 
 def _get_normalized_location(site: dict, timestamp: str) -> schema.NormalizedLocation:
     return schema.NormalizedLocation(
         id=_get_id(site),
         name=site["attributes"]["Name"],
-        address=schema.Address(
-            street1=site["attributes"]["Site_Address"],
-            street2=None,
-            city=_get_city(site),
-            state="IN",
-            zip=_get_zip(site),
-        ),
+        address=_get_address(site),
         location=schema.LatLng(
             latitude=site["geometry"]["y"],
             longitude=site["geometry"]["x"],
