@@ -30,7 +30,7 @@ def _get_city(site: dict) -> str:
 def _get_id(site: dict) -> str:
     name = _get_name(site)
     city = _get_city(site)
-    return f"me:maine_gov:{name}:{city}"
+    return f"{name}:{city}"
 
 
 def _get_source(site: dict, timestamp: str) -> schema.Source:
@@ -62,9 +62,11 @@ def _normalize_phone(raw_phone: str) -> str:
 def _get_contacts(site: dict):
     ret = []
     for raw_phone in site["phoneNumber"]:
-        ret.append(schema.Contact(phone=_normalize_phone(raw_phone),contact_type="general"))
+        ret.append(
+            schema.Contact(phone=_normalize_phone(raw_phone), contact_type="general")
+        )
     for website in site["website"]:
-        ret.append(schema.Contact(website=website,contact_type="general"))
+        ret.append(schema.Contact(website=website, contact_type="general"))
 
     scheduling_info_raw = site["schedulingInfo"]
 
@@ -124,7 +126,7 @@ def _get_notes(site: dict):
 
 def normalize(site: dict, timestamp: str) -> str:
     normalized = schema.NormalizedLocation(
-        id=_get_id(site),
+        id=("me:maine_gov:" + _get_id(site)),
         name=_get_name(site),
         contact=_get_contacts(site),
         source=_get_source(site, timestamp),
