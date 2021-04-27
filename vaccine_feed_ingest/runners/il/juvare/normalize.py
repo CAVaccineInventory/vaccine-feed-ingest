@@ -88,13 +88,15 @@ def _get_building_and_address(site: dict) -> Tuple[str, Optional[schema.Address]
 
 
 def _get_contact(site: dict) -> schema.Contact:
-    indirect_url = "https://covidvaccination.dph.illinois.gov/"
+    # indirect_url = "https://covidvaccination.dph.illinois.gov/"
 
     # NOTE: This direct url bypasses the consent form used at the indirect url,
-    # so we don't actually return it.
-    # direct_url = f"https://events.juvare.com/{site['organizer']}/{site['slug']}/"
+    # but it's very easy for people to find the direct url by following links
+    # from provider websites and search results, so it should be okay to return
+    # it.
+    direct_url = f"https://events.juvare.com/{site['organizer']}/{site['slug']}/"
 
-    return [schema.Contact(contact_type="booking", website=indirect_url)]
+    return [schema.Contact(contact_type="booking", website=direct_url)]
 
 
 def _get_inventory(site: dict) -> Optional[List[schema.Vaccine]]:
