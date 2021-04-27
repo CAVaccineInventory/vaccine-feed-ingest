@@ -56,7 +56,7 @@ def _get_building_and_address(site: dict) -> Tuple[str, Optional[schema.Address]
         r"""
         (?P<building>[^0-9]*)        # building name
         (?P<street>[0-9].*           # street address, must end with punctuation or street type
-          (\b(ave|avenue|blvd|boulevard|cir|circle|ct|court|dr|drive|hwy|highway|ln|lane|pkwy|parkway|st|street|way)\b\s*|[.,0-9]\s*|[\r\n])
+            (\b(ave|avenue|blvd|boulevard|cir|circle|ct|court|dr|drive|hwy|highway|ln|lane|pkwy|parkway|st|street|way)\b\s*|[.,0-9]\s*|[\r\n])
         )
         (?P<city>(\b\w+[ ]*)+)       # city
         [,]?\s+(IL|Illinois)\b[.,]?  # state
@@ -143,7 +143,7 @@ def _filter_name(building: str, site: dict) -> str:
                 and|to
                 |jan(uary)?|feb(ruary)?|mar(ch)?|apr(il)?|may|june?
                 |july?|aug(ust)?|sep(tember)?|oct(ober)?|nov(ember)?|dec(ember)?
-              )
+                )
             \b)+""",
         "",
         name,
