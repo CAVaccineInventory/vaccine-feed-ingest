@@ -6,7 +6,7 @@ import json
 import pathlib
 import re
 import sys
-from typing import List
+from typing import List, Optional, Tuple
 
 from vaccine_feed_ingest.schema import schema  # noqa: E402
 
@@ -21,7 +21,7 @@ def _get_source(site: dict, timestamp: str) -> schema.Source:
     )
 
 
-def _parse_date(date: str) -> str:
+def _parse_date(date: str) -> Optional[str]:
     match = re.match(r"(\d+)/(\d+)/(\d+).*", date or "")
     if not match:
         return None
@@ -43,7 +43,7 @@ def _get_access(site: dict) -> schema.Access:
     return None
 
 
-def _get_building_and_address(site: dict) -> (str, schema.Address):
+def _get_building_and_address(site: dict) -> Tuple[str, Optional[schema.Address]]:
     # NOTE: some locations are missing the ZIP code. We return None for these
     # locations because the schema requires a ZIP code.
 
@@ -97,7 +97,7 @@ def _get_contact(site: dict) -> schema.Contact:
     return [schema.Contact(contact_type="booking", website=indirect_url)]
 
 
-def _get_inventory(site: dict) -> List[schema.Vaccine]:
+def _get_inventory(site: dict) -> Optional[List[schema.Vaccine]]:
     name = site["name"]
 
     inventory = []
@@ -215,7 +215,9 @@ def normalize(site: dict, timestamp: str) -> str:
     building, address = _get_building_and_address(site)
 
     if site["lat"] and site["lon"]:
-        location = {"latitude": site["lat"], "longitude": site["lon"]}
+        location: Optional[schema.LatLng] = schema.LatLng(
+            latitude=site["lat"], longitude=site["lon"]
+        )
     else:
         location = None
 
