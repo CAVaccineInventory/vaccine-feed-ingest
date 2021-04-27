@@ -11,6 +11,14 @@ from vaccine_feed_ingest.schema import schema
 from vaccine_feed_ingest.utils.normalize import provider_id_from_name
 
 
+def format_phone(phone: str) -> str:
+    ph = re.sub(r"[^0-9]", "", phone)
+    if len(ph) == 11:
+        ph = ph[1:]
+    formatted = "({}) {}-{}".format(ph[0:3], ph[3:6], ph[6:10])
+    return formatted
+
+
 def _get_id(site: dict) -> str:
     return f"immunizenevada_org:{site['id']}"
 
@@ -48,7 +56,7 @@ def _get_contacts(site: dict) -> Optional[List[schema.Contact]]:
     if "contact-phone" in site:
         phone_contact = schema.Contact(
             contact_type="general",
-            phone=site["contact-phone"],
+            phone=format_phone(site["contact-phone"]),
         )
         contacts = [phone_contact]
 
