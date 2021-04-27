@@ -10,6 +10,7 @@ import sys
 from typing import List, Optional
 
 import pytz
+
 from vaccine_feed_ingest.schema import schema  # noqa: E402
 
 # Configure logger
