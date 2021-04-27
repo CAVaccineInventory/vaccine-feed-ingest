@@ -7,11 +7,10 @@ import os
 import pathlib
 import re
 import sys
+from typing import List, Optional
 
 import pytz
-
 from vaccine_feed_ingest.schema import schema  # noqa: E402
-from typing import List, Optional
 
 # Configure logger
 logging.basicConfig(
@@ -42,7 +41,7 @@ def _get_contacts(site: dict) -> Optional[List[schema.Contact]]:
     return None
 
 
-def _get_opening_hours(site: dict) -> dict:
+def _get_opening_hours(site: dict) -> Optional[List[schema.OpenHour]]:
     weekdays = [
         "Monday",
         "Tuesday",
@@ -73,7 +72,7 @@ def _get_opening_hours(site: dict) -> dict:
     return None
 
 
-def _get_availability(site: dict) -> dict:
+def _get_availability(site: dict) -> schema.Availability:
     appointment_required = site["attributes"]["Intake_ApptRequired"] == "Yes"
     drop_ins_allowed = site["attributes"]["Intake_WalkIn"] == "Yes"
 
@@ -85,7 +84,7 @@ def _get_availability(site: dict) -> dict:
     )
 
 
-def _get_inventory(site: dict) -> dict:
+def _get_inventory(site: dict) -> List[schema.Vaccine]:
     vaccines = []
 
     if site["attributes"]["ServiceType_JohnsonAndJohnson"] == "Yes":
@@ -100,7 +99,7 @@ def _get_inventory(site: dict) -> dict:
     return vaccines
 
 
-def _get_parent_organization(site: dict) -> dict:
+def _get_parent_organization(site: dict) -> Optional[schema.Organization]:
     # Just the obvious easy cases; Pareto-style
     name = site["attributes"]["FacilityName"]
     if name == "Rite Aid Pharmacy":
@@ -113,7 +112,7 @@ def _get_parent_organization(site: dict) -> dict:
     return None
 
 
-def _get_notes(site: dict) -> list:
+def _get_notes(site: dict) -> Optional[List[str]]:
     note = site["attributes"]["AdditionalInfo"]
     if note:
         return [note]
@@ -121,7 +120,7 @@ def _get_notes(site: dict) -> list:
     return None
 
 
-def _get_source(site: dict, timestamp: str) -> dict:
+def _get_source(site: dict, timestamp: str) -> schema.Source:
     source_uri = (
         "https://services1.arcgis.com/oOUgp466Coyjcu6V/ArcGIS/rest/services"
         + "/VaccineFinder_Production_View/FeatureServer/0"
@@ -138,7 +137,7 @@ def _get_source(site: dict, timestamp: str) -> dict:
     )
 
 
-def _get_normalized_location(site: dict, timestamp: str) -> dict:
+def _get_normalized_location(site: dict, timestamp: str) -> schema.NormalizedLocation:
     return schema.NormalizedLocation(
         id=f"nyc_arcgis:{site['attributes']['LocationID']}",
         name=site["attributes"]["FacilityName"],
