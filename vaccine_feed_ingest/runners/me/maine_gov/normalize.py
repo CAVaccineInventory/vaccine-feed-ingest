@@ -49,8 +49,60 @@ def _get_contacts(site: dict):
         ret.append(schema.Contact(phone=phone_number))
     for website in site["website"]:
         ret.append(schema.Contact(website=website))
-        ret.append(schema.Contact(other=site["schedulingInfo"]))
+
+    scheduling_info_raw = site["schedulingInfo"]
+
+    website_matches = re.search('href="(http.*)"', scheduling_info_raw)
+    if website_matches:
+        website = website_matches.group(1)
+    else:
+        website = None
+
+    phone_matches = re.search(
+        "tel:([-() \d]*)", scheduling_info_raw.replace("\u2013", "-")
+    )  # .replace() replaces en dash with ASCII '-', for better regex
+    if phone_matches:
+        raw_phone = phone_matches.group(1)
+    else:
+        phone_matches = re.search(
+            "(\d\d\d-\d\d\d-\d\d\d\d)", scheduling_info_raw.replace("\u2013", "-")
+        )  # .replace() replaces en dash with ASCII '-', for better regex
+        if phone_matches:
+            raw_phone = phone_matches.group(1)
+        elif "1-800-Walgreens" in scheduling_info_raw:
+            raw_phone = "(800) 925-4733"
+        else:
+            raw_phone = ""
+
+    raw_phone = raw_phone.lstrip("1-")
+    if raw_phone == "":
+        phone = None
+    elif len(raw_phone) == 8:
+        phone = "(???) " + raw_phone[0:3] + "-" + raw_phone[4:8]
+    elif raw_phone[3] == "-" or raw_phone[7] == "-":
+        phone = "(" + raw_phone[0:3] + ") " + raw_phone[4:7] + "-" + raw_phone[8:12]
+    # elif len(raw_phone) == 10:
+    #    phone = "(" + raw_phone[0:3] + ") " + raw_phone[3:6] + "-" + raw_phone[6:10]
+    else:
+        phone = raw_phone[0:14]
+
+    ret.append(
+        schema.Contact(
+            contact_type="booking",
+            phone=phone,
+            website=website,
+            other=scheduling_info_raw,
+        )
+    )
     return ret
+
+
+def _get_organization(site: dict):
+    if _get_name(site) == "Walmart":
+        return schema.Organization(name=_get_name(site), id="walmart")
+    if _get_name(site) == "Walgreens":
+        return schema.Organization(name=_get_name(site), id="walgreens")
+    return None
 
 
 def _get_notes(site: dict):
@@ -72,6 +124,7 @@ def normalize(site: dict, timestamp: str) -> str:
         name=_get_name(site),
         contact=_get_contacts(site),
         source=_get_source(site, timestamp),
+        parent_organization=_get_organization(site),
         notes=_get_notes(site),
     ).dict()
     return normalized
