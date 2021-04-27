@@ -8,6 +8,7 @@ import re
 import sys
 
 from vaccine_feed_ingest.schema import schema  # noqa: E402
+from typing import List, Optional
 
 CITY_RE = re.compile(r"^([\w ]+), NY$")
 # the providerName field smells like it's being parsed from someplace else,
@@ -43,7 +44,7 @@ def _get_source(site: dict, timestamp: str) -> schema.Source:
     )
 
 
-def _normalize_phone(raw_phone: str):
+def _normalize_phone(raw_phone: str) -> Optional[str]:
     raw_phone = raw_phone.lstrip("1")
     raw_phone = raw_phone.lstrip("-")
     raw_phone = raw_phone.lstrip(" ")
@@ -59,7 +60,7 @@ def _normalize_phone(raw_phone: str):
         return raw_phone[0:14]
 
 
-def _get_contacts(site: dict):
+def _get_contacts(site: dict) -> List[schema.Contact]:
     ret = []
     for raw_phone in site["phoneNumber"]:
         ret.append(
@@ -94,17 +95,15 @@ def _get_contacts(site: dict):
             raw_phone = ""
 
     ret.append(
-        schema.Contact(
-            contact_type="booking",
-            phone=_normalize_phone(raw_phone),
-            website=website,
-            other=scheduling_info_raw,
-        )
+        schema.Contact(contact_type="booking", phone=_normalize_phone(raw_phone))
     )
+    ret.append(schema.Contact(contact_type="booking", website=website))
+    ret.append(schema.Contact(contact_type="booking", other=scheduling_info_raw))
+
     return ret
 
 
-def _get_organization(site: dict):
+def _get_organization(site: dict) -> Optional[schema.Organization]:
     if _get_name(site) == "Walmart":
         return schema.Organization(name=_get_name(site), id="walmart")
     if _get_name(site) == "Walgreens":
@@ -112,7 +111,7 @@ def _get_organization(site: dict):
     return None
 
 
-def _get_notes(site: dict):
+def _get_notes(site: dict) -> List[str]:
     ret = []
     ret.append("city:" + site["city"])
     ret.append("county:" + site["county"])
@@ -135,7 +134,7 @@ def normalize(site: dict, timestamp: str) -> str:
     return normalized
 
 
-def normalize_from_list(sites, timestamp: str):
+def normalize_from_list(sites: list, timestamp: str) -> List[str]:
     ret = []
     for site in sites:
         ret.append(normalize(site, timestamp))
