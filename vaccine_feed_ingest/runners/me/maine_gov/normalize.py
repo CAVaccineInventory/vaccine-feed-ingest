@@ -77,13 +77,13 @@ def _get_contacts(site: dict):
         website = None
 
     phone_matches = re.search(
-        "tel:([-() \d]*)", scheduling_info_raw.replace("\u2013", "-")
+        "tel:([-() \\d]*)", scheduling_info_raw.replace("\u2013", "-")
     )  # .replace() replaces en dash with ASCII '-', for better regex
     if phone_matches:
         raw_phone = phone_matches.group(1)
     else:
         phone_matches = re.search(
-            "(\d\d\d-\d\d\d-\d\d\d\d)", scheduling_info_raw.replace("\u2013", "-")
+            "(\\d\\d\\d-\\d\\d\\d-\\d\\d\\d\\d)", scheduling_info_raw.replace("\u2013", "-")
         )  # .replace() replaces en dash with ASCII '-', for better regex
         if phone_matches:
             raw_phone = phone_matches.group(1)
