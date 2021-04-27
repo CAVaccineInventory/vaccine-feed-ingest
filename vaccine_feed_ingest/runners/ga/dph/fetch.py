@@ -35,6 +35,10 @@ def parse_location_links(doc: BeautifulSoup) -> List[str]:
     return urls
 
 
+def location_file_name_for_url(url: str) -> str:
+    return "location-" + url.split("/")[-1] + ".html"
+
+
 async def fetch_location(
     session: ClientSession, output_dir: pathlib.Path, url: str
 ) -> None:
@@ -42,7 +46,7 @@ async def fetch_location(
     Downloads the html for a location url and writes to a file
     'location-{slug}.html'
     """
-    file_name = "location-" + url.split("/")[-1] + ".html"
+    file_name = location_file_name_for_url(url)
     output_file = output_dir / file_name
 
     async with session.get(url) as response:
