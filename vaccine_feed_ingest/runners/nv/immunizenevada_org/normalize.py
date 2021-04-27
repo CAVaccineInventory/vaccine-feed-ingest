@@ -74,12 +74,7 @@ def _get_contacts(site: dict) -> Optional[List[schema.Contact]]:
 
 
 def _get_links(site: dict) -> Optional[List[schema.Link]]:
-    links = []
-    immunize_nv_link = schema.Link(
-        authority="immunizenevada_org",
-        id=site["title"],
-    )
-    links.append(immunize_nv_link)
+    links = None
 
     parsed_provider_link = provider_id_from_name(site["title"])
     if parsed_provider_link is not None:
@@ -87,7 +82,7 @@ def _get_links(site: dict) -> Optional[List[schema.Link]]:
             authority=parsed_provider_link[0],
             id=parsed_provider_link[1],
         )
-        links.append(provider_link)
+        links = [provider_link]
 
     return links
 
