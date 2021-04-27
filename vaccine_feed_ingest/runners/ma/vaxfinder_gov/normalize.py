@@ -4,7 +4,6 @@ import datetime
 import json
 import pathlib
 import sys
-
 from hashlib import md5
 
 # import schema
@@ -17,7 +16,8 @@ from schema import schema  # noqa: E402
 
 
 def _generate_id(unique_str: str) -> str:
-    return md5(unique_str.encode('utf-8')).hexdigest()
+    return md5(unique_str.encode("utf-8")).hexdigest()
+
 
 def normalize(site: dict, timestamp: str) -> schema.NormalizedLocation:
     # addresses are typically formatted like this: 800 Boylston Street, Boston, MA 02199
