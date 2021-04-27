@@ -11,6 +11,7 @@ import sys
 import pytz
 
 from vaccine_feed_ingest.schema import schema  # noqa: E402
+from typing import List, Optional
 
 # Configure logger
 logging.basicConfig(
@@ -23,7 +24,7 @@ logger = logging.getLogger("ny/nyc_arcgis/normalize.py")
 utc_tz = pytz.timezone("UTC")
 
 
-def _get_contacts(site: dict) -> dict:
+def _get_contacts(site: dict) -> Optional[List[schema.Contact]]:
     phone = None
     website = None
 
