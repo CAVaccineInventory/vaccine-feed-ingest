@@ -58,6 +58,7 @@ with input_file.open() as fin:
                 "providerName": m.group(2),
                 "streetAddress": m.group(3),
                 "city": m.group(4),
+                "minimumAge": "18",
             }
             if m.group(1) == "** ":
                 site["minimumAge"] = "16"
