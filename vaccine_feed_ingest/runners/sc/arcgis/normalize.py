@@ -9,14 +9,7 @@ import re
 import sys
 from typing import List, Optional
 
-# import schema
-site_dir = pathlib.Path(__file__).parent
-state_dir = site_dir.parent
-runner_dir = state_dir.parent
-root_dir = runner_dir.parent
-sys.path.append(str(root_dir))
-
-from schema import schema  # noqa: E402
+from vaccine_feed_ingest_schema import schema
 
 # Configure logger
 logging.basicConfig(
