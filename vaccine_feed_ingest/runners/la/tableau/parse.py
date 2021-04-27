@@ -10,7 +10,8 @@ from tableauscraper import utils
 
 def tableau_item_to_parsed_site(tableau_entry):
     """Put the tableau entry in something closer to the normalized format."""
-    name, street, city_state = tableau_entry["Site-value"].split("\n")
+    main_data, extra_data = tableau_entry
+    name, street, city_state = main_data["Site-value"].split("\n")
     city_state = city_state.strip()
     if city_state.endswith(" LA"):
         city = city_state[:-3]
@@ -26,10 +27,13 @@ def tableau_item_to_parsed_site(tableau_entry):
         minimum_age = 18
 
     contact = {}
-    if tableau_entry["Dimension-value"] == "Website":
-        contact["website"] = tableau_entry["Value-alias"]
-    if tableau_entry["Phone-value"] != "%null%":
-        contact["phone"] = tableau_entry["Phone-value"]
+    if main_data["Dimension-value"] == "Website":
+        contact["website"] = main_data["Value-alias"]
+    elif extra_data["Dimension-value"] == "Website":
+        contact["website"] = extra_data["Value-alias"]
+
+    if main_data["Phone-value"] != "%null%":
+        contact["phone"] = main_data["Phone-value"]
 
     out = {}
     if contact:
@@ -59,7 +63,15 @@ def parse_tableau(file_contents):
     data_dict = utils.getData(full_data, indices_info)
     num_entries = len(data_dict["Site-value"])
     # Transpose columns to rows (tableau-scraping uses pandas, but we don't strictly need to do that)
-    entries = [{k: v[i] for (k, v) in data_dict.items()} for i in range(num_entries)]
+    # Rows are actually duplicated; some have map, some have website.
+    entries = []
+    for i in range(0, num_entries, 2):
+        main_data = {k: v[i] for (k, v) in data_dict.items()}
+        extra_data = {
+            "Dimension-value": data_dict["Dimension-value"][i + 1],
+            "Value-alias": data_dict["Value-alias"][i + 1],
+        }
+        entries.append((main_data, extra_data))
     return [tableau_item_to_parsed_site(entry) for entry in entries]
 
 
