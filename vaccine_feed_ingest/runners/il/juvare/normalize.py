@@ -8,7 +8,7 @@ import re
 import sys
 from typing import List, Optional, Tuple
 
-from vaccine_feed_ingest.schema import schema  # noqa: E402
+from vaccine_feed_ingest_schema import schema  # noqa: E402
 
 
 def _get_source(site: dict, timestamp: str) -> schema.Source:
