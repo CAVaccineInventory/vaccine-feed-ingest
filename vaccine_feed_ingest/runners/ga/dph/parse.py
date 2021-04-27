@@ -74,7 +74,16 @@ def parse_landing(input_dir: pathlib.Path) -> List:
             "Location Name": cells[0].text.strip(),
             "County": cells[1].text.strip(),
             "Address": cells[2].text.strip(),
+            "address-parts": {},
         }
+        # inside the address column the data is organized with classes
+        # containing semantic parts: address-line1, locality, postal-code, etc
+        for span in cells[2].find_all("span"):
+            # these spans should only ever have 1 class, but just in case,
+            # convert the list to a string
+            key = " ".join(span.attrs["class"])
+            location["address-parts"][key] = span.text.strip()
+
         a = row.find("a")
         if a is not None and a.attrs["href"] is not None:
             file_name = location_file_name_for_url(a.attrs["href"])
