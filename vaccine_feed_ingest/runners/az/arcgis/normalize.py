@@ -11,6 +11,8 @@ from typing import List, Optional, Tuple
 
 from vaccine_feed_ingest_schema import schema
 
+from vaccine_feed_ingest.utils.validation import BOUNDING_BOX
+
 # Configure logger
 logging.basicConfig(
     level=logging.INFO,
@@ -223,6 +225,21 @@ def _get_inventory(site: dict) -> Optional[List[schema.Vaccine]]:
     ]
 
 
+def _get_lat_lng(site: dict) -> Optional[schema.LatLng]:
+    lat_lng = schema.LatLng(
+        latitude=site["geometry"]["y"], longitude=site["geometry"]["x"]
+    )
+
+    # Some locations in the AZ data set have lat/lng near the south pole. Drop
+    # those values.
+    if not BOUNDING_BOX.latitude.contains(
+        lat_lng.latitude
+    ) or not BOUNDING_BOX.longitude.contains(lat_lng.longitude):
+        return None
+
+    return lat_lng
+
+
 def _get_normalized_location(site: dict, timestamp: str) -> schema.NormalizedLocation:
     return schema.NormalizedLocation(
         id=_get_id(site),
@@ -234,9 +251,7 @@ def _get_normalized_location(site: dict, timestamp: str) -> schema.NormalizedLoc
             state=site["attributes"]["state"] or "AZ",
             zip=site["attributes"]["zip"],
         ),
-        location=schema.LatLng(
-            latitude=site["geometry"]["y"], longitude=site["geometry"]["x"]
-        ),
+        location=_get_lat_lng(site),
         contact=_get_contacts(site),
         languages=_get_languages(site),
         opening_dates=_get_opening_dates(site),
