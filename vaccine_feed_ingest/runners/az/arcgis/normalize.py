@@ -11,7 +11,7 @@ from typing import List, Optional, Tuple
 
 from vaccine_feed_ingest_schema import schema
 
-from vaccine_feed_ingest.utils.validation import BOUNDING_BOX
+from vaccine_feed_ingest.utils.validation import BOUNDING_BOX  # noqa: E402
 
 # Configure logger
 logging.basicConfig(
