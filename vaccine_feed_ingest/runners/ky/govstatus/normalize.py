@@ -108,8 +108,7 @@ def _get_organization(site: dict):
 
 
 def _get_notes(site: dict):
-    ret = []
-    return ret
+    return []
 
 
 def _get_source(site: dict, timestamp: str) -> schema.Source:
