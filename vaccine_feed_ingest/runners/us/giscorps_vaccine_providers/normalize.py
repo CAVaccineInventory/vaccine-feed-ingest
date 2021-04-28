@@ -141,12 +141,16 @@ def _get_access(site: dict) -> Optional[List[str]]:
         "Not Applicable": "no",
         "NA": "no"
     }
-    try:
-        wheelchair_bool = wheelchair_options[wheelchair]
-    except KeyError:
-        wheelchair_bool = "no"
-
+    wheelchair_bool = try_lookup(wheelchair_options, wheelchair, "no")
+    
     return schema.Access(drive=drive_bool, wheelchair=wheelchair_bool)
+
+
+def try_lookup(mapping, value, default):
+    try:
+        return mapping[value]
+    except KeyError:
+        return default
 
 
 def _get_published_at(site: dict) -> Optional[str]:
