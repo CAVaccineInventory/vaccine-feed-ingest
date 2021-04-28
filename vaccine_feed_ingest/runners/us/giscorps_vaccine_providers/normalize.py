@@ -146,10 +146,13 @@ def _get_access(site: dict) -> Optional[List[str]]:
     return schema.Access(drive=drive_bool, wheelchair=wheelchair_bool)
 
 
-def try_lookup(mapping, value, default):
+def try_lookup(mapping, value, default, name=None):
     try:
         return mapping[value]
-    except KeyError:
+    except KeyError as e:
+        name = " for " + name or ""
+        logger.error("value not present in lookup table%s: %s", name, e)
+
         return default
 
 
