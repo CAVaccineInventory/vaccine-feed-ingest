@@ -82,8 +82,8 @@ def available_sites(state: Optional[str]) -> None:
     """Print list of available sites, optionally filtered by state"""
 
     for site_dir in site.get_site_dirs_for_state(state):
-        has_fetch = bool(site.find_executeable(site_dir, common.PipelineStage.FETCH))
-        has_parse = bool(site.find_executeable(site_dir, common.PipelineStage.PARSE))
+        has_fetch = _compute_has_fetch(site_dir)
+        has_parse = _compute_has_parse(site_dir)
         has_normalize = bool(
             site.find_executeable(site_dir, common.PipelineStage.NORMALIZE)
         )
@@ -94,6 +94,30 @@ def available_sites(state: Optional[str]) -> None:
             "parse" if has_parse else "no-parse",
             "normalize" if has_normalize else "no-normalize",
         )
+
+
+def _compute_has_fetch(site_dir: pathlib.Path) -> bool:
+    if site.find_executeable(site_dir, common.PipelineStage.FETCH):
+        return True
+    if not site.find_yml(site_dir, common.PipelineStage.FETCH):
+        return False
+    return bool(
+        site.find_executeable(
+            common.RUNNERS_DIR.joinpath("_shared"), common.PipelineStage.FETCH
+        )
+    )
+
+
+def _compute_has_parse(site_dir: pathlib.Path) -> bool:
+    if site.find_executeable(site_dir, common.PipelineStage.PARSE):
+        return True
+    if not site.find_yml(site_dir, common.PipelineStage.PARSE):
+        return False
+    return bool(
+        site.find_executeable(
+            common.RUNNERS_DIR.joinpath("_shared"), common.PipelineStage.PARSE
+        )
+    )
 
 
 @cli.command()
