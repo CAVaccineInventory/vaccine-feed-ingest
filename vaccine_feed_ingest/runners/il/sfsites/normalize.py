@@ -5,6 +5,8 @@ import json
 import pathlib
 import sys
 
+from vaccine_feed_ingest.utils.normalize import organization_from_name
+
 # import schema
 site_dir = pathlib.Path(__file__).parent
 state_dir = site_dir.parent
@@ -20,6 +22,12 @@ def normalize(site: dict, timestamp: str) -> dict:
 
     if "Location_Type__c" in site:
         notes.append(site["Location_Type__c"])
+
+    parent_organization = None
+
+    org = organization_from_name(name)
+    if org is not None:
+        parent_organization = schema.Organization(id=org[0], name=org[1])
 
     return schema.NormalizedLocation(
         id=location_id,
@@ -47,7 +55,7 @@ def normalize(site: dict, timestamp: str) -> dict:
         availability=schema.Availability(appointments=True),
         inventory=None,
         access=None,
-        parent_organization=None,
+        parent_organization=parent_organization,
         links=None,
         notes=notes,
         active=None,
