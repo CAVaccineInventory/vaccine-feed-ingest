@@ -158,26 +158,6 @@ def _is_different(source: schema.NormalizedLocation, candidate: dict) -> bool:
         if src_org and cand_org and jellyfish.jaro_winkler(src_org, cand_org) < 0.1:
             return True
 
-    # Must not have any conflicting links/concordances
-    if source.links and candidate_props.get("concordances"):
-        src_link_map = {link.authority: link.id for link in source.links}
-
-        for link in candidate_props["concordances"]:
-            if ":" not in link:
-                continue
-
-            link_authority, link_id = link.split(":", maxsplit=1)
-            if not link_id:
-                continue
-
-            src_link_id = src_link_map.get(link_authority)
-
-            if not src_link_id:
-                continue
-
-            if src_link_id != link_id:
-                return True
-
     return False
 
 
