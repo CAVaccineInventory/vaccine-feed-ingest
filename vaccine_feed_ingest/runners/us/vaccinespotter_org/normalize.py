@@ -100,10 +100,6 @@ def normalize(site_blob: dict, timestamp: str) -> dict:
                 "id": site["id"],
             },
         ],
-        "fetched_at": timestamp,
-        "published_at": site[
-            "appointments_last_fetched"  # we could also use `appointments_last_modified`
-        ],
         "active": None,
         "source": {
             "source": "vaccinespotter_org",

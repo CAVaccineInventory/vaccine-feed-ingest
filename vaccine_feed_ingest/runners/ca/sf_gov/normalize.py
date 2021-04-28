@@ -57,8 +57,6 @@ def normalize(site: dict, timestamp: str) -> dict:
                 "id": site["id"],
             },
         ],
-        "fetched_at": timestamp,
-        "published_at": site["appointments"]["last_updated"],
         "active": site["active"],
         "source": {
             "source": "sf_gov",
