@@ -197,9 +197,9 @@ def _get_normalized_location(site: dict, timestamp: str) -> schema.NormalizedLoc
             zip=try_get_list(city_state_zip, -1, default=""),
         ),
         location=schema.LatLng(
-            latitude=site["geometry"]["y"],
-            longitude=site["geometry"]["x"],
-        ),
+            latitude=site["geometry"]["y"] if site.get("geometry") else None,
+            longitude=site["geometry"]["x"] if site.get("geometry") else None,
+        ) if site.get("geometry") else None,# this is convuluted. ask Adrian (the author) if theres questions
         contact=_get_contacts(site),
         languages=None,
         opening_dates=None,
