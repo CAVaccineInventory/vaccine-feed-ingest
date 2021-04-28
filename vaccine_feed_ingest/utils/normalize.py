@@ -4,6 +4,7 @@ Various tricks for matching source locations to product locations from VIAL
 import re
 from typing import Optional, Tuple
 
+
 def organization_from_name(name: str) -> Optional[Tuple[str, str]]:
     """
     Generate parent organization for retail pharmacies (walgreens, Walgreens)

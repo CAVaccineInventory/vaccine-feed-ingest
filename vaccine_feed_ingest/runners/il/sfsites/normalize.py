@@ -15,6 +15,7 @@ root_dir = runner_dir.parent
 sys.path.append(str(root_dir))
 from schema import schema  # noqa: E402
 
+
 def get_statewide_ids(statewide_filepath: str) -> set:
     statewide_ids = set()
 
@@ -59,10 +60,7 @@ def normalize(site: dict, statewide_ids: set, timestamp: str) -> dict:
             longitude=site["Geolocation__Longitude__s"],
         ),
         contact=[
-            schema.Contact(
-                website=site["Website__c"],
-                contact_type="booking"
-            ),
+            schema.Contact(website=site["Website__c"], contact_type="booking"),
         ],
         languages=None,
         opening_dates=None,
@@ -83,8 +81,6 @@ def normalize(site: dict, statewide_ids: set, timestamp: str) -> dict:
             data=site,
         ),
     )
-
-    return normalized
 
 
 output_dir = pathlib.Path(sys.argv[1])
