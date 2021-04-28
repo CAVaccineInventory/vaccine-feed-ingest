@@ -101,7 +101,7 @@ def _get_inventory(site: dict) -> List[schema.Vaccine]:
         vaccines.append(schema.Vaccine(vaccine="moderna"))
 
     if site["attributes"]["ServiceType_Pfizer"] == "Yes":
-        vaccines.append(schema.Vaccine(vaccine="pfizer"))
+        vaccines.append(schema.Vaccine(vaccine="pfizer_biontech"))
 
     return vaccines
 
@@ -163,7 +163,9 @@ def _get_normalized_location(site: dict, timestamp: str) -> schema.NormalizedLoc
         opening_hours=_get_opening_hours(site),
         availability=_get_availability(site),
         inventory=_get_inventory(site),
-        access=schema.Access(wheelchair=site["attributes"]["ADA_Compliant"] == "Yes"),
+        access=schema.Access(
+            wheelchair="yes" if site["attributes"]["ADA_Compliant"] == "Yes" else "no"
+        ),
         parent_organization=_get_parent_organization(site),
         notes=_get_notes(site),
         source=_get_source(site, timestamp),
