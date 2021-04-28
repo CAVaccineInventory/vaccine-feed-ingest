@@ -16,6 +16,7 @@ from schema import schema  # noqa: E402
 def normalize(site: dict, timestamp: str) -> dict:
     location_id = site["Id"]
     name = site["Testing_Center__c"]
+    notes = [site["Location_Type__c"]]
 
     return schema.NormalizedLocation(
         id=location_id,
@@ -45,7 +46,7 @@ def normalize(site: dict, timestamp: str) -> dict:
         access=None,
         parent_organization=None,
         links=None,
-        notes=None,
+        notes=notes,
         active=None,
         source=schema.Source(
             source="sfsites",
