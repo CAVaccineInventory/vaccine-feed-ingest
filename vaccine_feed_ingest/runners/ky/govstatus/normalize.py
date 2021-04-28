@@ -50,21 +50,17 @@ def _get_contacts(site: dict):
 
     if "register_phone" in site:
         raw_phone = site["register_phone"]
-        if raw_phone != "":
+        if raw_phone:
             raw_phone = raw_phone.lstrip("tel:")
             raw_phone = raw_phone.lstrip(" ")
             raw_phone = raw_phone.lstrip("1")
             raw_phone = raw_phone.lstrip("-")
             raw_phone = raw_phone.lstrip(" ")
             if raw_phone[3] == "-" or raw_phone[7] == "-":
-                phone = (
-                    "(" + raw_phone[0:3] + ") " + raw_phone[4:7] + "-" + raw_phone[8:12]
-                )
+                phone = f"({raw_phone[0:3]}) {raw_phone[4:7]}-{raw_phone[8:12]}"
                 phone_notes = raw_phone[12:]
             elif len(raw_phone) == 10:
-                phone = (
-                    "(" + raw_phone[0:3] + ") " + raw_phone[3:6] + "-" + raw_phone[6:10]
-                )
+                phone = f"({raw_phone[0:3]}) {raw_phone[3:6]}-{raw_phone[6:10]}"
                 phone_notes = ""
             else:
                 phone = raw_phone[0:14]
@@ -86,7 +82,7 @@ def _get_contacts(site: dict):
 
     if "register_online_url" in site:
         website = site["register_online_url"]
-        if website != "":
+        if website:
             ret.append(schema.Contact(website=website, contact_type="booking"))
     return ret
 
@@ -100,7 +96,7 @@ def _get_organization(site: dict):
     if _get_name(site)[0:6] == "Kroger":
         return schema.Organization(name="Kroger", id="kroger")
     if _get_name(site)[0:9] == "Walgreens":
-        return schema.Organization(name="Walgreens", id="walmart")
+        return schema.Organization(name="Walgreens", id="walgreens")
     if _get_name(site)[0:7] == "Walmart":
         return schema.Organization(name="Walmart", id="walmart")
 
@@ -121,9 +117,9 @@ def _get_source(site: dict, timestamp: str) -> schema.Source:
     )
 
 
-def normalize(site: dict, timestamp: str) -> str:
+def normalize(site: dict, timestamp: str) -> dict:
     normalized = schema.NormalizedLocation(
-        id=(SOURCE_NAME + ":" + _get_id(site)),
+        id=(f"{SOURCE_NAME}:{_get_id(site)}"),
         name=_get_name(site),
         address=_get_address(site),
         location=_get_location(site),
