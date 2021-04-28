@@ -115,14 +115,12 @@ def _get_active(site: dict) -> Optional[bool]:
 
     status_options = {
         "Open": True,
+        "Closed": False,
+        "Testing Restricted": True
     }
 
-    try:
-        return status_options[status]
-    except KeyError as e:
-        logger.error("Unexpected status value: %s", e)
+    return try_lookup(status_options, status, None, name="active status lookup")
 
-    return None
 
 
 def _get_access(site: dict) -> Optional[List[str]]:
