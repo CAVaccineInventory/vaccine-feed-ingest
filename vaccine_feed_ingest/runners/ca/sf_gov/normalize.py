@@ -22,7 +22,7 @@ def normalize(site: dict, timestamp: str) -> dict:
     normalized = {
         "id": f"sf_gov:{site['id']}",
         "name": site["name"],
-        address: {
+        "address": {
             "street1": street1,
             "street2": street2,
             "city": site["location"]["city"],
