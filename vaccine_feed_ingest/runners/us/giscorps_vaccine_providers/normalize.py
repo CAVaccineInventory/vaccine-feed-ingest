@@ -181,15 +181,20 @@ def try_get_list(lis, index, default=None):
 
 
 def _get_normalized_location(site: dict, timestamp: str) -> schema.NormalizedLocation:
+
+    addrsplit = site["attributes"]["fulladdr"].split(", ")
+
+    city_state_zip = addrsplit[1].split(" ") if try_get_list(addrsplit, 1) else None
+ 
     return schema.NormalizedLocation(
         id=_get_id(site),
         name=site["attributes"]["name"],
         address=schema.Address(
-            street1=site["attributes"]["fulladdr"].split(", ")[0],
+            street1=addrsplit[0],
             street2=None,
-            city=site["attributes"]["municipality"],
-            state=site["attributes"]["State"],
-            zip=site["attributes"]["fulladdr"].split(" ")[-1],
+            city=try_get_list(city_state_zip, 0, default="") or site["attributes"]["municipality"],
+            state=try_get_list(city_state_zip, 1, default="") or site["attributes"]["State"],
+            zip=try_get_list(city_state_zip, 2, default=""),
         ),
         location=schema.LatLng(
             latitude=site["geometry"]["y"],
