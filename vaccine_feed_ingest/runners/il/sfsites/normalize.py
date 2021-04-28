@@ -16,7 +16,10 @@ from schema import schema  # noqa: E402
 def normalize(site: dict, timestamp: str) -> dict:
     location_id = site["Id"]
     name = site["Testing_Center__c"]
-    notes = [site["Location_Type__c"]]
+    notes = []
+
+    if "Location_Type__c" in site:
+        notes.append(site["Location_Type__c"])
 
     return schema.NormalizedLocation(
         id=location_id,
