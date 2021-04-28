@@ -9,7 +9,13 @@ from typing import Optional
 
 from vaccine_feed_ingest_schema import schema  # noqa: E402
 
-logger = logging.getLogger(__name__)
+# Configure logger
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s %(levelname)s:%(name)s:%(message)s",
+    datefmt="%m/%d/%Y %H:%M:%S",
+)
+logger = logging.getLogger("ky/govstatus/normalize.py")
 
 SOURCE_NAME = "ky:govstatus"
 
