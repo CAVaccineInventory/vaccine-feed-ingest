@@ -26,19 +26,24 @@ utc_tz = pytz.timezone("UTC")
 
 
 def _get_contacts(site: dict) -> Optional[List[schema.Contact]]:
-    phone = None
-    website = None
+    contacts = []
 
     if site["attributes"]["Phone"] and re.match(
         r"^\(\d{3}\) \d{3}-\d{4}$", site["attributes"]["Phone"]
     ):
-        phone = site["attributes"]["Phone"]
+        contacts.append(
+            schema.Contact(contact_type="general", phone=site["attributes"]["Phone"])
+        )
 
     if site["attributes"]["Website"]:
-        website = site["attributes"]["Website"]
+        contacts.append(
+            schema.Contact(
+                contact_type="general", website=site["attributes"]["Website"]
+            )
+        )
 
-    if phone or website:
-        return [schema.Contact(phone=phone, website=website)]
+    if len(contacts) > 0:
+        return contacts
 
     return None
 
