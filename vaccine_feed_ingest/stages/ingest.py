@@ -318,7 +318,8 @@ def _validate_normalized(output_dir: pathlib.Path) -> bool:
     return True
 
 
-def validate_bounding_boxes(location, bounding_boxes, filepath="", line=""):
+def validate_bounding_boxes(location, bounding_boxes, method="all", filepath="", line=""):
+    results = []
     for boundingbox in bounding_boxes:
         if not boundingbox.latitude.contains(
             location.latitude
@@ -332,7 +333,19 @@ def validate_bounding_boxes(location, bounding_boxes, filepath="", line=""):
                 location,
                 boundingbox,
             )
+            if method == "any":
+                # fail if any single bounding box fails
+                return False
+            else:
+                results.append(False)
+
+        results.append(True)
+
+    if method == "all":
+        # only fail if all bounding boxes fail
+        if all(not x for x in results):
             return False
-    return True
-
-
+    elif method == "any":
+        # fail if any single bounding box fails.
+        # by this point it will have failed if it is going to fail, so succeed
+        return True
