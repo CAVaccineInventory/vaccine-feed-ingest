@@ -328,7 +328,7 @@ def validate_bounding_boxes(location, bounding_boxes, filepath="", line=""):
             logger.warning(
                 "Invalid latitude or longitude in %s at line %d: %s is outside approved bounds (%s)",
                 filepath,
-                line_no,
+                line,
                 location,
                 boundingbox,
             )
