@@ -1,5 +1,12 @@
 #!/usr/bin/env bash
 
+# exit when a command fails instead of blindly blundering forward
+set -e
+# treat unset variables as an error and exit immediately
+set -u
+# don't hide exit codes when pipeline output to another command
+set -o pipefail
+
 maybe_install() {
 
     exists=$(which "$1")
