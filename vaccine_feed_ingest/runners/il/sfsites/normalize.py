@@ -15,13 +15,28 @@ root_dir = runner_dir.parent
 sys.path.append(str(root_dir))
 from schema import schema  # noqa: E402
 
-def normalize(site: dict, timestamp: str) -> dict:
+def get_statewide_ids(statewide_filepath: str) -> set:
+    statewide_ids = set()
+
+    with statewide_filepath.open() as file:
+        for site_json in file:
+            parsed_site = json.loads(site_json)
+
+            statewide_ids.add(parsed_site["Id"])
+
+    return statewide_ids
+
+
+def normalize(site: dict, statewide_ids: set, timestamp: str) -> dict:
     location_id = site["Id"]
     name = site["Testing_Center__c"]
     notes = []
 
     if "Location_Type__c" in site:
         notes.append(site["Location_Type__c"])
+
+    if location_id not in statewide_ids:
+        notes.append("Not open to all Illinois residents")
 
     parent_organization = None
 
@@ -75,6 +90,8 @@ def normalize(site: dict, timestamp: str) -> dict:
 output_dir = pathlib.Path(sys.argv[1])
 input_dir = pathlib.Path(sys.argv[2])
 
+statewide_ids = get_statewide_ids(input_dir / "statewide.parsed.ndjson")
+
 input_filepath = input_dir / "locations.parsed.ndjson"
 
 parsed_at_timestamp = datetime.datetime.utcnow().isoformat()
@@ -86,7 +103,7 @@ with input_filepath.open() as fin:
         for site_json in fin:
             parsed_site = json.loads(site_json)
 
-            normalized_site = normalize(parsed_site, parsed_at_timestamp)
+            normalized_site = normalize(parsed_site, statewide_ids, parsed_at_timestamp)
 
             json.dump(normalized_site.dict(), fout)
             fout.write("\n")
