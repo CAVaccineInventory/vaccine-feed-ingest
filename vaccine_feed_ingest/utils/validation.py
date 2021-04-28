@@ -26,3 +26,14 @@ BOUNDING_BOX = BoundingBox(
         maximum=0.0,
     ),
 )
+
+BOUNDING_BOX_GUAM = BoundingBox(
+    latitude=MinMax(
+        minimum=12.613640,
+        maximum=16.816439,
+    ),
+    longitude=MinMax(
+        minimum=144.064088,
+        maximum=146.330609,
+    ),
+)
