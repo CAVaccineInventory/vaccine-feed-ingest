@@ -9,7 +9,7 @@ import sys
 from typing import Optional
 
 import pydantic
-from vaccine_feed_ingest_schema import schema
+from vaccine_feed_ingest_schema import location as schema
 
 from vaccine_feed_ingest.utils.normalize import provider_id_from_name
 from vaccine_feed_ingest.utils.validation import BOUNDING_BOX
@@ -99,10 +99,6 @@ def normalize(site_blob: dict, timestamp: str) -> dict:
                 "authority": "vaccinespotter_org",
                 "id": site["id"],
             },
-        ],
-        "fetched_at": timestamp,
-        "published_at": site[
-            "appointments_last_fetched"  # we could also use `appointments_last_modified`
         ],
         "active": None,
         "source": {

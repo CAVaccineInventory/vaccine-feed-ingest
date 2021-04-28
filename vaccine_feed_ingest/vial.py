@@ -10,7 +10,7 @@ import geojson
 import rtree
 import shapely.geometry
 import urllib3
-from vaccine_feed_ingest_schema import schema
+from vaccine_feed_ingest_schema import load
 
 from .utils import misc
 
@@ -67,7 +67,7 @@ def start_import_run(vial_http: urllib3.connectionpool.ConnectionPool) -> str:
 def import_source_locations(
     vial_http: urllib3.connectionpool.ConnectionPool,
     import_run_id: str,
-    import_locations: Iterable[schema.ImportSourceLocation],
+    import_locations: Iterable[load.ImportSourceLocation],
 ) -> urllib3.response.HTTPResponse:
     """Import source locations"""
     for import_locations_batch in misc.batch(import_locations, 1_000):

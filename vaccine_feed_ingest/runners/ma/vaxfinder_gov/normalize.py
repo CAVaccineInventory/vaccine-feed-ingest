@@ -6,13 +6,7 @@ import pathlib
 import sys
 from hashlib import md5
 
-# import schema
-site_dir = pathlib.Path(__file__).parent
-state_dir = site_dir.parent
-runner_dir = state_dir.parent
-root_dir = runner_dir.parent
-sys.path.append(str(root_dir))
-from schema import schema  # noqa: E402
+from vaccine_feed_ingest_schema import location as schema
 
 
 def _generate_id(unique_str: str) -> str:

@@ -32,7 +32,7 @@ pandas = "^1.2.4"
 openpyxl = "^3.0.7"
 pytz = "^2021.1"
 beautifulsoup4 = "^4.9.3"
-vaccine-feed-ingest-schema = "^0.1"
+vaccine-feed-ingest-schema = "^0.2.1"
 aiohttp = "^3.7.4"
 
 [tool.poetry.dev-dependencies]
