@@ -145,6 +145,9 @@ def _get_access(site: dict) -> Optional[List[str]]:
 
 
 def try_lookup(mapping, value, default, name=None):
+    if value is None:
+        return default
+        
     try:
         return mapping[value]
     except KeyError as e:
