@@ -135,8 +135,10 @@ def _get_access(site: dict) -> Optional[List[str]]:
     wheelchair = site["attributes"].get("Wheelchair_Accessible")
 
     wheelchair_options = {
-        "Unknown": "",  # how to handle this?
-        # TODO: find other options. i was only using the first result from the data as a guide for this one
+        "Yes": "yes",
+        "Partially": "partial",
+        "Unknown": "no",
+        "Not Applicable": "no"
     }
     wheelchair_bool = wheelchair_options[wheelchair]
 
