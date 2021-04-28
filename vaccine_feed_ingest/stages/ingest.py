@@ -320,22 +320,26 @@ def _validate_normalized(output_dir: pathlib.Path) -> bool:
 
 def validate_bounding_boxes(location, bounding_boxes, method="all", filepath="", line=""):
     results = []
+
+    def fail():
+        logger.warning(
+            "Invalid latitude or longitude in %s at line %d: %s is outside approved bounds (%s)",
+            filepath,
+            line,
+            location,
+            boundingbox,
+        )
+        return False
+
     for boundingbox in bounding_boxes:
         if not boundingbox.latitude.contains(
             location.latitude
         ) or not boundingbox.longitude.contains(
             location.longitude
         ):
-            logger.warning(
-                "Invalid latitude or longitude in %s at line %d: %s is outside approved bounds (%s)",
-                filepath,
-                line,
-                location,
-                boundingbox,
-            )
             if method == "any":
                 # fail if any single bounding box fails
-                return False
+                return fail()
             else:
                 results.append(False)
 
@@ -344,7 +348,7 @@ def validate_bounding_boxes(location, bounding_boxes, method="all", filepath="",
     if method == "all":
         # only fail if all bounding boxes fail
         if all(not x for x in results):
-            return False
+            return fail()
         else:
             return True
     elif method == "any":
