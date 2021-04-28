@@ -63,7 +63,13 @@ setup_linux() {
     echo "I'm about to use sudo to install some libraries, python 3.9, and curl"
     echo "so will ask for your root password"
     echo ""
-    sudo apt-get install libbz2-dev liblzma-dev libreadline-dev libsqlite3-dev python3.9 curl
+    sudo apt-get install \
+        libbz2-dev \
+        liblzma-dev \
+        libreadline-dev \
+        libsqlite3-dev \
+        python3.9 \
+        curl
 
     curl -sSL https://raw.githubusercontent.com/python-poetry/poetry/master/get-poetry.py | python3.9 -
 
