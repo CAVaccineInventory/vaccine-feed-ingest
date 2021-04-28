@@ -23,7 +23,7 @@ def parse_address(address):
         raise Exception(f"failed to parse zip code in address: {address}")
 
     rest = match.group("rest")
-    tn_pattern = re.compile(r"\bTN\b|\bTennessee\b", re.IGNORECASE)
+    tn_pattern = re.compile(r",?\s*\b(TN|Tennessee)\b", re.IGNORECASE)
     if re.search(tn_pattern, rest) is None:
         raise Exception(f"This address doesn't look like it's for Tennessee: {address}")
     city = re.sub(tn_pattern, "", rest)
