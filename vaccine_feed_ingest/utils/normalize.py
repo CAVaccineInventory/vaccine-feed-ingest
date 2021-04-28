@@ -4,6 +4,27 @@ Various tricks for matching source locations to product locations from VIAL
 import re
 from typing import Optional, Tuple
 
+def organization_from_name(name: str) -> Optional[Tuple[str, str]]:
+    """
+    Generate parent organization for retail pharmacies (walgreens, Walgreens)
+
+    We may want to merge this function with provider_id_from_name if we can get more clever regex's
+    """
+
+    m = re.search(r"(Walgreens)", name, re.I)
+    if m:
+        return m.group(1).lower(), m.group(1).title()
+
+    m = re.search(r"(CVS)", name, re.I)
+    if m:
+        return m.group(1).lower(), m.group(1).upper()
+
+    m = re.search(r"(Costco)", name, re.I)
+    if m:
+        return m.group(1).lower(), m.group(1).title()
+
+    return None
+
 
 def provider_id_from_name(name: str) -> Optional[Tuple[str, str]]:
     """ Generate provider ids for retail pharmacies (riteaid:123) """
