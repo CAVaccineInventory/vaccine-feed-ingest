@@ -10,7 +10,7 @@ from vaccine_feed_ingest_schema import schema  # noqa: E402
 
 logger = logging.getLogger(__name__)
 
-_source_name = "ky:govstatus"
+SOURCE_NAME = "ky:govstatus"
 
 
 def _get_id(site: dict) -> str:
@@ -117,13 +117,13 @@ def _get_source(site: dict, timestamp: str) -> schema.Source:
         fetched_at=timestamp,
         fetched_from_uri="https://govstatus.egov.com/kentucky-vaccine-map",
         id=_get_id(site),
-        source=_source_name,
+        source=SOURCE_NAME,
     )
 
 
 def normalize(site: dict, timestamp: str) -> str:
     normalized = schema.NormalizedLocation(
-        id=(_source_name + ":" + _get_id(site)),
+        id=(SOURCE_NAME + ":" + _get_id(site)),
         name=_get_name(site),
         address=_get_address(site),
         location=_get_location(site),
