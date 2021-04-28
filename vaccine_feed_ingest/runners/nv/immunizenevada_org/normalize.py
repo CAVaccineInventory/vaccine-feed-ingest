@@ -7,7 +7,8 @@ import re
 import sys
 from typing import List, Optional
 
-from vaccine_feed_ingest.schema import schema
+from vaccine_feed_ingest_schema import location as schema
+
 from vaccine_feed_ingest.utils.normalize import provider_id_from_name
 
 

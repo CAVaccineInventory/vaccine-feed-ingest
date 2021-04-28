@@ -8,7 +8,7 @@ import re
 import sys
 from typing import List, Optional
 
-from vaccine_feed_ingest.schema import schema  # noqa: E402
+from vaccine_feed_ingest_schema import location as schema
 
 CITY_RE = re.compile(r"^([\w ]+), NY$")
 # the providerName field smells like it's being parsed from someplace else,
