@@ -138,9 +138,13 @@ def _get_access(site: dict) -> Optional[List[str]]:
         "Yes": "yes",
         "Partially": "partial",
         "Unknown": "no",
-        "Not Applicable": "no"
+        "Not Applicable": "no",
+        "NA": "no"
     }
-    wheelchair_bool = wheelchair_options[wheelchair]
+    try:
+        wheelchair_bool = wheelchair_options[wheelchair]
+    except KeyError:
+        wheelchair_bool = "no"
 
     return schema.Access(drive=drive_bool, wheelchair=wheelchair_bool)
 
