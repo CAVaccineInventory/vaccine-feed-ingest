@@ -15,6 +15,8 @@ from .common import STAGE_OUTPUT_SUFFIX, PipelineStage
 
 logger = logging.getLogger("ingest")
 
+APPROVED_BOUNDS = [BOUNDING_BOX, BOUNDING_BOX_GUAM]
+
 
 def run_fetch(
     site_dir: pathlib.Path,
@@ -305,8 +307,9 @@ def _validate_normalized(output_dir: pathlib.Path) -> bool:
                     return False
 
                 if normalized_location.location:
-                    result, failed_bound = validate_bounding_boxes(
-                        normalized_location.location, [BOUNDING_BOX, BOUNDING_BOX_GUAM]
+                    result = validate_bounding_boxes(
+                        normalized_location.location,
+                        APPROVED_BOUNDS
                     )
 
                     # if false, return false
@@ -316,38 +319,29 @@ def _validate_normalized(output_dir: pathlib.Path) -> bool:
                             filepath,
                             line_no,
                             normalized_location.location,
-                            failed_bound if failed_bound is not None else "all",
+                            APPROVED_BOUNDS,
                         )
                         return False
 
     return True
 
 
-def validate_bounding_boxes(location, bounding_boxes, method="all"):
+def validate_bounding_boxes(location, bounding_boxes):
     results = []
 
     for boundingbox in bounding_boxes:
         if not boundingbox.latitude.contains(
             location.latitude
         ) or not boundingbox.longitude.contains(location.longitude):
-            if method == "any":
-                # fail if any single bounding box fails
-                return False, boundingbox
-            else:
-                results.append(False)
+            results.append(False)
 
         results.append(True)
+   
+    # only fail if all bounding boxes fail
+    try:
+        results.index(True)
+    except ValueError:
+        # if True is not in the list, then they all failed, so fail
+        return False
 
-    if method == "all":
-        # only fail if all bounding boxes fail
-        try:
-            results.index(True)
-            return True, None
-        except ValueError:
-            # if True is not in the list, then they all failed, so fail
-            return False, None
-
-    elif method == "any":
-        # fail if any single bounding box fails.
-        # by this point it will have failed if it is going to fail, so succeed
-        return True, None
+    return True
