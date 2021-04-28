@@ -307,29 +307,25 @@ def _validate_normalized(output_dir: pathlib.Path) -> bool:
                 if normalized_location.location:
                     result = validate_bounding_boxes(
                         normalized_location.location,
-                        [BOUNDING_BOX, BOUNDING_BOX_GUAM],
-                        filepath=filepath, line=line_no
+                        [BOUNDING_BOX, BOUNDING_BOX_GUAM]
                         )
 
                     # if false, return false
                     if not result:
-                        return result       
+                        logger.warning(
+                            "Invalid latitude or longitude in %s at line %d: %s is outside approved bounds (%s)",
+                            filepath,
+                            line_no,
+                            location,
+                            boundingbox,
+                        )
+                        return False
 
     return True
 
 
-def validate_bounding_boxes(location, bounding_boxes, method="all", filepath="", line=""):
+def validate_bounding_boxes(location, bounding_boxes, method="all"):
     results = []
-
-    def fail():
-        logger.warning(
-            "Invalid latitude or longitude in %s at line %d: %s is outside approved bounds (%s)",
-            filepath,
-            line,
-            location,
-            boundingbox,
-        )
-        return False
 
     for boundingbox in bounding_boxes:
         if not boundingbox.latitude.contains(
@@ -339,7 +335,7 @@ def validate_bounding_boxes(location, bounding_boxes, method="all", filepath="",
         ):
             if method == "any":
                 # fail if any single bounding box fails
-                return fail()
+                return False
             else:
                 results.append(False)
 
@@ -348,10 +344,11 @@ def validate_bounding_boxes(location, bounding_boxes, method="all", filepath="",
     if method == "all":
         # only fail if all bounding boxes fail
         if all(not x for x in results):
-            return fail()
+            return False
         else:
             return True
     elif method == "any":
         # fail if any single bounding box fails.
         # by this point it will have failed if it is going to fail, so succeed
         return True
+        
