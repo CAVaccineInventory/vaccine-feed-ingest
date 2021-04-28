@@ -60,8 +60,22 @@ jobs:
         if: steps.cached-poetry-dependencies.outputs.cache-hit != 'true'
         working-directory: vaccine-feed-ingest
 
+      - name: load .tox from cache
+        id: cached-tox-dependencies
+        uses: actions/cache@v2
+        with:
+          path: vaccine-feed-ingest/.tox
+          key: venv-${{ runner.os }}-${{ hashFiles('**/poetry.lock') }}
+
       - run: poetry run tox
         working-directory: vaccine-feed-ingest
+
+      - name: clean up .tox
+        working-directory: vaccine-feed-ingest
+        run: |
+          rm -f .tox/log/*
+          rm -f .tox/test/log/*
+          rm -f .tox/lint/log/*
 
 
   repo-linter:
