@@ -6,7 +6,6 @@ import pathlib
 import sys
 from typing import List
 
-from bs4 import BeautifulSoup
 import yaml
 from bs4 import BeautifulSoup
 
@@ -131,7 +130,6 @@ elif config["parser"] == "prepmod":
             address = title.find_next_sibling("p").get_text().strip()
             vaccines = _prepmod_find_data_item(parent, "Vaccinations offered", -2)
             ages = _prepmod_find_data_item(parent, "Age groups served", -1)
-<<<<<<< HEAD
             additional_info = _prepmod_find_data_item(
                 parent, "Additional Information", -1
             )
@@ -139,11 +137,6 @@ elif config["parser"] == "prepmod":
             available_count = (
                 _prepmod_find_data_item(parent, "Available Appointments", -1) or 0
             )
-=======
-            additional_info = _prepmod_find_data_item(parent, "Additional Information", -1)
-            hours = _prepmod_find_data_item(parent, "Clinic Hours", -1)
-            available_count = _prepmod_find_data_item(parent, "Available Appointments", -1) or 0
->>>>>>> 5b1ad84 (Allow prepmod via YAML)
             special = _prepmod_find_data_item(parent, "Special Instructions", -1)
             find_clinic_id = EXTRACT_CLINIC_ID.match(
                 parent.find_next_sibling("div", "map-image").find("img")["src"]
@@ -164,11 +157,6 @@ elif config["parser"] == "prepmod":
             with open(out_filepath, "w") as fout:
                 json.dump(data, fout)
                 fout.write("\n")
-<<<<<<< HEAD
-
-=======
-        
->>>>>>> 5b1ad84 (Allow prepmod via YAML)
 else:
     logger.error("Parser '%s' was not recognized.", config["parser"])
     raise NotImplementedError(f"No shared parser available for '{config['parser']}'.")

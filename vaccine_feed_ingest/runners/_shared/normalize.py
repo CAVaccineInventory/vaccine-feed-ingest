@@ -13,6 +13,8 @@ from typing import List
 from vaccine_feed_ingest_schema import location as schema
 import yaml
 
+from vaccine_feed_ingest.schema import schema  # noqa: E402
+
 # Configure logger
 logging.basicConfig(
     level=logging.INFO,
