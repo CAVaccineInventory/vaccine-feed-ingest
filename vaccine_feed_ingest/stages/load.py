@@ -1,6 +1,6 @@
 import logging
 import pathlib
-from typing import Iterator, Optional
+from typing import Iterator, List, Optional
 
 import jellyfish
 import pydantic
@@ -8,12 +8,12 @@ import rtree
 import shapely.geometry
 import urllib3
 import us
-from vaccine_feed_ingest import vial
-from vaccine_feed_ingest.schema import schema
+from vaccine_feed_ingest_schema import schema
 
+from .. import vial
 from ..utils.match import canonicalize_address, get_full_address
 from . import outputs
-from .common import PipelineStage
+from .common import STAGE_OUTPUT_SUFFIX, PipelineStage
 
 logger = logging.getLogger("load")
 
@@ -31,7 +31,7 @@ def run_load_to_vial(
     enable_match: bool = True,
     enable_create: bool = False,
     dry_run: bool = False,
-) -> bool:
+) -> Optional[List[schema.ImportSourceLocation]]:
     """Load source to vial source locations"""
     normalize_run_dir = outputs.find_latest_run_dir(
         output_dir, site_dir.parent.name, site_dir.name, PipelineStage.NORMALIZE
@@ -41,28 +41,29 @@ def run_load_to_vial(
             "Skipping load for %s because there is no data from normalize stage",
             site_dir.name,
         )
-        return False
+        return None
 
-    if not outputs.data_exists(normalize_run_dir):
+    if not outputs.data_exists(
+        normalize_run_dir, suffix=STAGE_OUTPUT_SUFFIX[PipelineStage.NORMALIZE]
+    ):
         logger.warning("No normalize data available to load for %s.", site_dir.name)
-        return False
+        return None
 
     num_imported_locations = 0
 
-    for filepath in outputs.iter_data_paths(normalize_run_dir):
-        if not filepath.name.endswith(".normalized.ndjson"):
-            continue
-
+    for filepath in outputs.iter_data_paths(
+        normalize_run_dir, suffix=STAGE_OUTPUT_SUFFIX[PipelineStage.NORMALIZE]
+    ):
         import_locations = []
-        with filepath.open("rb") as src_file:
+        with filepath.open() as src_file:
             for line in src_file:
                 try:
                     normalized_location = schema.NormalizedLocation.parse_raw(line)
-                except pydantic.ValidationError:
+                except pydantic.ValidationError as e:
                     logger.warning(
-                        "Skipping source location because it is invalid: %s",
+                        "Skipping source location because it is invalid: %s\n%s",
                         line,
-                        exc_info=True,
+                        str(e),
                     )
                     continue
 
@@ -111,7 +112,7 @@ def run_load_to_vial(
         site_dir.name,
     )
 
-    return bool(num_imported_locations)
+    return import_locations
 
 
 def _find_candidates(
@@ -126,9 +127,7 @@ def _find_candidates(
 
     search_bounds = src_point.buffer(CANDIDATE_DEGREES_DISTANCE).bounds
 
-    result = existing.intersection(search_bounds, objects=True)
-    for row in result:
-        yield row.object
+    yield from existing.intersection(search_bounds, objects="raw")
 
 
 def _is_different(source: schema.NormalizedLocation, candidate: dict) -> bool:
@@ -158,26 +157,6 @@ def _is_different(source: schema.NormalizedLocation, candidate: dict) -> bool:
 
         if src_org and cand_org and jellyfish.jaro_winkler(src_org, cand_org) < 0.1:
             return True
-
-    # Must not have any conflicting links/concordances
-    if source.links and candidate_props.get("concordances"):
-        src_link_map = {link.authority: link.id for link in source.links}
-
-        for link in candidate_props["concordances"]:
-            if ":" not in link:
-                continue
-
-            link_authority, link_id = link.split(":", maxsplit=1)
-            if not link_id:
-                continue
-
-            src_link_id = src_link_map.get(link_authority)
-
-            if not src_link_id:
-                continue
-
-            if src_link_id != link_id:
-                return True
 
     return False
 

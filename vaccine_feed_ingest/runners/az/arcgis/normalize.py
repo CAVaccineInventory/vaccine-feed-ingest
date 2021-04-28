@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# isort: skip_file
 
 import json
 import logging
@@ -7,16 +8,11 @@ import pathlib
 import re
 import sys
 from datetime import datetime
-from typing import List, Optional
+from typing import List, Optional, Tuple
 
-# import schema
-site_dir = pathlib.Path(__file__).parent
-state_dir = site_dir.parent
-runner_dir = state_dir.parent
-root_dir = runner_dir.parent
-sys.path.append(str(root_dir))
+from vaccine_feed_ingest_schema import schema
 
-from schema import schema  # noqa: E402
+from vaccine_feed_ingest.utils.validation import BOUNDING_BOX
 
 # Configure logger
 logging.basicConfig(
@@ -39,7 +35,7 @@ def _get_id(site: dict) -> str:
 
     # Could parse these from directory traversal, but do not for now to avoid
     # accidental mutation.
-    site = "arcgis"
+    site_name = "arcgis"
     runner = "az"
 
     # Could parse these from the input file name, but do not for now to avoid
@@ -47,7 +43,7 @@ def _get_id(site: dict) -> str:
     arcgis = "128ead309d754558ad81bccd99188dc9"
     layer = 0
 
-    return f"{runner}:{site}:{arcgis}_{layer}:{data_id}"
+    return f"{runner}:{site_name}:{arcgis}_{layer}:{data_id}"
 
 
 def _get_contacts(site: dict) -> Optional[List[schema.Contact]]:
@@ -113,7 +109,7 @@ def _get_opening_dates(site: dict) -> Optional[List[schema.OpenDate]]:
     ]
 
 
-def _parse_time(human_readable_time: str) -> (int, int):
+def _parse_time(human_readable_time: str) -> Tuple[int, int]:
     match = re.match(r"^(?P<hour>\d+):(?P<minute>\d+) ?AM?$", human_readable_time)
     if match:
         return int(match.group("hour")), int(match.group("minute"))
@@ -220,14 +216,29 @@ def _get_inventory(site: dict) -> Optional[List[schema.Vaccine]]:
 
     return [
         {
-            "Pfizer_BioNTech": schema.Vaccine(vaccine="pfizer"),
-            "Pfizer-BioNTech": schema.Vaccine(vaccine="pfizer"),
-            "Pfizer": schema.Vaccine(vaccine="pfizer"),
+            "Pfizer_BioNTech": schema.Vaccine(vaccine="pfizer_biontech"),
+            "Pfizer-BioNTech": schema.Vaccine(vaccine="pfizer_biontech"),
+            "Pfizer": schema.Vaccine(vaccine="pfizer_biontech"),
             "Moderna": schema.Vaccine(vaccine="moderna"),
-            "J_J": schema.Vaccine(vaccine="janssen"),
+            "J_J": schema.Vaccine(vaccine="johnson_johnson_janssen"),
         }[vaccine.lstrip("\u200b").strip()]
         for vaccine in inventory
     ]
+
+
+def _get_lat_lng(site: dict) -> Optional[schema.LatLng]:
+    lat_lng = schema.LatLng(
+        latitude=site["geometry"]["y"], longitude=site["geometry"]["x"]
+    )
+
+    # Some locations in the AZ data set have lat/lng near the south pole. Drop
+    # those values.
+    if not BOUNDING_BOX.latitude.contains(
+        lat_lng.latitude
+    ) or not BOUNDING_BOX.longitude.contains(lat_lng.longitude):
+        return None
+
+    return lat_lng
 
 
 def _get_normalized_location(site: dict, timestamp: str) -> schema.NormalizedLocation:
@@ -241,9 +252,7 @@ def _get_normalized_location(site: dict, timestamp: str) -> schema.NormalizedLoc
             state=site["attributes"]["state"] or "AZ",
             zip=site["attributes"]["zip"],
         ),
-        location=schema.LatLng(
-            latitude=site["geometry"]["y"], longitude=site["geometry"]["x"]
-        ),
+        location=_get_lat_lng(site),
         contact=_get_contacts(site),
         languages=_get_languages(site),
         opening_dates=_get_opening_dates(site),

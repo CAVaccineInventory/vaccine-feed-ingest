@@ -2,13 +2,19 @@
 
 import contextlib
 import json
-from typing import Iterable, Iterator
+import logging
+import urllib.parse
+from typing import Any, Iterable, Iterator, Tuple
 
 import geojson
 import rtree
 import shapely.geometry
 import urllib3
-from vaccine_feed_ingest.schema import schema
+from vaccine_feed_ingest_schema import schema
+
+from .utils import misc
+
+logger = logging.getLogger("vial")
 
 
 @contextlib.contextmanager
@@ -64,42 +70,76 @@ def import_source_locations(
     import_locations: Iterable[schema.ImportSourceLocation],
 ) -> urllib3.response.HTTPResponse:
     """Import source locations"""
-    encoded_ndjson = "\n".join(
-        [loc.json(exclude_none=True) for loc in import_locations]
+    for import_locations_batch in misc.batch(import_locations, 1_000):
+        encoded_ndjson = "\n".join(
+            [loc.json(exclude_none=True) for loc in import_locations_batch]
+        )
+
+        return vial_http.request(
+            "POST",
+            f"/api/importSourceLocations?import_run_id={import_run_id}",
+            headers={**vial_http.headers, "Content-Type": "application/x-ndjson"},
+            body=encoded_ndjson.encode("utf-8"),
+        )
+
+
+def search_locations(
+    vial_http: urllib3.connectionpool.ConnectionPool,
+    **kwds: Any,
+) -> Iterator[dict]:
+    """Wrapper around search locations api. Returns geojson."""
+    params = {
+        **kwds,
+        "format": "nlgeojson",
+    }
+
+    query = urllib.parse.urlencode(params)
+
+    resp = vial_http.request(
+        "GET", f"/api/searchLocations?{query}", preload_content=False
     )
 
-    return vial_http.request(
-        "POST",
-        f"/api/importSourceLocations?import_run_id={import_run_id}",
-        headers={**vial_http.headers, "Content-Type": "application/x-ndjson"},
-        body=encoded_ndjson.encode("utf-8"),
-    )
+    for line in resp:
+        try:
+            yield geojson.loads(line)
+        except json.JSONDecodeError:
+            logger.warning("Invalid json record in search response: %s", line)
+
+    resp.release_conn()
 
 
 def retrieve_existing_locations(
     vial_http: urllib3.connectionpool.ConnectionPool,
 ) -> Iterator[dict]:
-    """Verifies that header contains valid authorization token"""
-    resp = vial_http.request(
-        "GET", "/api/searchLocations?format=nlgeojson&all=1", preload_content=False
-    )
+    """Return all existing locations in VIAL as geojson"""
+    return search_locations(vial_http, all=1)
 
-    for line in resp:
-        yield geojson.loads(line)
 
-    resp.release_conn()
+def _generate_index_row(loc: dict) -> Tuple[int, tuple, dict]:
+    """Generate a rtree index entry from geojson entry"""
+    loc_id = hash(loc["properties"]["id"])
+    loc_shape = shapely.geometry.shape(loc["geometry"])
+    loc_bounds = loc_shape.bounds
+
+    return (loc_id, loc_bounds, loc)
 
 
 def retrieve_existing_locations_as_index(
     vial_http: urllib3.connectionpool.ConnectionPool,
 ) -> rtree.index.Index:
-    """Verifies that header contains valid authorization token"""
+    """Return all existing locations in VIAL as rtree indexed geojson"""
     locations = retrieve_existing_locations(vial_http)
+    return rtree.index.Index(_generate_index_row(loc) for loc in locations)
 
-    def generate_index_row(i: int, loc: dict) -> tuple:
-        loc_point = shapely.geometry.shape(loc["geometry"])
-        return (i, loc_point.bounds, loc)
 
-    return rtree.index.Index(
-        generate_index_row(i, loc) for i, loc in enumerate(locations)
-    )
+def update_existing_locations(
+    vial_http: urllib3.connectionpool.ConnectionPool,
+    locations: rtree.index.Index,
+    source_ids: Iterable[str],
+) -> None:
+    """Updates rtree index with locations with source ids"""
+    for chunked_ids in misc.batch(source_ids, 20):
+        updated_locations = search_locations(vial_http, idref=list(chunked_ids))
+
+        for loc in updated_locations:
+            locations.insert(_generate_index_row(loc))

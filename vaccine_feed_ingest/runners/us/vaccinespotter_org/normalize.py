@@ -1,33 +1,81 @@
 #!/usr/bin/env python
+# isort: skip_file
 
 import datetime
 import json
+import logging
 import pathlib
 import sys
+from typing import Optional
+
+import pydantic
+from vaccine_feed_ingest_schema import schema
 
 from vaccine_feed_ingest.utils.normalize import provider_id_from_name
+from vaccine_feed_ingest.utils.validation import BOUNDING_BOX
+
+logger = logging.getLogger("us/vaccinespotter_org")
+
+
+def _get_address(site: dict) -> Optional[schema.Address]:
+    try:
+        return schema.Address(
+            street1=site["address"],
+            city=site["city"],
+            state=site["state"],
+            zip=site["postal_code"],
+        )
+    except pydantic.ValidationError:
+        logger.warning(
+            "Invalid address for %s (%s). Returning None",
+            site["id"],
+            f"{site['address']} {site['city']} {site['state']} {site['postal_code']}",
+        )
+
+    return None
+
+
+def _get_lat_lng(geometry: dict, id: str) -> Optional[schema.LatLng]:
+    try:
+        lat_lng = schema.LatLng(
+            latitude=geometry["coordinates"][1], longitude=geometry["coordinates"][0]
+        )
+        if BOUNDING_BOX.latitude.contains(
+            lat_lng.latitude
+        ) and BOUNDING_BOX.longitude.contains(lat_lng.longitude):
+            return lat_lng
+
+        logger.warning(
+            "Out of bounds lat/lng for %s (%s). Returning None",
+            id,
+            f"lat={geometry['coordinates'][1]}, lng={geometry['coordinates'][0]}",
+        )
+    except pydantic.ValidationError:
+        logger.warning(
+            "Invalid lat/lng for %s (%s). Returning None",
+            id,
+            f"lat={geometry['coordinates'][1]}, lng={geometry['coordinates'][0]}",
+        )
+
+    return None
 
 
 def normalize(site_blob: dict, timestamp: str) -> dict:
     site = site_blob["properties"]
-    geometry = site_blob["geometry"]
-    street1 = site["address"]
-    street2 = None  # this is part of street1...
+
+    address = _get_address(site)
+    if address:
+        address = address.dict()
+
+    lat_lng = _get_lat_lng(site_blob["geometry"], site["id"])
+    if lat_lng:
+        lat_lng = lat_lng.dict()
 
     normalized = {
         "id": f"vaccinespotter_org:{site['id']}",
         "name": site["name"],
-        "address": {
-            "street1": street1,
-            "street2": street2,
-            "city": site["city"],
-            "state": site["state"],
-            "zip": site["postal_code"],
-        },
-        "location": {
-            "latitude": geometry["coordinates"][1],
-            "longitude": geometry["coordinates"][0],
-        },
+        "address": address,
+        "location": lat_lng,
         "contact": [
             {
                 "contact_type": None,

@@ -1,0 +1,5 @@
+---
+state: il
+site: juvare
+parser: json_list
+path: ["pageProps", "events"]
