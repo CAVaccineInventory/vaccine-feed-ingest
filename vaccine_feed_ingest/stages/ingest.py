@@ -305,7 +305,7 @@ def _validate_normalized(output_dir: pathlib.Path) -> bool:
                     return False
 
                 if normalized_location.location:
-                    result = validate_bounding_boxes(
+                    result, failed_bound = validate_bounding_boxes(
                         normalized_location.location,
                         [BOUNDING_BOX, BOUNDING_BOX_GUAM]
                         )
@@ -316,8 +316,8 @@ def _validate_normalized(output_dir: pathlib.Path) -> bool:
                             "Invalid latitude or longitude in %s at line %d: %s is outside approved bounds (%s)",
                             filepath,
                             line_no,
-                            location,
-                            boundingbox,
+                            normalized_location.location,
+                            failed_bound if failed_bound is not None else "all",
                         )
                         return False
 
@@ -335,7 +335,7 @@ def validate_bounding_boxes(location, bounding_boxes, method="all"):
         ):
             if method == "any":
                 # fail if any single bounding box fails
-                return False
+                return False, boundingbox
             else:
                 results.append(False)
 
@@ -343,12 +343,14 @@ def validate_bounding_boxes(location, bounding_boxes, method="all"):
 
     if method == "all":
         # only fail if all bounding boxes fail
-        if all(not x for x in results):
-            return False
-        else:
-            return True
+        try:
+            results.index(True)
+            return True, None
+        except ValueError:
+            # if True is not in the list, then they all failed, so fail
+            return False, None
+
     elif method == "any":
         # fail if any single bounding box fails.
         # by this point it will have failed if it is going to fail, so succeed
-        return True
-        
+        return True, None
