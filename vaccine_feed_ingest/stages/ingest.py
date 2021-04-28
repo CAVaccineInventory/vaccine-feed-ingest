@@ -308,8 +308,7 @@ def _validate_normalized(output_dir: pathlib.Path) -> bool:
 
                 if normalized_location.location:
                     result = validate_bounding_boxes(
-                        normalized_location.location,
-                        APPROVED_BOUNDS
+                        normalized_location.location, APPROVED_BOUNDS
                     )
 
                     # if false, return false
@@ -336,7 +335,7 @@ def validate_bounding_boxes(location, bounding_boxes):
             results.append(False)
 
         results.append(True)
-   
+
     # only fail if all bounding boxes fail
     try:
         results.index(True)
