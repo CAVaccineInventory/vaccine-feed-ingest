@@ -85,6 +85,6 @@ fi
 
 case "$OSTYPE" in
 darwin*) setup_macos ;;
-#linux*)   setup_linux ;;
+linux*) setup_linux ;;
 *) setup_unsupported ;;
 esac
