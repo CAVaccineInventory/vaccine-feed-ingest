@@ -67,8 +67,6 @@ def normalize(site_blob: dict, timestamp: str) -> str:
                 authority="am_i_eligible_covid19vaccine_gov", id=site_blob["providerId"]
             ),
         ],
-        fetched_at=timestamp,
-        published_at=site_blob["lastUpdated"],
         source=_get_source(site_blob, timestamp),
     ).dict()
     normalized["address"] = {"city": city, "state": "NY"}
