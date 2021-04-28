@@ -87,7 +87,7 @@ def _get_contacts(site: dict):
     if "register_online_url" in site:
         website = site["register_online_url"]
         if website != "":
-            ret.append(schema.Contact(website=website, scontact_type="booking"))
+            ret.append(schema.Contact(website=website, contact_type="booking"))
     return ret
 
 
