@@ -8,7 +8,7 @@ import rtree
 import shapely.geometry
 import urllib3
 import us
-from vaccine_feed_ingest_schema import schema
+from vaccine_feed_ingest_schema import load
 
 from .. import vial
 from ..utils.match import canonicalize_address, get_full_address
@@ -31,7 +31,7 @@ def run_load_to_vial(
     enable_match: bool = True,
     enable_create: bool = False,
     dry_run: bool = False,
-) -> Optional[List[schema.ImportSourceLocation]]:
+) -> Optional[List[load.ImportSourceLocation]]:
     """Load source to vial source locations"""
     normalize_run_dir = outputs.find_latest_run_dir(
         output_dir, site_dir.parent.name, site_dir.name, PipelineStage.NORMALIZE
@@ -58,7 +58,7 @@ def run_load_to_vial(
         with filepath.open() as src_file:
             for line in src_file:
                 try:
-                    normalized_location = schema.NormalizedLocation.parse_raw(line)
+                    normalized_location = load.NormalizedLocation.parse_raw(line)
                 except pydantic.ValidationError as e:
                     logger.warning(
                         "Skipping source location because it is invalid: %s\n%s",
@@ -116,7 +116,7 @@ def run_load_to_vial(
 
 
 def _find_candidates(
-    source: schema.NormalizedLocation,
+    source: load.NormalizedLocation,
     existing: rtree.index.Index,
 ) -> Iterator[dict]:
     """Return a slice of existing locations"""
@@ -130,7 +130,7 @@ def _find_candidates(
     yield from existing.intersection(search_bounds, objects="raw")
 
 
-def _is_different(source: schema.NormalizedLocation, candidate: dict) -> bool:
+def _is_different(source: load.NormalizedLocation, candidate: dict) -> bool:
     """Return True if candidate is so different it couldn't be a match"""
     candidate_props = candidate.get("properties", {})
 
@@ -161,7 +161,7 @@ def _is_different(source: schema.NormalizedLocation, candidate: dict) -> bool:
     return False
 
 
-def _is_match(source: schema.NormalizedLocation, candidate: dict) -> bool:
+def _is_match(source: load.NormalizedLocation, candidate: dict) -> bool:
     """Return True if candidate is so similar it must be a match"""
     source_links = (
         set("{}:{}".format(link.authority, link.id) for link in source.links)
@@ -190,11 +190,11 @@ def _is_match(source: schema.NormalizedLocation, candidate: dict) -> bool:
 
 
 def _match_source_to_existing_locations(
-    source: schema.NormalizedLocation,
+    source: load.NormalizedLocation,
     existing: rtree.index.Index,
     enable_match: bool = True,
     enable_create: bool = False,
-) -> Optional[schema.ImportMatchAction]:
+) -> Optional[load.ImportMatchAction]:
     """Attempt to match source location to existing locations"""
     if not source.location:
         return None
@@ -204,7 +204,7 @@ def _match_source_to_existing_locations(
     if not candidates:
         logger.info("%s is a new location - nothing close", source.name)
         if enable_create:
-            return schema.ImportMatchAction(action="new")
+            return load.ImportMatchAction(action="new")
         else:
             return None
 
@@ -214,7 +214,7 @@ def _match_source_to_existing_locations(
     if not candidates:
         logger.info("%s is a new location", source.name)
         if enable_create:
-            return schema.ImportMatchAction(action="new")
+            return load.ImportMatchAction(action="new")
         else:
             return None
 
@@ -225,7 +225,7 @@ def _match_source_to_existing_locations(
     if len(candidates) == 1:
         logger.info("%s is an existing location", source.name)
         if enable_match:
-            return schema.ImportMatchAction(
+            return load.ImportMatchAction(
                 action="existing",
                 id=candidates[0]["properties"]["id"],
             )
@@ -237,11 +237,11 @@ def _match_source_to_existing_locations(
 
 
 def _create_import_location(
-    normalized_record: schema.NormalizedLocation,
-    match_action: Optional[schema.ImportMatchAction] = None,
-) -> schema.ImportSourceLocation:
+    normalized_record: load.NormalizedLocation,
+    match_action: Optional[load.ImportMatchAction] = None,
+) -> load.ImportSourceLocation:
     """Transform normalized record into import record"""
-    import_location = schema.ImportSourceLocation(
+    import_location = load.ImportSourceLocation(
         source_uid=normalized_record.id,
         source_name=normalized_record.source.source,
         import_json=normalized_record,

@@ -9,7 +9,7 @@ import sys
 from typing import Optional
 
 import pydantic
-from vaccine_feed_ingest_schema import schema
+from vaccine_feed_ingest_schema import location as schema
 
 from vaccine_feed_ingest.utils.normalize import provider_id_from_name
 from vaccine_feed_ingest.utils.validation import BOUNDING_BOX

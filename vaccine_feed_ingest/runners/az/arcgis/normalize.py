@@ -10,7 +10,7 @@ import sys
 from datetime import datetime
 from typing import List, Optional, Tuple
 
-from vaccine_feed_ingest_schema import schema
+from vaccine_feed_ingest_schema import location as schema
 
 from vaccine_feed_ingest.utils.validation import BOUNDING_BOX
 

@@ -10,7 +10,9 @@ DEPRECATION NOTICE
 vaccine_feed_ingest/schema/schema.py is DEPRECATED. Instead of using this file,
 import the published package using the line:
 
-from vaccine_feed_ingest_schema import schema
+from vaccine_feed_ingest_schema import location
+~or~
+from vaccine_feed_ingest_schema import load
 
 This file is maintained in the source so that currently open PRs will not break.
 It will be removed from source by 2021-05-01, potentially earlier.
