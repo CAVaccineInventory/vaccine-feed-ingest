@@ -61,6 +61,7 @@ jobs:
         working-directory: vaccine-feed-ingest
 
       - run: poetry run tox
+        working-directory: vaccine-feed-ingest
 
 
   repo-linter:
