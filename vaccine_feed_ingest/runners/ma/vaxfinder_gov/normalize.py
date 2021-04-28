@@ -4,9 +4,22 @@ import datetime
 import json
 import pathlib
 import sys
+from hashlib import md5
+
+# import schema
+site_dir = pathlib.Path(__file__).parent
+state_dir = site_dir.parent
+runner_dir = state_dir.parent
+root_dir = runner_dir.parent
+sys.path.append(str(root_dir))
+from schema import schema  # noqa: E402
 
 
-def normalize(site: dict, timestamp: str) -> dict:
+def _generate_id(unique_str: str) -> str:
+    return md5(unique_str.encode("utf-8")).hexdigest()
+
+
+def normalize(site: dict, timestamp: str) -> schema.NormalizedLocation:
     # addresses are typically formatted like this: 800 Boylston Street, Boston, MA 02199
     # sometimes, "MA" is not included, so there's a handler below for that
     address = site["address"]
@@ -36,31 +49,42 @@ def normalize(site: dict, timestamp: str) -> dict:
     # The locations we get typically are formatted like:
     # "Abington: Walmart (Brockton Ave.)". We don't need the city name twice
     name_without_city = site["name"].split(":")[1].strip()
-    normalized = {
-        "name": name_without_city,
-        address: {
-            "street1": street1,
-            "street2": street2,
-            "city": city,
-            "state": "MA",
-            "zip": zipcode,
-        },
-        "contact": [
-            {
-                "contact_type": "booking",
-                "website": "https://vaxfinder.mass.gov",
-            },
-        ],
-        "fetched_at": timestamp,
-        "source": {
-            "source": "vaxfinder",
-            "fetched_from_uri": "https://www.mass.gov/doc/covid-19-vaccine-locations-for-currently-eligible-recipients-csv/download",  # noqa: E501
-            "fetched_at": timestamp,
-            "data": site,
-        },
-    }
 
-    return normalized
+    location_id = _generate_id(name_without_city + address)
+
+    return schema.NormalizedLocation(
+        id=location_id,
+        name=name_without_city,
+        address=schema.Address(
+            street1=street1,
+            street2=street2,
+            city=city,
+            state="MA",
+            zip=zipcode,
+        ),
+        location=None,
+        contact=[
+            schema.Contact(website="https://vaxfinder.mass.gov", contact_type="booking")
+        ],
+        languages=None,
+        opening_dates=None,
+        opening_hours=None,
+        availability=None,
+        inventory=None,
+        access=None,
+        parent_organization=None,
+        links=None,
+        notes=None,
+        active=None,
+        source=schema.Source(
+            source="vaxfinder",
+            id=location_id,
+            fetched_from_uri="https://www.mass.gov/doc/covid-19-vaccine-locations-for-currently-eligible-recipients-csv/download",  # noqa: E501
+            fetched_at=timestamp,
+            published_at=None,
+            data=site,
+        ),
+    )
 
 
 output_dir = pathlib.Path(sys.argv[1])
@@ -79,5 +103,5 @@ with input_filepath.open() as fin:
 
             normalized_site = normalize(parsed_site, parsed_at_timestamp)
 
-            json.dump(normalized_site, fout)
+            json.dump(normalized_site.dict(), fout)
             fout.write("\n")
