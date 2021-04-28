@@ -192,9 +192,9 @@ def _get_normalized_location(site: dict, timestamp: str) -> schema.NormalizedLoc
         address=schema.Address(
             street1=addrsplit[0],
             street2=None,
-            city=try_get_list(city_state_zip, 0, default="") or site["attributes"]["municipality"],
-            state=try_get_list(city_state_zip, 1, default="") or site["attributes"]["State"],
-            zip=try_get_list(city_state_zip, 2, default=""),
+            city=site["attributes"]["municipality"] or try_get_list(city_state_zip, -3, default=""),
+            state=site["attributes"]["State"] or try_get_list(city_state_zip, -2, default=""),
+            zip=try_get_list(city_state_zip, -1, default=""),
         ),
         location=schema.LatLng(
             latitude=site["geometry"]["y"],
