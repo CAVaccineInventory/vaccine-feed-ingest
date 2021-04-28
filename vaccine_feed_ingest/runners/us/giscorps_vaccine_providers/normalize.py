@@ -141,7 +141,7 @@ def _get_access(site: dict) -> Optional[List[str]]:
         "Not Applicable": "no",
         "NA": "no"
     }
-    wheelchair_bool = try_lookup(wheelchair_options, wheelchair, "no")
+    wheelchair_bool = try_lookup(wheelchair_options, wheelchair, "no", name="wheelchair access")
     
     return schema.Access(drive=drive_bool, wheelchair=wheelchair_bool)
 
