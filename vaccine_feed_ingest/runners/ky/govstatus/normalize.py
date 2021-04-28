@@ -5,6 +5,7 @@ import json
 import logging
 import pathlib
 import sys
+from typing import List, Optional
 
 from vaccine_feed_ingest_schema import schema  # noqa: E402
 
@@ -34,7 +35,7 @@ def _get_address(site: dict):
     )
 
 
-def _get_location(site: dict):
+def _get_location(site: dict) -> Optional[schema.LatLng]:
     latitude = site["lat"]
     longitude = site["long"]
     if latitude == "" or longitude == "":
@@ -93,7 +94,7 @@ def _get_contacts(site: dict):
     return ret
 
 
-def _get_organization(site: dict):
+def _get_organization(site: dict) -> Optional[schema.Organization]:
     if _get_name(site)[0:6] == "Kroger":
         return schema.Organization(name="Kroger", id="kroger")
     if _get_name(site)[0:9] == "Walgreens":
