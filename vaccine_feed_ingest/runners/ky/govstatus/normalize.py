@@ -45,6 +45,11 @@ def _get_location(site: dict):
     )
 
 
+# some example data that we'll handle in this dataset:
+# {... "register_phone": "tel:270-685-7100 option #6", "register_online_url": "https://www.owensborohealth.org/patient-visitor/schedule-an-appointment/covid-19-vaccination/", ...}
+# {... "register_phone": "tel:(866) 624-0366 ", "register_online_url": "https://www.mercy.com/mercy-health-monitoring-coronavirus-covid-19/covid-19-vaccine/kentucky", ...}
+# (also website-only and phone-only entries)
+# some phone_number handling is defensive, based on examples seen elsewhere
 def _get_contacts(site: dict):
     ret = []
 
@@ -66,12 +71,11 @@ def _get_contacts(site: dict):
                 phone = raw_phone[0:14]
                 phone_notes = raw_phone[14:]
 
-            if phone_notes == "":
-                ret.append(schema.Contact(phone=phone, contact_type="booking"))
-            else:
-                phone_notes = phone_notes.lstrip(",")
-                phone_notes = phone_notes.lstrip(";")
-                phone_notes = phone_notes.lstrip(" ")
+            phone_notes = phone_notes.lstrip(",")
+            phone_notes = phone_notes.lstrip(";")
+            phone_notes = phone_notes.lstrip(" ")
+
+            if phone_notes:
                 ret.append(
                     schema.Contact(
                         phone=phone,
@@ -79,6 +83,8 @@ def _get_contacts(site: dict):
                         contact_type="booking",
                     )
                 )
+            else:
+                ret.append(schema.Contact(phone=phone, contact_type="booking"))
 
     if "register_online_url" in site:
         website = site["register_online_url"]
