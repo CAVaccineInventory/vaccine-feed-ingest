@@ -18,10 +18,6 @@ from .common import STAGE_OUTPUT_SUFFIX, PipelineStage
 logger = logging.getLogger("load")
 
 
-# Collect locations that are within .6 degrees = 66.6 km = 41 mi
-CANDIDATE_DEGREES_DISTANCE = 0.6
-
-
 def run_load_to_vial(
     vial_http: urllib3.connectionpool.ConnectionPool,
     site_dir: pathlib.Path,
@@ -30,6 +26,7 @@ def run_load_to_vial(
     locations: Optional[rtree.index.Index],
     enable_match: bool = True,
     enable_create: bool = False,
+    candidate_distance: float = 0.6,
     dry_run: bool = False,
 ) -> Optional[List[load.ImportSourceLocation]]:
     """Load source to vial source locations"""
@@ -72,6 +69,7 @@ def run_load_to_vial(
                     match_action = _match_source_to_existing_locations(
                         normalized_location,
                         locations,
+                        candidate_distance,
                         enable_match=enable_match,
                         enable_create=enable_create,
                     )
@@ -118,6 +116,7 @@ def run_load_to_vial(
 def _find_candidates(
     source: location.NormalizedLocation,
     existing: rtree.index.Index,
+    candidate_distance: float,
 ) -> Iterator[dict]:
     """Return a slice of existing locations"""
     src_point = shapely.geometry.Point(
@@ -125,7 +124,7 @@ def _find_candidates(
         source.location.latitude,
     )
 
-    search_bounds = src_point.buffer(CANDIDATE_DEGREES_DISTANCE).bounds
+    search_bounds = src_point.buffer(candidate_distance).bounds
 
     yield from existing.intersection(search_bounds, objects="raw")
 
@@ -192,6 +191,7 @@ def _is_match(source: location.NormalizedLocation, candidate: dict) -> bool:
 def _match_source_to_existing_locations(
     source: location.NormalizedLocation,
     existing: rtree.index.Index,
+    candidate_distance: float,
     enable_match: bool = True,
     enable_create: bool = False,
 ) -> Optional[load.ImportMatchAction]:
@@ -199,7 +199,7 @@ def _match_source_to_existing_locations(
     if not source.location:
         return None
 
-    candidates = list(_find_candidates(source, existing))
+    candidates = list(_find_candidates(source, existing, candidate_distance))
 
     if not candidates:
         logger.info("%s is a new location - nothing close", source.name)

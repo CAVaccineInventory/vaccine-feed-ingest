@@ -23,6 +23,9 @@ logging.basicConfig(
     datefmt="%m/%d/%Y %H:%M:%S",
 )
 
+# Collect locations that are within .6 degrees = 66.6 km = 41 mi
+CANDIDATE_DEGREES_DISTANCE = 0.6
+
 
 def _generate_run_timestamp() -> str:
     """Generate a timestam that will be recorded in the stage data output dirs"""
@@ -241,6 +244,12 @@ def all_stages(
     type=bool,
     default=lambda: os.environ.get("ENABLE_CREATE", "false").lower() == "true",
 )
+@click.option(
+    "--candidate-distance",
+    "candidate_distance",
+    type=float,
+    default=CANDIDATE_DEGREES_DISTANCE,
+)
 def load_to_vial(
     vial_server: str,
     vial_apikey: str,
@@ -250,6 +259,7 @@ def load_to_vial(
     sites: Optional[Sequence[str]],
     enable_match: bool,
     enable_create: bool,
+    candidate_distance: float,
 ) -> None:
     """Load specified sites to vial server."""
     site_dirs = site.get_site_dirs(state, sites)
@@ -269,6 +279,7 @@ def load_to_vial(
                 locations,
                 enable_match=enable_match,
                 enable_create=enable_create,
+                candidate_distance=candidate_distance,
                 dry_run=dry_run,
             )
 
