@@ -166,6 +166,20 @@ def _get_published_at(site: dict) -> Optional[str]:
     return None
 
 
+
+def try_get_list(lis, index, default=None):
+    if lis is None:
+        return default
+
+    try:
+        value = lis[index]
+        if value == "none":
+            logger.warn("saw none value")
+        return value
+    except IndexError:
+        return default
+
+
 def _get_normalized_location(site: dict, timestamp: str) -> schema.NormalizedLocation:
     return schema.NormalizedLocation(
         id=_get_id(site),
