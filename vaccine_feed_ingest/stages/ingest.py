@@ -9,7 +9,7 @@ import tempfile
 import pydantic
 from vaccine_feed_ingest_schema import location
 
-from ..utils.validation import BOUNDING_BOX
+from ..utils.validation import BOUNDING_BOX, BOUNDING_BOX_GUAM
 from . import outputs, site
 from .common import STAGE_OUTPUT_SUFFIX, PipelineStage
 
@@ -305,19 +305,16 @@ def _validate_normalized(output_dir: pathlib.Path) -> bool:
                     return False
 
                 if normalized_location.location:
-                    if not BOUNDING_BOX.latitude.contains(
-                        normalized_location.location.latitude
-                    ) or not BOUNDING_BOX.longitude.contains(
-                        normalized_location.location.longitude
-                    ):
-                        logger.warning(
-                            "Invalid latitude or longitude in %s at line %d: %s is outside approved bounds (%s)",
-                            filepath,
-                            line_no,
-                            normalized_location.location,
-                            BOUNDING_BOX,
+                    result = validate_bounding_boxes(
+                        normalized_location.location,
+                        [BOUNDING_BOX, BOUNDING_BOX_GUAM],
+                        filepath=filepath, line=line_no
                         )
-                        return False
+
+                    # if false, return false
+                    if not result:
+                        return result       
+
     return True
 
 
