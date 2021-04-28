@@ -345,6 +345,8 @@ def validate_bounding_boxes(location, bounding_boxes, method="all", filepath="",
         # only fail if all bounding boxes fail
         if all(not x for x in results):
             return False
+        else:
+            return True
     elif method == "any":
         # fail if any single bounding box fails.
         # by this point it will have failed if it is going to fail, so succeed
