@@ -88,19 +88,12 @@ def _get_contacts(site: dict):
 
 
 def _get_organization(site: dict):
-    # organization_name = ""
-    #
-    # if site["Organization Name"] == "":
-    #     return None
-
     if _get_name(site)[0:6] == "Kroger":
         return schema.Organization(name="Kroger", id="kroger")
     if _get_name(site)[0:9] == "Walgreens":
         return schema.Organization(name="Walgreens", id="walgreens")
     if _get_name(site)[0:7] == "Walmart":
         return schema.Organization(name="Walmart", id="walmart")
-
-    # return schema.Organization(name=site["Organization Name"])
 
 
 def _get_notes(site: dict):
