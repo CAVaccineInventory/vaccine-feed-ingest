@@ -74,8 +74,7 @@ with input_filepath.open() as fin:
         for site_json in fin:
             parsed_site = json.loads(site_json)
 
-            if "covidvaccination.dph.illinois.gov" not in parsed_site["Website__c"]:
-                normalized_site = normalize(parsed_site, parsed_at_timestamp)
+            normalized_site = normalize(parsed_site, parsed_at_timestamp)
 
-                json.dump(normalized_site.dict(), fout)
-                fout.write("\n")
+            json.dump(normalized_site.dict(), fout)
+            fout.write("\n")
