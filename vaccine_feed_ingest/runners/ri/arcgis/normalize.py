@@ -9,14 +9,7 @@ import re
 import sys
 from typing import List, Optional
 
-# import schema
-site_dir = pathlib.Path(__file__).parent
-state_dir = site_dir.parent
-runner_dir = state_dir.parent
-root_dir = runner_dir.parent
-sys.path.append(str(root_dir))
-
-from schema import schema  # noqa: E402
+from vaccine_feed_ingest_schema import location as schema
 
 # Configure logger
 logging.basicConfig(
@@ -32,7 +25,7 @@ def _get_id(site: dict) -> str:
 
     # Could parse these from directory traversal, but do not for now to avoid
     # accidental mutation.
-    site = "arcgis"
+    site_name = "arcgis"
     runner = "ri"
 
     # Could parse these from the input file name, but do not for now to avoid
@@ -40,7 +33,7 @@ def _get_id(site: dict) -> str:
     arcgis = "da57e8c8663048a2a9893c636fef63d0"
     layer = 0
 
-    return f"{runner}:{site}:{arcgis}_{layer}:{data_id}"
+    return f"{runner}:{site_name}:{arcgis}_{layer}:{data_id}"
 
 
 def _get_inventory(site: dict) -> Optional[List[schema.Vaccine]]:
@@ -126,7 +119,7 @@ def _get_normalized_location(site: dict, timestamp: str) -> schema.NormalizedLoc
         notes=_get_notes(site),
         active=None,
         source=schema.Source(
-            source="arcgis",
+            source="ri:arcgis",
             id=site["attributes"]["OBJECTID"],
             fetched_from_uri="https://rihealth.maps.arcgis.com/apps/instant/nearby/index.html?appid=a25f35833533498bac3f724f92a84b4e",  # noqa: E501
             fetched_at=timestamp,

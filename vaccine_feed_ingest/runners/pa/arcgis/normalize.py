@@ -9,14 +9,7 @@ import re
 import sys
 from typing import List, Optional
 
-# import schema
-site_dir = pathlib.Path(__file__).parent
-state_dir = site_dir.parent
-runner_dir = state_dir.parent
-root_dir = runner_dir.parent
-sys.path.append(str(root_dir))
-
-from schema import schema  # noqa: E402
+from vaccine_feed_ingest_schema import location as schema
 
 # Configure logger
 logging.basicConfig(
@@ -32,7 +25,7 @@ def _get_id(site: dict) -> str:
 
     # Could parse these from directory traversal, but do not for now to avoid
     # accidental mutation.
-    site = "arcgis"
+    site_name = "arcgis"
     runner = "pa"
 
     # Could parse these from the input file name, but do not for now to avoid
@@ -40,7 +33,7 @@ def _get_id(site: dict) -> str:
     arcgis = "5b874ac0947347e9be49f6847eb44604"
     layer = 0
 
-    return f"{runner}:{site}:{arcgis}_{layer}:{data_id}"
+    return f"{runner}:{site_name}:{arcgis}_{layer}:{data_id}"
 
 
 def _get_contacts(site: dict) -> Optional[List[schema.Contact]]:
@@ -76,8 +69,8 @@ def _get_normalized_location(site: dict, timestamp: str) -> schema.NormalizedLoc
             zip=site["attributes"]["ZIP_Code"],
         ),
         location=schema.LatLng(
-            latitude=site["geometry"]["x"],
-            longitude=site["geometry"]["y"],
+            latitude=site["geometry"]["y"],
+            longitude=site["geometry"]["x"],
         ),
         contact=_get_contacts(site),
         languages=None,
@@ -91,7 +84,7 @@ def _get_normalized_location(site: dict, timestamp: str) -> schema.NormalizedLoc
         notes=None,
         active=None,
         source=schema.Source(
-            source="arcgis",
+            source="pa:arcgis",
             id=site["attributes"]["Clinic_ID"],
             fetched_from_uri="https://padoh.maps.arcgis.com/apps/webappviewer/index.html?id=e6f78224c6fe4313a1f70b56f553c357",  # noqa: E501
             fetched_at=timestamp,

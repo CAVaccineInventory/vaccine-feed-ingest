@@ -9,14 +9,7 @@ import re
 import sys
 from typing import List, Optional
 
-# import schema
-site_dir = pathlib.Path(__file__).parent
-state_dir = site_dir.parent
-runner_dir = state_dir.parent
-root_dir = runner_dir.parent
-sys.path.append(str(root_dir))
-
-from schema import schema  # noqa: E402
+from vaccine_feed_ingest_schema import location as schema
 
 # Configure logger
 logging.basicConfig(
@@ -48,7 +41,7 @@ def _get_id(site: dict) -> str:
 
     # Could parse these from directory traversal, but do not for now to avoid
     # accidental mutation.
-    site = "arcgis"
+    site_name = "arcgis"
     runner = "ak"
 
     # Could parse these from the input file name, but do not for now to avoid
@@ -56,7 +49,7 @@ def _get_id(site: dict) -> str:
     arcgis = "d92cbd6ff2524d7e92bef109f30cb366"
     layer = 0
 
-    return f"{runner}:{site}:{arcgis}_{layer}:{data_id}"
+    return f"{runner}:{site_name}:{arcgis}_{layer}:{data_id}"
 
 
 def _get_inventory(site: dict) -> Optional[List[schema.Vaccine]]:
@@ -147,7 +140,7 @@ def _get_normalized_location(site: dict, timestamp: str) -> schema.NormalizedLoc
         notes=_get_notes(site),
         active=None,
         source=schema.Source(
-            source="arcgis",
+            source="ak:arcgis",
             id=site["attributes"]["globalid"],
             fetched_from_uri="https://services1.arcgis.com/WzFsmainVTuD5KML/ArcGIS/rest/services/COVID19_Vaccine_Site_Survey_API/FeatureServer/0",  # noqa: E501
             fetched_at=timestamp,

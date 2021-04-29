@@ -9,14 +9,7 @@ import re
 import sys
 from typing import List, Optional
 
-# import schema
-site_dir = pathlib.Path(__file__).parent
-state_dir = site_dir.parent
-runner_dir = state_dir.parent
-root_dir = runner_dir.parent
-sys.path.append(str(root_dir))
-
-from schema import schema  # noqa: E402
+from vaccine_feed_ingest_schema import location as schema
 
 # Configure logger
 logging.basicConfig(
@@ -39,7 +32,7 @@ def _get_id(site: dict) -> str:
 
     # Could parse these from directory traversal, but do not for now to avoid
     # accidental mutation.
-    site = "arcgis"
+    site_name = "arcgis"
     runner = "sc"
 
     # Could parse these from the input file name, but do not for now to avoid
@@ -47,7 +40,7 @@ def _get_id(site: dict) -> str:
     arcgis = "bbd8924909264baaa1a5a1564b393063"
     layer = 0
 
-    return f"{runner}:{site}:{arcgis}_{layer}:{data_id}"
+    return f"{runner}:{site_name}:{arcgis}_{layer}:{data_id}"
 
 
 # This currently tosses any address if it doesn't have a street address or zip because
@@ -163,7 +156,7 @@ def _get_normalized_location(site: dict, timestamp: str) -> schema.NormalizedLoc
         notes=None,
         active=_get_activated(site),
         source=schema.Source(
-            source="arcgis",
+            source="sc:arcgis",
             id=site["attributes"]["GlobalID"],
             fetched_from_uri="https://opendata.arcgis.com/datasets/bbd8924909264baaa1a5a1564b393063_0.geojson",  # noqa: E501
             fetched_at=timestamp,
