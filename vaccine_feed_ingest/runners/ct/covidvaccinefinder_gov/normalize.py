@@ -91,7 +91,8 @@ def normalize(site: dict, timestamp: str) -> dict:
             appointments=site["availability"],
         ),
         inventory=[
-            {"vaccine": vaccine["name"]} for vaccine in site["providerVaccines"]
+            schema.Vaccine(vaccine=vaccine["name"])
+            for vaccine in site["providerVaccines"]
         ],
         access=schema.Access(
             drive=site["isDriveThru"],
