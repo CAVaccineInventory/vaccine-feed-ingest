@@ -19,6 +19,13 @@ jobs:
           workflows: '[".github/workflows/*.yml"]'
 
 
+  force-rebase-schema-1-0-0:
+    name: You must rebase and install to get new schema v1.0.0
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "If you fail this job, you must rebase on main and then run poetry install --extras lint"
+
+
   tox:
     name: Python Lint & Test
     runs-on: ubuntu-latest
