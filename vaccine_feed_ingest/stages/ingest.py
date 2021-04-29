@@ -5,14 +5,13 @@ import logging
 import pathlib
 import subprocess
 import tempfile
-from typing import Optional, Tuple
 
 import pydantic
 from vaccine_feed_ingest_schema import location
 
 from ..utils.validation import BOUNDING_BOX
 from . import outputs, site
-from .common import RUNNERS_DIR, STAGE_CMD_NAME, STAGE_OUTPUT_SUFFIX, PipelineStage
+from .common import STAGE_OUTPUT_SUFFIX, PipelineStage
 
 logger = logging.getLogger("ingest")
 
@@ -23,7 +22,7 @@ def run_fetch(
     timestamp: str,
     dry_run: bool = False,
 ) -> bool:
-    fetch_path, yml_path = resolve_executable(site_dir, PipelineStage.FETCH)
+    fetch_path, yml_path = site.resolve_executable(site_dir, PipelineStage.FETCH)
     if not fetch_path:
         log_msg = (
             "Missing shared executable to run for yml in %s."
@@ -80,7 +79,7 @@ def run_parse(
     validate: bool = True,
     dry_run: bool = False,
 ) -> bool:
-    parse_path, yml_path = resolve_executable(site_dir, PipelineStage.PARSE)
+    parse_path, yml_path = site.resolve_executable(site_dir, PipelineStage.PARSE)
     if not parse_path:
         log_msg = (
             "Missing shared executable to run for yml in %s."
@@ -263,21 +262,6 @@ def run_normalize(
             outputs.copy_files(normalize_output_dir, normalize_run_dir)
 
     return True
-
-
-def resolve_executable(
-    site_dir: pathlib.Path, stage: PipelineStage
-) -> Tuple[Optional[pathlib.Path], Optional[pathlib.Path]]:
-    """Returns the executable and yml paths for specified site/stage."""
-    if stage not in (PipelineStage.FETCH, PipelineStage.PARSE):
-        raise Exception(f"Resolution not supported for stage {STAGE_CMD_NAME[stage]}")
-    executable_path = site.find_executeable(site_dir, stage)
-    if executable_path:
-        return (executable_path, None)
-    yml_path = site.find_yml(site_dir, stage)
-    if not yml_path:
-        return (None, None)
-    return (site.find_executeable(RUNNERS_DIR.joinpath("_shared"), stage), yml_path)
 
 
 def _validate_parsed(output_dir: pathlib.Path) -> bool:

@@ -100,12 +100,12 @@ def available_sites(state: Optional[str]) -> None:
 
 
 def _compute_has_fetch(site_dir: pathlib.Path) -> bool:
-    exec_path, _ = ingest.resolve_executable(site_dir, common.PipelineStage.FETCH)
+    exec_path, _ = site.resolve_executable(site_dir, common.PipelineStage.FETCH)
     return bool(exec_path)
 
 
 def _compute_has_parse(site_dir: pathlib.Path) -> bool:
-    exec_path, _ = ingest.resolve_executable(site_dir, common.PipelineStage.PARSE)
+    exec_path, _ = site.resolve_executable(site_dir, common.PipelineStage.PARSE)
     return bool(exec_path)
 
 
