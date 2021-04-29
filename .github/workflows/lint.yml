@@ -78,6 +78,72 @@ jobs:
           rm -f .tox/lint/log/*
 
 
+  run-pipeline:
+    name: Run all-stages for modified runners
+    runs-on: ubuntu-latest
+    steps:
+      - name: apt-get dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install libbz2-dev liblzma-dev libreadline-dev libsqlite3-dev
+
+      - uses: actions/checkout@v2
+        with:
+          repository: CAVaccineInventory/vaccine-feed-ingest
+          path: ./vaccine-feed-ingest/
+          submodules: true
+          fetch-depth: 0
+
+      - name: get python version
+        working-directory: vaccine-feed-ingest
+        run: |
+          python_version=$(cat .python-version)
+          echo "python_version=${python_version}" >> $GITHUB_ENV
+
+      - uses: actions/setup-python@v2
+        with:
+          python-version: ${{ env.python_version }}
+
+      - name: setup from README.md
+        run: |
+          curl -sSL https://raw.githubusercontent.com/python-poetry/poetry/master/get-poetry.py | python -
+          echo "$HOME/.poetry/bin" >> $GITHUB_PATH
+
+      - name: load poetry install from cache
+        id: cached-poetry-dependencies
+        uses: actions/cache@v2
+        with:
+          path: vaccine-feed-ingest/.venv
+          key: venv-${{ runner.os }}-${{ hashFiles('**/poetry.lock') }}
+
+      - run: poetry install --extras lint
+        if: steps.cached-poetry-dependencies.outputs.cache-hit != 'true'
+        working-directory: vaccine-feed-ingest
+
+      - name: ensure cli starts
+        working-directory: vaccine-feed-ingest
+        run: poetry run vaccine-feed-ingest --help
+
+      - name: calculate runners to run
+        working-directory: vaccine-feed-ingest
+        run: |
+          git diff --name-only --diff-filter=ACMRT ${{ github.event.pull_request.base.sha }} ${{ github.sha }} | \
+            grep "vaccine_feed_ingest/runners/[^._]" | \
+            sed -E "s#vaccine_feed_ingest/runners/([^/]+)/([^/]+)/.*#\1/\2#" | \
+            grep -v "us/" > ../runners_to_run.txt || true
+
+      - name: run selected runners
+        working-directory: vaccine-feed-ingest
+        run: |
+          if [[ -f ../runners_to_run.txt ]]; then
+            echo "will run the following runners"
+            cat ../runners_to_run.txt
+            cat ../runners_to_run.txt | xargs poetry run vaccine-feed-ingest all-stages
+          else
+            echo "no runners to run"
+          fi
+
+
   repo-linter:
     name: SuperLinter
     runs-on: ubuntu-latest
