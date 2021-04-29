@@ -18,6 +18,9 @@ from .common import STAGE_OUTPUT_SUFFIX, PipelineStage
 logger = logging.getLogger("load")
 
 
+# useless comment
+
+
 def run_load_to_vial(
     vial_http: urllib3.connectionpool.ConnectionPool,
     site_dir: pathlib.Path,

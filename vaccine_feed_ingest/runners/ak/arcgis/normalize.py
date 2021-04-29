@@ -11,6 +11,7 @@ from typing import List, Optional
 
 from vaccine_feed_ingest_schema import location as schema
 
+# comment
 # Configure logger
 logging.basicConfig(
     level=logging.INFO,

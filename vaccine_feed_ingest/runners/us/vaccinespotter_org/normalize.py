@@ -72,7 +72,7 @@ def normalize(site_blob: dict, timestamp: str) -> dict:
         links.append(
             schema.Link(authority=parsed_provider_link[0], id=parsed_provider_link[1])
         )
-
+    # fake file comment
     return schema.NormalizedLocation(
         id=f"vaccinespotter_org:{site['id']}",
         name=site["name"],
