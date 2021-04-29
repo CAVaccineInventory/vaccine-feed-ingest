@@ -53,68 +53,62 @@ def _get_lat_lng(site: dict) -> Optional[schema.LatLng]:
 
 
 def normalize(site: dict, timestamp: str) -> dict:
-    lat_lng = _get_lat_lng(site)
-    if lat_lng:
-        lat_lng = lat_lng.dict()
+    links = [
+        schema.Link(authority="ct_gov", id=site["_id"]),
+        schema.Link(authority="ct_gov:network_id", id=site["networkId"]),
+    ]
 
-    normalized = {
-        "id": f"ct_gov:{site['_id']}",
-        "name": site["displayName"],
-        "address": {
-            "street1": site["addressLine1"],
-            "street2": site["addressLine2"],
-            "city": site["city"],
-            "state": "CT",
-            "zip": site["zip"],
-        },
-        "location": lat_lng,
-        "contact": [
-            {
-                "contact_type": "booking",
-                "phone": site["phone"],
-                "website": site["link"],
-            },
-        ],
-        "availability": {
-            "appointments": site["availability"],
-        },
-        "access": {
-            "drive": site["isDriveThru"],
-        },
-        "inventory": [
-            {"vaccine": vaccine["name"]} for vaccine in site["providerVaccines"]
-        ],
-        "links": [
-            {
-                "authority": "ct_gov",
-                "id": site["_id"],
-            },
-            {
-                "authority": "ct_gov:network_id",
-                "id": site["networkId"],
-            },
-        ],
-        "parent_organization": {
-            "name": site["networks"][0]["name"],
-        },
-        "source": {
-            "source": "ct",
-            "id": site["_id"],
-            "fetched_from_uri": "https://covidvaccinefinder.ct.gov/api/HttpTriggerGetProvider",
-            "fetched_at": timestamp,
-            "published_at": site["lastModified"],
-            "data": site,
-        },
-    }
+    parent_organization = schema.Organization(name=site["networks"][0]["name"])
 
     parsed_provider_link = provider_id_from_name(site["name"])
     if parsed_provider_link is not None:
-        normalized["links"].append(
-            {"authority": parsed_provider_link[0], "id": parsed_provider_link[1]}
+        links.append(
+            schema.Link(authority=parsed_provider_link[0], id=parsed_provider_link[1])
         )
-        normalized["parent_organization"]["id"] = parsed_provider_link[0]
 
-    return normalized
+        parent_organization.id = parsed_provider_link[0]
+
+    return schema.NormalizedLocation(
+        id=f"ct_gov:{site['_id']}",
+        name=site["displayName"],
+        address=schema.Address(
+            street1=site["addressLine1"],
+            street2=site["addressLine2"],
+            city=site["city"],
+            state="CT",
+            zip=site["zip"],
+        ),
+        location=_get_lat_lng(site),
+        contact=[
+            schema.Contact(
+                contact_type="booking", phone=site["phone"], website=site["link"]
+            ),
+        ],
+        languages=None,
+        opening_dates=None,
+        opening_hours=None,
+        availability=schema.Availability(
+            appointments=site["availability"],
+        ),
+        inventory=[
+            {"vaccine": vaccine["name"]} for vaccine in site["providerVaccines"]
+        ],
+        access=schema.Access(
+            drive=site["isDriveThru"],
+        ),
+        parent_organization=parent_organization,
+        links=links,
+        notes=None,
+        active=None,
+        source=schema.Source(
+            source="covidvaccinefinder_gov",
+            id=site["_id"],
+            fetched_from_uri="https://covidvaccinefinder.ct.gov/api/HttpTriggerGetProvider",  # noqa: E501
+            fetched_at=timestamp,
+            published_at=site["lastModified"],
+            data=site,
+        ),
+    ).dict()
 
 
 output_dir = pathlib.Path(sys.argv[1])

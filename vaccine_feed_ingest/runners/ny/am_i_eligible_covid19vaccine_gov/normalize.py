@@ -47,7 +47,7 @@ def _get_source(site_blob: dict, timestamp: str) -> schema.Source:
     )
 
 
-def normalize(site_blob: dict, timestamp: str) -> str:
+def normalize(site_blob: dict, timestamp: str) -> dict:
     """
     sample entry:
 
@@ -57,9 +57,13 @@ def normalize(site_blob: dict, timestamp: str) -> str:
     city = CITY_RE.search(site_blob["address"]).group(1)
     appts_available = True if site_blob["availableAppointments"] == "Y" else False
 
-    normalized = schema.NormalizedLocation(
+    return schema.NormalizedLocation(
         id=f"am_i_eligible_covid19vaccine_gov:{site_blob['providerId']}",
         name=name,
+        address=schema.Address(
+            city=city,
+            state="NY",
+        ),
         availability=schema.Availability(appointments=appts_available),
         inventory=_get_inventory(site_blob["vaccineBrand"]),
         links=[
@@ -69,8 +73,6 @@ def normalize(site_blob: dict, timestamp: str) -> str:
         ],
         source=_get_source(site_blob, timestamp),
     ).dict()
-    normalized["address"] = {"city": city, "state": "NY"}
-    return normalized
 
 
 parsed_at_timestamp = datetime.datetime.utcnow().isoformat()
