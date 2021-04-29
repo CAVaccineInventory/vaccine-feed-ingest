@@ -2,18 +2,15 @@
 
 import datetime
 import json
+import logging
 import pathlib
 import sys
 
+from vaccine_feed_ingest_schema import location as schema
+
 from vaccine_feed_ingest.utils.normalize import organization_from_name
 
-# import schema
-site_dir = pathlib.Path(__file__).parent
-state_dir = site_dir.parent
-runner_dir = state_dir.parent
-root_dir = runner_dir.parent
-sys.path.append(str(root_dir))
-from schema import schema  # noqa: E402
+logger = logging.getLogger("us/vaccinespotter_org")
 
 
 def normalize(site: dict, timestamp: str) -> dict:
@@ -31,7 +28,7 @@ def normalize(site: dict, timestamp: str) -> dict:
         parent_organization = schema.Organization(id=org[0], name=org[1])
 
     return schema.NormalizedLocation(
-        id=location_id,
+        id=f"sfsites:{location_id}",
         name=name,
         address=schema.Address(
             street1=site["Street__c"],
