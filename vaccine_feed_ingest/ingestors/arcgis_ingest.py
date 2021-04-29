@@ -24,7 +24,7 @@ def fetch_geojson(
     output_dir: str,
     selected_layers: Optional[Sequence[str]] = None,
 ) -> None:
-    """ Save selected layers of the arcgis service item """
+    """Save selected layers of the arcgis service item"""
     gis = GIS()
     item = gis.content.get(service_item_id)
 
