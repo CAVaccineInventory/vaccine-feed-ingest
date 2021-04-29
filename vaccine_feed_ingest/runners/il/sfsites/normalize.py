@@ -10,7 +10,7 @@ from vaccine_feed_ingest_schema import location as schema
 
 from vaccine_feed_ingest.utils.normalize import organization_from_name
 
-logger = logging.getLogger("us/vaccinespotter_org")
+logger = logging.getLogger("il/sfsites")
 
 
 def normalize(site: dict, timestamp: str) -> dict:
