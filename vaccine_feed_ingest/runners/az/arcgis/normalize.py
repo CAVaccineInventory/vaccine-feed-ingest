@@ -249,7 +249,7 @@ def _get_normalized_location(site: dict, timestamp: str) -> schema.NormalizedLoc
             street1=site["attributes"]["addr1"],
             street2=site["attributes"]["addr2"],
             city=site["attributes"]["city"],
-            state=site["attributes"]["state"] or "AZ",
+            state="AZ",
             zip=site["attributes"]["zip"],
         ),
         location=_get_lat_lng(site),
