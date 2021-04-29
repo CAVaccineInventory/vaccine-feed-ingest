@@ -136,7 +136,7 @@ jobs:
       - name: run selected runners
         working-directory: vaccine-feed-ingest
         run: |
-          if [[ -f ../runners_to_run.txt ]]; then
+          if [[ -s ../runners_to_run.txt ]]; then
             echo "will run the following runners"
             cat ../runners_to_run.txt
             cat ../runners_to_run.txt | xargs poetry run vaccine-feed-ingest all-stages
