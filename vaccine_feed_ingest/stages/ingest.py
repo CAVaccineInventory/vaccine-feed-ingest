@@ -5,16 +5,16 @@ import logging
 import pathlib
 import subprocess
 import tempfile
+from typing import Optional, Tuple
 
 import pydantic
 from vaccine_feed_ingest_schema import location
 
 from ..utils.validation import BOUNDING_BOX
 from . import outputs, site
-from .common import RUNNERS_DIR, STAGE_OUTPUT_SUFFIX, PipelineStage
+from .common import RUNNERS_DIR, STAGE_OUTPUT_SUFFIX, PipelineStage, STAGE_CMD_NAME
 
 logger = logging.getLogger("ingest")
-
 
 def run_fetch(
     site_dir: pathlib.Path,
@@ -22,25 +22,12 @@ def run_fetch(
     timestamp: str,
     dry_run: bool = False,
 ) -> bool:
-    fetch_path = site.find_executeable(site_dir, PipelineStage.FETCH)
-
-    yml_path = None
+    fetch_path, yml_path = resolve_executable(site_dir, PipelineStage.FETCH)
     if not fetch_path:
-        yml_path = site.find_yml(site_dir, PipelineStage.FETCH)
-
-        if not yml_path:
-            logger.info("No fetch cmd or .yml config for %s to run.", site_dir.name)
-            return False
-
-        fetch_path = site.find_executeable(
-            RUNNERS_DIR.joinpath("_shared"), PipelineStage.FETCH
-        )
-
-        if not fetch_path:
-            logger.info(
-                "Missing shapred executable to run for yml in %s.", site_dir.name
-            )
-            return False
+        log_msg = "Missing shared executable to run for yml in %s." if yml_path \
+            else "No fetch cmd or .yml config for %s to run."
+        logger.info(log_msg, site_dir.name)
+        return False
 
     with tempfile.TemporaryDirectory(
         f"_fetch_{site_dir.parent.name}_{site_dir.name}"
@@ -89,24 +76,12 @@ def run_parse(
     validate: bool = True,
     dry_run: bool = False,
 ) -> bool:
-    parse_path = site.find_executeable(site_dir, PipelineStage.PARSE)
-    yml_path = None
+    parse_path, yml_path = resolve_executable(site_dir, PipelineStage.PARSE)
     if not parse_path:
-        yml_path = site.find_yml(site_dir, PipelineStage.PARSE)
-
-        if not yml_path:
-            logger.info("No parse cmd or .yml config for %s to run.", site_dir.name)
-            return False
-
-        parse_path = site.find_executeable(
-            RUNNERS_DIR.joinpath("_shared"), PipelineStage.PARSE
-        )
-
-        if not parse_path:
-            logger.info(
-                "Missing shapred executable to run for yml in %s.", site_dir.name
-            )
-            return False
+        log_msg = "Missing shared executable to run for yml in %s." if yml_path \
+            else "No parse cmd or .yml config for %s to run."
+        logger.info(log_msg, site_dir.name)
+        return False
 
     fetch_run_dir = outputs.find_latest_run_dir(
         output_dir, site_dir.parent.name, site_dir.name, PipelineStage.FETCH
@@ -281,6 +256,27 @@ def run_normalize(
             outputs.copy_files(normalize_output_dir, normalize_run_dir)
 
     return True
+
+
+def resolve_executable(
+        site_dir: pathlib.Path,
+        stage: PipelineStage
+) -> Tuple[Optional[pathlib.Path], Optional[pathlib.Path]]:
+    """Returns the executable and yml paths for specified site/stage."""
+    if stage not in (PipelineStage.FETCH, PipelineStage.PARSE):
+        raise Exception(
+            f"Resolution not supported for stage {STAGE_CMD_NAME[stage]}"
+        )
+    executable_path = site.find_executeable(site_dir, stage)
+    if executable_path:
+        return (executable_path, None)
+    yml_path = site.find_yml(site_dir, stage)
+    if not yml_path:
+        return (None, None)
+    return (
+        site.find_executeable(RUNNERS_DIR.joinpath("_shared"), stage),
+        yml_path
+    )
 
 
 def _validate_parsed(output_dir: pathlib.Path) -> bool:
