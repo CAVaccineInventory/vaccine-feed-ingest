@@ -13,7 +13,7 @@ logger = logging.getLogger(__name__)
 
 def _get_id(site: dict) -> str:
     loc_id = site["Event Location Id"]
-    return f"nc:myspot_gov:{loc_id}"
+    return f"nc_myspot_gov:{loc_id}"
 
 
 def _get_name(site: dict) -> str:
@@ -133,7 +133,7 @@ def _get_source(site: dict, timestamp: str) -> schema.Source:
         fetched_at=timestamp,
         fetched_from_uri="https://myspot.nc.gov/api/get-vaccine-locations",
         id=site["Event Location Id"],
-        source="nc:myspot_gov",
+        source="nc_myspot_gov",
     )
 
 

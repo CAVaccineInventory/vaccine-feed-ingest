@@ -144,7 +144,7 @@ def _get_normalized_location(site: dict, timestamp: str) -> schema.NormalizedLoc
         notes=_get_notes(site),
         active=None,
         source=schema.Source(
-            source="in:arcgis",
+            source="in_arcgis",
             id=site["attributes"]["GlobalID"],
             fetched_from_uri="https://experience.arcgis.com/experience/24159814f1dd4f69b6c22e7e87bca65b",  # noqa: E501
             fetched_at=timestamp,

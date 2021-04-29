@@ -156,7 +156,7 @@ def _get_normalized_location(site: dict, timestamp: str) -> schema.NormalizedLoc
         notes=None,
         active=_get_activated(site),
         source=schema.Source(
-            source="sc:arcgis",
+            source="sc_arcgis",
             id=site["attributes"]["GlobalID"],
             fetched_from_uri="https://opendata.arcgis.com/datasets/bbd8924909264baaa1a5a1564b393063_0.geojson",  # noqa: E501
             fetched_at=timestamp,
