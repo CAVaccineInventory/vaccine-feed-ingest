@@ -124,22 +124,24 @@ jobs:
         working-directory: vaccine-feed-ingest
         run: poetry run vaccine-feed-ingest --help
 
-      - name: list runners to run
+      - name: calculate runners to run
         working-directory: vaccine-feed-ingest
         run: |
           git diff --name-only --diff-filter=ACMRT ${{ github.event.pull_request.base.sha }} ${{ github.sha }} | \
             grep "vaccine_feed_ingest/runners/[^._]" | \
             sed -E "s#vaccine_feed_ingest/runners/([^/]+)/([^/]+)/.*#\1/\2#" | \
-            grep -v "us/"
+            grep -v "us/" > ../runners_to_run.txt || true
 
       - name: run selected runners
         working-directory: vaccine-feed-ingest
         run: |
-          git diff --name-only --diff-filter=ACMRT ${{ github.event.pull_request.base.sha }} ${{ github.sha }} | \
-            grep "vaccine_feed_ingest/runners/[^._]" | \
-            sed -E "s#vaccine_feed_ingest/runners/([^/]+)/([^/]+)/.*#\1/\2#" | \
-            grep -v "us/" | \
-            xargs poetry run vaccine-feed-ingest all-stages
+          if [[ -f ../runners_to_run.txt ]]; then
+            echo "will run the following runners"
+            cat ../runners_to_run.txt
+            cat ../runners_to_run.txt | xargs poetry run vaccine-feed-ingest all-stages
+          else
+            echo "no runners to run"
+          fi
 
 
   repo-linter:
