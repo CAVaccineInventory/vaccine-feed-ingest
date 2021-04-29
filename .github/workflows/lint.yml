@@ -81,6 +81,7 @@ jobs:
   run-pipeline:
     name: Run all-stages for modified runners
     runs-on: ubuntu-latest
+    if: ${{ github.event_name == 'pull_request' }}
     steps:
       - name: apt-get dependencies
         run: |
