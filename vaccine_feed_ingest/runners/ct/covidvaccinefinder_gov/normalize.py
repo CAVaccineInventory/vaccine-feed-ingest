@@ -55,7 +55,7 @@ def _get_lat_lng(site: dict) -> Optional[schema.LatLng]:
 def normalize(site: dict, timestamp: str) -> dict:
     links = [
         schema.Link(authority="ct_gov", id=site["_id"]),
-        schema.Link(authority="ct_gov:network_id", id=site["networkId"])
+        schema.Link(authority="ct_gov:network_id", id=site["networkId"]),
     ]
 
     parent_organization = schema.Organization(name=site["networks"][0]["name"])
@@ -81,21 +81,21 @@ def normalize(site: dict, timestamp: str) -> dict:
         location=_get_lat_lng(site),
         contact=[
             schema.Contact(
-                contact_type="booking",
-                phone=site["phone"],
-                website=site["link"]
-                ),
+                contact_type="booking", phone=site["phone"], website=site["link"]
+            ),
         ],
         languages=None,
         opening_dates=None,
         opening_hours=None,
         availability=schema.Availability(
             appointments=site["availability"],
-            ),
-        inventory=[{"vaccine": vaccine["name"]} for vaccine in site["providerVaccines"]],
+        ),
+        inventory=[
+            {"vaccine": vaccine["name"]} for vaccine in site["providerVaccines"]
+        ],
         access=schema.Access(
             drive=site["isDriveThru"],
-            ),
+        ),
         parent_organization=parent_organization,
         links=links,
         notes=None,

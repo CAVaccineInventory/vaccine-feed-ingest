@@ -69,7 +69,7 @@ def normalize(site_blob: dict, timestamp: str) -> dict:
         site["provider_brand_name"]  # or use site["name"]?
     )
     if parsed_provider_link is not None:
-        normalized["links"].append(
+        links.append(
             schema.Link(authority=parsed_provider_link[0], id=parsed_provider_link[1])
         )
 
@@ -79,25 +79,16 @@ def normalize(site_blob: dict, timestamp: str) -> dict:
         address=_get_address(site),
         location=_get_lat_lng(site_blob["geometry"], site["id"]),
         contact=[
-            schema.Contact(
-                contact_type=None,
-                phone=None,
-                website=site["url"]
-                ),
+            schema.Contact(contact_type=None, phone=None, website=site["url"]),
         ],
         languages=None,
         opening_dates=None,
         opening_hours=None,
         availability=schema.Availability(
-            appointments=site["appointments_available"],
-            drop_in=None
-            ),
+            appointments=site["appointments_available"], drop_in=None
+        ),
         inventory=None,
-        access=schema.Access(
-            walk=None,
-            drive=None,
-            wheelchair=None
-            ),
+        access=schema.Access(walk=None, drive=None, wheelchair=None),
         parent_organization=None,
         links=links,
         notes=None,

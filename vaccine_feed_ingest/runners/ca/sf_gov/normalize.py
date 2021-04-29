@@ -5,8 +5,9 @@ import json
 import pathlib
 import sys
 
-from vaccine_feed_ingest.utils.normalize import provider_id_from_name
 from vaccine_feed_ingest_schema import location as schema
+
+from vaccine_feed_ingest.utils.normalize import provider_id_from_name
 
 
 def normalize(site: dict, timestamp: str) -> dict:
@@ -47,22 +48,22 @@ def normalize(site: dict, timestamp: str) -> dict:
                 contact_type="booking",
                 phone=site["booking"]["phone"],
                 website=site["booking"]["url"],
-                other=site["booking"]["info"]
-                ),
+                other=site["booking"]["info"],
+            ),
         ],
         languages=[k for k, v in site["access"]["languages"].items() if v],
         opening_dates=None,
         opening_hours=None,
         availability=schema.Availability(
             appointments=site["appointments"]["available"],
-            drop_in=site["booking"]["dropins"]
-            ),
+            drop_in=site["booking"]["dropins"],
+        ),
         inventory=None,
         access=schema.Access(
             walk=site["access_mode"]["walk"],
             drive=site["access_mode"]["drive"],
-            wheelchair="yes" if site["access"]["wheelchair"] else "no"
-            ),
+            wheelchair="yes" if site["access"]["wheelchair"] else "no",
+        ),
         parent_organization=None,
         links=links,
         notes=None,
