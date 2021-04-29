@@ -43,7 +43,7 @@ def _get_id(site: dict) -> str:
     arcgis = "128ead309d754558ad81bccd99188dc9"
     layer = 0
 
-    return f"{runner}:{site_name}:{arcgis}_{layer}:{data_id}"
+    return f"{runner}_{site_name}:{arcgis}_{layer}:{data_id}"
 
 
 def _get_contacts(site: dict) -> Optional[List[schema.Contact]]:

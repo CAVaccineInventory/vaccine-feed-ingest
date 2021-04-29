@@ -49,7 +49,7 @@ def _get_id(site: dict) -> str:
     arcgis = "d92cbd6ff2524d7e92bef109f30cb366"
     layer = 0
 
-    return f"{runner}:{site_name}:{arcgis}_{layer}:{data_id}"
+    return f"{runner}_{site_name}:{arcgis}_{layer}:{data_id}"
 
 
 def _get_inventory(site: dict) -> Optional[List[schema.Vaccine]]:
