@@ -5,7 +5,9 @@ import json
 import logging
 import os
 import pathlib
+import re
 import sys
+from typing import List, Optional
 
 # import schema
 site_dir = pathlib.Path(__file__).parent
@@ -26,29 +28,43 @@ logger = logging.getLogger("ga/dph/normalize.py")
 
 
 def _get_id(site: dict) -> str:
+    data_id = site["node-id"].split("/")[1]
     # Could parse these from directory traversal, but do not for now to avoid
     # accidental mutation.
     org = "dph"
     runner = "ga"
 
-    return f"{runner}:{org}"
+    return f"{runner}:{org}:{data_id}"
+
+
+def _get_contacts(site: dict) -> Optional[List[schema.Contact]]:
+    contacts = []
+    if len(site["phone-numbers"]):
+        sourcePhone = re.sub("[^0-9]", "", site["phone-numbers"][0])
+        if len(sourcePhone) == 11:
+            sourcePhone = sourcePhone[1:]
+        phone = f"({sourcePhone[0:3]}) {sourcePhone[3:6]}-{sourcePhone[6:]}"
+        contacts.append(schema.Contact(phone=phone))
+
+    if len(site["contact-links"]):
+        contacts.append(schema.Contact(website=site["contact-links"][0]["href"]))
+
+    if len(contacts) > 0:
+        return contacts
+
+    return None
 
 
 def _get_normalized_location(site: dict, timestamp: str) -> schema.NormalizedLocation:
-    address_field = site["Address"].split("\n")
-    street1 = " ".join(address_field[0:-1])
-    city_state_zip = address_field[-1].split(",")
-    city = city_state_zip[0]
-    zip = city_state_zip[-1].split(" ")[-1]
     return schema.NormalizedLocation(
         id=_get_id(site),
         name=site["Location Name"],
         address=schema.Address(
-            street1=street1,
-            street2=None,
-            city=city,
+            street1=site["address-parts"]["address-line1"],
+            street2=site["address-parts"].get("address-line2", None),
+            city=site["address-parts"]["locality"],
             state="GA",
-            zip=zip,
+            zip=site["address-parts"]["postal-code"],
         ),
         location=None,
         contact=None,
@@ -64,10 +80,10 @@ def _get_normalized_location(site: dict, timestamp: str) -> schema.NormalizedLoc
         active=None,
         source=schema.Source(
             source="dph",
-            id=0,
+            id=site["node-id"],
             fetched_from_uri="https://dph.georgia.gov/locations/covid-vaccination-site",  # noqa: E501
             fetched_at=timestamp,
-            published_at=None,
+            published_at=site["last-updated"],
             data=site,
         ),
     )
