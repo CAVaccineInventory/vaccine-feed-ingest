@@ -120,6 +120,10 @@ jobs:
         if: steps.cached-poetry-dependencies.outputs.cache-hit != 'true'
         working-directory: vaccine-feed-ingest
 
+      - name: ensure cli starts
+        working-directory: vaccine-feed-ingest
+        run: poetry run vaccine-feed-ingest --help
+
       - name: list runners to run
         working-directory: vaccine-feed-ingest
         run: |
