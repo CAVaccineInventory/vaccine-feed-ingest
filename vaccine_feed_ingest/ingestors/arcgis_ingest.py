@@ -96,7 +96,7 @@ def get_count(query_url: str) -> int:
 def get_results(
     query_url: str, offset: int, batch_size: int, output_dir: str, format: str
 ) -> None:
-    """ Fetch one batch of ArcGIS features from the query_url """
+    """Fetch one batch of ArcGIS features from the query_url"""
 
     # Set Output Spatial reference to EPSG 4326 GPS coords
     out_sr = "4326"
@@ -125,7 +125,7 @@ def get_results(
 def fetch(
     query_url: str, output_dir: str, batch_size: int = 50, format: str = "geojson"
 ) -> None:
-    """ Fetch ArcGIS features in chunks of batch_size """
+    """Fetch ArcGIS features in chunks of batch_size"""
 
     count = get_count(query_url)
     print(f"Found {count} results")
