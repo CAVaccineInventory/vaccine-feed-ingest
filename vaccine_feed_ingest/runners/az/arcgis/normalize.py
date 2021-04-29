@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# isort: skip_file
 
 import json
 import logging
@@ -9,7 +10,9 @@ import sys
 from datetime import datetime
 from typing import List, Optional, Tuple
 
-from vaccine_feed_ingest_schema import schema
+from vaccine_feed_ingest_schema import location as schema
+
+from vaccine_feed_ingest.utils.validation import BOUNDING_BOX
 
 # Configure logger
 logging.basicConfig(
@@ -223,6 +226,21 @@ def _get_inventory(site: dict) -> Optional[List[schema.Vaccine]]:
     ]
 
 
+def _get_lat_lng(site: dict) -> Optional[schema.LatLng]:
+    lat_lng = schema.LatLng(
+        latitude=site["geometry"]["y"], longitude=site["geometry"]["x"]
+    )
+
+    # Some locations in the AZ data set have lat/lng near the south pole. Drop
+    # those values.
+    if not BOUNDING_BOX.latitude.contains(
+        lat_lng.latitude
+    ) or not BOUNDING_BOX.longitude.contains(lat_lng.longitude):
+        return None
+
+    return lat_lng
+
+
 def _get_normalized_location(site: dict, timestamp: str) -> schema.NormalizedLocation:
     return schema.NormalizedLocation(
         id=_get_id(site),
@@ -231,12 +249,10 @@ def _get_normalized_location(site: dict, timestamp: str) -> schema.NormalizedLoc
             street1=site["attributes"]["addr1"],
             street2=site["attributes"]["addr2"],
             city=site["attributes"]["city"],
-            state=site["attributes"]["state"] or "AZ",
+            state="AZ",
             zip=site["attributes"]["zip"],
         ),
-        location=schema.LatLng(
-            latitude=site["geometry"]["y"], longitude=site["geometry"]["x"]
-        ),
+        location=_get_lat_lng(site),
         contact=_get_contacts(site),
         languages=_get_languages(site),
         opening_dates=_get_opening_dates(site),
@@ -251,7 +267,7 @@ def _get_normalized_location(site: dict, timestamp: str) -> schema.NormalizedLoc
         else None,
         active=None,
         source=schema.Source(
-            source="arcgis",
+            source="az:arcgis",
             id=site["attributes"]["globalid"],
             fetched_from_uri="https://adhsgis.maps.arcgis.com/apps/opsdashboard/index.html#/5d636af4d5134a819833b1a3b906e1b6",  # noqa: E501
             fetched_at=timestamp,

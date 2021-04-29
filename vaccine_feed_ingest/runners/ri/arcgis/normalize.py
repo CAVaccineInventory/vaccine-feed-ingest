@@ -9,7 +9,7 @@ import re
 import sys
 from typing import List, Optional
 
-from vaccine_feed_ingest_schema import schema
+from vaccine_feed_ingest_schema import location as schema
 
 # Configure logger
 logging.basicConfig(
@@ -119,7 +119,7 @@ def _get_normalized_location(site: dict, timestamp: str) -> schema.NormalizedLoc
         notes=_get_notes(site),
         active=None,
         source=schema.Source(
-            source="arcgis",
+            source="ri:arcgis",
             id=site["attributes"]["OBJECTID"],
             fetched_from_uri="https://rihealth.maps.arcgis.com/apps/instant/nearby/index.html?appid=a25f35833533498bac3f724f92a84b4e",  # noqa: E501
             fetched_at=timestamp,

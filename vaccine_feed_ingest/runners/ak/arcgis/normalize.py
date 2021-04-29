@@ -9,7 +9,7 @@ import re
 import sys
 from typing import List, Optional
 
-from vaccine_feed_ingest_schema import schema  # noqa: E402
+from vaccine_feed_ingest_schema import location as schema
 
 # Configure logger
 logging.basicConfig(
@@ -140,7 +140,7 @@ def _get_normalized_location(site: dict, timestamp: str) -> schema.NormalizedLoc
         notes=_get_notes(site),
         active=None,
         source=schema.Source(
-            source="arcgis",
+            source="ak:arcgis",
             id=site["attributes"]["globalid"],
             fetched_from_uri="https://services1.arcgis.com/WzFsmainVTuD5KML/ArcGIS/rest/services/COVID19_Vaccine_Site_Survey_API/FeatureServer/0",  # noqa: E501
             fetched_at=timestamp,

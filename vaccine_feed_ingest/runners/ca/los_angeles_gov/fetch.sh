@@ -10,4 +10,4 @@ else
     echo "Must pass an output_dir as first argument"
 fi
 
-curl --silent "https://dph.georgia.gov/locations/covid-vaccination-site" -o "${output_dir}/locations.html"
+(cd "$output_dir" && curl --silent "http://publichealth.lacounty.gov/acd/ncorona2019/js/pod-data.js" -o 'los_angeles.js')

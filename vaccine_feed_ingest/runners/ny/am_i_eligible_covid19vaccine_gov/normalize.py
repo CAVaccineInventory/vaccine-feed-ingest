@@ -8,7 +8,7 @@ import re
 import sys
 from typing import List, Optional
 
-from vaccine_feed_ingest.schema import schema  # noqa: E402
+from vaccine_feed_ingest_schema import location as schema
 
 CITY_RE = re.compile(r"^([\w ]+), NY$")
 # the providerName field smells like it's being parsed from someplace else,
@@ -67,8 +67,6 @@ def normalize(site_blob: dict, timestamp: str) -> str:
                 authority="am_i_eligible_covid19vaccine_gov", id=site_blob["providerId"]
             ),
         ],
-        fetched_at=timestamp,
-        published_at=site_blob["lastUpdated"],
         source=_get_source(site_blob, timestamp),
     ).dict()
     normalized["address"] = {"city": city, "state": "NY"}

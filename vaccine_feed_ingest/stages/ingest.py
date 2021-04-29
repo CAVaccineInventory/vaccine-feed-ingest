@@ -7,8 +7,9 @@ import subprocess
 import tempfile
 
 import pydantic
-from vaccine_feed_ingest_schema import schema
+from vaccine_feed_ingest_schema import location
 
+from ..utils.validation import BOUNDING_BOX
 from . import outputs, site
 from .common import RUNNERS_DIR, STAGE_OUTPUT_SUFFIX, PipelineStage
 
@@ -311,7 +312,7 @@ def _validate_normalized(output_dir: pathlib.Path) -> bool:
         with filepath.open() as ndjson_file:
             for line_no, content in enumerate(ndjson_file):
                 try:
-                    schema.NormalizedLocation.parse_raw(content)
+                    normalized_location = location.NormalizedLocation.parse_raw(content)
                 except pydantic.ValidationError as e:
                     logger.warning(
                         "Invalid source location in %s at line %d: %s\n%s",
@@ -322,4 +323,18 @@ def _validate_normalized(output_dir: pathlib.Path) -> bool:
                     )
                     return False
 
+                if normalized_location.location:
+                    if not BOUNDING_BOX.latitude.contains(
+                        normalized_location.location.latitude
+                    ) or not BOUNDING_BOX.longitude.contains(
+                        normalized_location.location.longitude
+                    ):
+                        logger.warning(
+                            "Invalid latitude or longitude in %s at line %d: %s is outside approved bounds (%s)",
+                            filepath,
+                            line_no,
+                            normalized_location.location,
+                            BOUNDING_BOX,
+                        )
+                        return False
     return True

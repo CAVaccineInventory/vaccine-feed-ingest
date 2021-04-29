@@ -23,6 +23,9 @@ logging.basicConfig(
     datefmt="%m/%d/%Y %H:%M:%S",
 )
 
+# Collect locations that are within .6 degrees = 66.6 km = 41 mi
+CANDIDATE_DEGREES_DISTANCE = 0.6
+
 
 def _generate_run_timestamp() -> str:
     """Generate a timestam that will be recorded in the stage data output dirs"""
@@ -82,8 +85,8 @@ def available_sites(state: Optional[str]) -> None:
     """Print list of available sites, optionally filtered by state"""
 
     for site_dir in site.get_site_dirs_for_state(state):
-        has_fetch = bool(site.find_executeable(site_dir, common.PipelineStage.FETCH))
-        has_parse = bool(site.find_executeable(site_dir, common.PipelineStage.PARSE))
+        has_fetch = _compute_has_fetch(site_dir)
+        has_parse = _compute_has_parse(site_dir)
         has_normalize = bool(
             site.find_executeable(site_dir, common.PipelineStage.NORMALIZE)
         )
@@ -94,6 +97,30 @@ def available_sites(state: Optional[str]) -> None:
             "parse" if has_parse else "no-parse",
             "normalize" if has_normalize else "no-normalize",
         )
+
+
+def _compute_has_fetch(site_dir: pathlib.Path) -> bool:
+    if site.find_executeable(site_dir, common.PipelineStage.FETCH):
+        return True
+    if not site.find_yml(site_dir, common.PipelineStage.FETCH):
+        return False
+    return bool(
+        site.find_executeable(
+            common.RUNNERS_DIR.joinpath("_shared"), common.PipelineStage.FETCH
+        )
+    )
+
+
+def _compute_has_parse(site_dir: pathlib.Path) -> bool:
+    if site.find_executeable(site_dir, common.PipelineStage.PARSE):
+        return True
+    if not site.find_yml(site_dir, common.PipelineStage.PARSE):
+        return False
+    return bool(
+        site.find_executeable(
+            common.RUNNERS_DIR.joinpath("_shared"), common.PipelineStage.PARSE
+        )
+    )
 
 
 @cli.command()
@@ -217,6 +244,12 @@ def all_stages(
     type=bool,
     default=lambda: os.environ.get("ENABLE_CREATE", "false").lower() == "true",
 )
+@click.option(
+    "--candidate-distance",
+    "candidate_distance",
+    type=float,
+    default=CANDIDATE_DEGREES_DISTANCE,
+)
 def load_to_vial(
     vial_server: str,
     vial_apikey: str,
@@ -226,6 +259,7 @@ def load_to_vial(
     sites: Optional[Sequence[str]],
     enable_match: bool,
     enable_create: bool,
+    candidate_distance: float,
 ) -> None:
     """Load specified sites to vial server."""
     site_dirs = site.get_site_dirs(state, sites)
@@ -245,6 +279,7 @@ def load_to_vial(
                 locations,
                 enable_match=enable_match,
                 enable_create=enable_create,
+                candidate_distance=candidate_distance,
                 dry_run=dry_run,
             )
 

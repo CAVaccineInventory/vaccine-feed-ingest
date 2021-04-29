@@ -9,7 +9,7 @@ import re
 import sys
 from typing import List, Optional
 
-from vaccine_feed_ingest_schema import schema
+from vaccine_feed_ingest_schema import location as schema
 
 # Configure logger
 logging.basicConfig(
@@ -156,7 +156,7 @@ def _get_normalized_location(site: dict, timestamp: str) -> schema.NormalizedLoc
         notes=None,
         active=_get_activated(site),
         source=schema.Source(
-            source="arcgis",
+            source="sc:arcgis",
             id=site["attributes"]["GlobalID"],
             fetched_from_uri="https://opendata.arcgis.com/datasets/bbd8924909264baaa1a5a1564b393063_0.geojson",  # noqa: E501
             fetched_at=timestamp,

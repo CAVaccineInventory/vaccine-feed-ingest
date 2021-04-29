@@ -9,7 +9,7 @@ import re
 import sys
 from typing import List, Optional
 
-from vaccine_feed_ingest_schema import schema
+from vaccine_feed_ingest_schema import location as schema
 
 # Configure logger
 logging.basicConfig(
@@ -69,8 +69,8 @@ def _get_normalized_location(site: dict, timestamp: str) -> schema.NormalizedLoc
             zip=site["attributes"]["ZIP_Code"],
         ),
         location=schema.LatLng(
-            latitude=site["geometry"]["x"],
-            longitude=site["geometry"]["y"],
+            latitude=site["geometry"]["y"],
+            longitude=site["geometry"]["x"],
         ),
         contact=_get_contacts(site),
         languages=None,
@@ -84,7 +84,7 @@ def _get_normalized_location(site: dict, timestamp: str) -> schema.NormalizedLoc
         notes=None,
         active=None,
         source=schema.Source(
-            source="arcgis",
+            source="pa:arcgis",
             id=site["attributes"]["Clinic_ID"],
             fetched_from_uri="https://padoh.maps.arcgis.com/apps/webappviewer/index.html?id=e6f78224c6fe4313a1f70b56f553c357",  # noqa: E501
             fetched_at=timestamp,
