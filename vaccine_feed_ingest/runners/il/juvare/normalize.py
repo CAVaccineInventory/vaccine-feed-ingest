@@ -21,21 +21,42 @@ def _get_source(site: dict, timestamp: str) -> location.Source:
     )
 
 
-def _parse_date(date: str) -> Optional[str]:
+def _parse_datetime(date: str) -> Optional[datetime.datetime]:
     # Input data always looks like "3/23/2021, 9:00 AM", unless it's null.
-    match = re.match(r"(\d+)/(\d+)/(\d+).*", date or "")
-    if not match:
+    # Strptime is locale-dependent, but the default locale is always "C", which
+    # should work fine:
+    # https://docs.python.org/3/library/locale.html#background-details-hints-tips-and-caveats
+    try:
+        return datetime.datetime.strptime(date, "%m/%d/%Y, %I:%M %p")
+    except (TypeError, ValueError):
         return None
-    month, day, year = [int(x) for x in match.groups()]
-    return f"{year:04}-{month:02}-{day:02}"
 
 
 def _get_opening_dates(site: dict) -> location.OpenDate:
-    return [
-        location.OpenDate(
-            opens=_parse_date(site["dateFrom"]), closes=_parse_date(site["dateTo"])
-        )
-    ]
+    opens = _parse_datetime(site["dateFrom"])
+    closes = _parse_datetime(site["dateTo"])
+    if opens:
+        opens = opens.date().isoformat()
+    if closes:
+        closes = closes.date().isoformat()
+    return [location.OpenDate(opens=opens, closes=closes)]
+
+
+def _get_opening_hours(site: dict) -> location.OpenHour:
+    opens = _parse_datetime(site["dateFrom"])
+    closes = _parse_datetime(site["dateTo"])
+    if opens and closes and opens.date() == closes.date():
+        return [
+            location.OpenHour(
+                day=opens.strftime("%A").lower(),
+                opens=opens.time().isoformat("minutes"),
+                closes=closes.time().isoformat("minutes"),
+            )
+        ]
+    # If the location is open more than one day, we can't figure out which days
+    # and times it's open from the source we have. We would need to scrape more
+    # information.
+    return None
 
 
 def _get_access(site: dict) -> location.Access:
@@ -267,6 +288,7 @@ def normalize(site: dict, timestamp: str) -> str:
         location=latlng,
         contact=_get_contact(site),
         opening_dates=_get_opening_dates(site),
+        opening_hours=_get_opening_hours(site),
         availability=location.Availability(appointments=True),
         inventory=_get_inventory(site),
         access=_get_access(site),
