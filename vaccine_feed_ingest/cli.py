@@ -100,27 +100,13 @@ def available_sites(state: Optional[str]) -> None:
 
 
 def _compute_has_fetch(site_dir: pathlib.Path) -> bool:
-    if site.find_executeable(site_dir, common.PipelineStage.FETCH):
-        return True
-    if not site.find_yml(site_dir, common.PipelineStage.FETCH):
-        return False
-    return bool(
-        site.find_executeable(
-            common.RUNNERS_DIR.joinpath("_shared"), common.PipelineStage.FETCH
-        )
-    )
+    exec_path, _ = site.resolve_executable(site_dir, common.PipelineStage.FETCH)
+    return bool(exec_path)
 
 
 def _compute_has_parse(site_dir: pathlib.Path) -> bool:
-    if site.find_executeable(site_dir, common.PipelineStage.PARSE):
-        return True
-    if not site.find_yml(site_dir, common.PipelineStage.PARSE):
-        return False
-    return bool(
-        site.find_executeable(
-            common.RUNNERS_DIR.joinpath("_shared"), common.PipelineStage.PARSE
-        )
-    )
+    exec_path, _ = site.resolve_executable(site_dir, common.PipelineStage.PARSE)
+    return bool(exec_path)
 
 
 @cli.command()
