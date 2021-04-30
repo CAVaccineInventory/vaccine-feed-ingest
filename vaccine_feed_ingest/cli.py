@@ -73,6 +73,53 @@ def _sites_argument() -> Callable:
     return click.argument("sites", nargs=-1, type=str)
 
 
+def _vial_server_option() -> Callable:
+    return click.option(
+        "--vial-server",
+        "vial_server",
+        type=str,
+        default=lambda: os.environ.get(
+            "VIAL_SERVER", "https://vial-staging.calltheshots.us"
+        ),
+    )
+
+
+def _vial_apikey_option() -> Callable:
+    return click.option(
+        "--vial-apikey",
+        "vial_apikey",
+        type=str,
+        default=lambda: os.environ.get("VIAL_APIKEY", ""),
+    )
+
+
+def _match_option() -> Callable:
+    return click.option(
+        "--match/--no-match",
+        "enable_match",
+        type=bool,
+        default=lambda: os.environ.get("ENABLE_MATCH", "true").lower() == "true",
+    )
+
+
+def _create_option() -> Callable:
+    return click.option(
+        "--create/--no-create",
+        "enable_create",
+        type=bool,
+        default=lambda: os.environ.get("ENABLE_CREATE", "false").lower() == "true",
+    )
+
+
+def _candidate_distance_option() -> Callable:
+    return click.option(
+        "--candidate-distance",
+        "candidate_distance",
+        type=float,
+        default=CANDIDATE_DEGREES_DISTANCE,
+    )
+
+
 @click.group()
 def cli():
     """Run vaccine-feed-ingest commands"""
@@ -221,38 +268,11 @@ def enrich(
 @_state_option()
 @_output_dir_option()
 @_dry_run_option()
-@click.option(
-    "--vial-server",
-    "vial_server",
-    type=str,
-    default=lambda: os.environ.get(
-        "VIAL_SERVER", "https://vial-staging.calltheshots.us"
-    ),
-)
-@click.option(
-    "--vial-apikey",
-    "vial_apikey",
-    type=str,
-    default=lambda: os.environ.get("VIAL_APIKEY", ""),
-)
-@click.option(
-    "--match/--no-match",
-    "enable_match",
-    type=bool,
-    default=lambda: os.environ.get("ENABLE_MATCH", "true").lower() == "true",
-)
-@click.option(
-    "--create/--no-create",
-    "enable_create",
-    type=bool,
-    default=lambda: os.environ.get("ENABLE_CREATE", "false").lower() == "true",
-)
-@click.option(
-    "--candidate-distance",
-    "candidate_distance",
-    type=float,
-    default=CANDIDATE_DEGREES_DISTANCE,
-)
+@_vial_server_option()
+@_vial_apikey_option()
+@_match_option()
+@_create_option()
+@_candidate_distance_option()
 def load_to_vial(
     sites: Optional[Sequence[str]],
     state: Optional[str],
