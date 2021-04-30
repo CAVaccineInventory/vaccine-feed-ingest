@@ -200,6 +200,25 @@ def all_stages(
 
 
 @cli.command()
+@_state_option()
+@_output_dir_option()
+@_dry_run_option()
+@_sites_argument()
+def enrich(
+    state: Optional[str],
+    output_dir: pathlib.Path,
+    dry_run: bool,
+    sites: Optional[Sequence[str]],
+) -> None:
+    """Run enrich process for specified sites."""
+    timestamp = _generate_run_timestamp()
+    site_dirs = site.get_site_dirs(state, sites)
+
+    for site_dir in site_dirs:
+        ingest.run_enrich(site_dir, output_dir, timestamp, dry_run)
+
+
+@cli.command()
 @click.option(
     "--vial-server",
     "vial_server",

@@ -14,6 +14,7 @@ class PipelineStage(str, enum.Enum):
     FETCH = "fetch"
     PARSE = "parse"
     NORMALIZE = "normalize"
+    ENRICH = "enrich"
 
 
 # Root name for command or config to run for each stage e.g. fetch.py
@@ -29,6 +30,7 @@ STAGE_OUTPUT_NAME = {
     PipelineStage.FETCH: "raw",
     PipelineStage.PARSE: "parsed",
     PipelineStage.NORMALIZE: "normalized",
+    PipelineStage.ENRICH: "enriched",
 }
 
 
@@ -36,4 +38,5 @@ STAGE_OUTPUT_NAME = {
 STAGE_OUTPUT_SUFFIX = {
     PipelineStage.PARSE: ".parsed.ndjson",
     PipelineStage.NORMALIZE: ".normalized.ndjson",
+    PipelineStage.ENRICH: ".enriched.ndjson",
 }
