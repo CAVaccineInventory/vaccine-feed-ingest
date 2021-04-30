@@ -69,6 +69,7 @@ setup_linux() {
         libreadline-dev \
         libsqlite3-dev \
         python3.9 \
+        python3-pip \
         curl
 
     curl -sSL https://raw.githubusercontent.com/python-poetry/poetry/master/install-poetry.py | python3.9 -
