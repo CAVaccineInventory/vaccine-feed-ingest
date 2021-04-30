@@ -17,7 +17,7 @@ logging.basicConfig(
 )
 logger = logging.getLogger("ky/govstatus/normalize.py")
 
-SOURCE_NAME = "ky:govstatus"
+SOURCE_NAME = "ky_govstatus"
 
 
 def _get_id(site: dict) -> str:

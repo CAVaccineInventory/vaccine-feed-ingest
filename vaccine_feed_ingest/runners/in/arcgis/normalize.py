@@ -33,7 +33,7 @@ def _get_id(site: dict) -> str:
     arcgis = "46630b2520ce44a68a9f42f8343d3518"
     layer = 0
 
-    return f"{runner}:{site_name}:{arcgis}_{layer}:{data_id}"
+    return f"{runner}_{site_name}:{arcgis}_{layer}:{data_id}"
 
 
 def _get_inventory(site: dict) -> Optional[List[schema.Vaccine]]:
@@ -144,7 +144,7 @@ def _get_normalized_location(site: dict, timestamp: str) -> schema.NormalizedLoc
         notes=_get_notes(site),
         active=None,
         source=schema.Source(
-            source="in:arcgis",
+            source="in_arcgis",
             id=site["attributes"]["GlobalID"],
             fetched_from_uri="https://experience.arcgis.com/experience/24159814f1dd4f69b6c22e7e87bca65b",  # noqa: E501
             fetched_at=timestamp,

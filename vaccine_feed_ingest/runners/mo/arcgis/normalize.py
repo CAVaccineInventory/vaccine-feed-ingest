@@ -33,7 +33,7 @@ def _get_id(site: dict) -> str:
     arcgis = "46630b2520ce44a68a9f42f8343d3518"
     layer = 0
 
-    return f"{runner}:{site_name}:{arcgis}_{layer}:{data_id}"
+    return f"{runner}_{site_name}:{arcgis}_{layer}:{data_id}"
 
 
 def _get_contacts(site: dict) -> Optional[List[schema.Contact]]:
@@ -86,7 +86,7 @@ def _get_normalized_location(site: dict, timestamp: str) -> schema.NormalizedLoc
         notes=None,
         active=None,
         source=schema.Source(
-            source="mo:arcgis",
+            source="mo_arcgis",
             id=site["attributes"]["GlobalID"],
             fetched_from_uri="https://www.arcgis.com/apps/webappviewer/index.html?id=ab04156a03584e31a14ae2eb36110c20",  # noqa: E501
             fetched_at=timestamp,

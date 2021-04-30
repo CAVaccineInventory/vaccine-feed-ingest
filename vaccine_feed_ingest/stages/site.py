@@ -3,7 +3,7 @@
 import logging
 import os
 import pathlib
-from typing import Iterator, Optional, Sequence
+from typing import Iterator, Optional, Sequence, Tuple
 
 from .common import RUNNERS_DIR, STAGE_CMD_NAME, PipelineStage
 
@@ -115,3 +115,18 @@ def find_yml(
         return None
 
     return yml
+
+
+def resolve_executable(
+    site_dir: pathlib.Path, stage: PipelineStage
+) -> Tuple[Optional[pathlib.Path], Optional[pathlib.Path]]:
+    """Returns the executable and yml paths for specified site/stage."""
+    if stage not in (PipelineStage.FETCH, PipelineStage.PARSE):
+        raise Exception(f"Resolution not supported for stage {STAGE_CMD_NAME[stage]}")
+    executable_path = find_executeable(site_dir, stage)
+    if executable_path:
+        return (executable_path, None)
+    yml_path = find_yml(site_dir, stage)
+    if not yml_path:
+        return (None, None)
+    return (find_executeable(RUNNERS_DIR.joinpath("_shared"), stage), yml_path)

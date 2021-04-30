@@ -11,7 +11,7 @@ from vaccine_feed_ingest_schema import location
 
 from ..utils.validation import BOUNDING_BOX
 from . import outputs, site
-from .common import RUNNERS_DIR, STAGE_OUTPUT_SUFFIX, PipelineStage
+from .common import STAGE_OUTPUT_SUFFIX, PipelineStage
 
 logger = logging.getLogger("ingest")
 
@@ -22,25 +22,15 @@ def run_fetch(
     timestamp: str,
     dry_run: bool = False,
 ) -> bool:
-    fetch_path = site.find_executeable(site_dir, PipelineStage.FETCH)
-
-    yml_path = None
+    fetch_path, yml_path = site.resolve_executable(site_dir, PipelineStage.FETCH)
     if not fetch_path:
-        yml_path = site.find_yml(site_dir, PipelineStage.FETCH)
-
-        if not yml_path:
-            logger.info("No fetch cmd or .yml config for %s to run.", site_dir.name)
-            return False
-
-        fetch_path = site.find_executeable(
-            RUNNERS_DIR.joinpath("_shared"), PipelineStage.FETCH
+        log_msg = (
+            "Missing shared executable to run for yml in %s."
+            if yml_path
+            else "No fetch cmd or .yml config for %s to run."
         )
-
-        if not fetch_path:
-            logger.info(
-                "Missing shapred executable to run for yml in %s.", site_dir.name
-            )
-            return False
+        logger.info(log_msg, site_dir.name)
+        return False
 
     with tempfile.TemporaryDirectory(
         f"_fetch_{site_dir.parent.name}_{site_dir.name}"
@@ -89,24 +79,15 @@ def run_parse(
     validate: bool = True,
     dry_run: bool = False,
 ) -> bool:
-    parse_path = site.find_executeable(site_dir, PipelineStage.PARSE)
-    yml_path = None
+    parse_path, yml_path = site.resolve_executable(site_dir, PipelineStage.PARSE)
     if not parse_path:
-        yml_path = site.find_yml(site_dir, PipelineStage.PARSE)
-
-        if not yml_path:
-            logger.info("No parse cmd or .yml config for %s to run.", site_dir.name)
-            return False
-
-        parse_path = site.find_executeable(
-            RUNNERS_DIR.joinpath("_shared"), PipelineStage.PARSE
+        log_msg = (
+            "Missing shared executable to run for yml in %s."
+            if yml_path
+            else "No parse cmd or .yml config for %s to run."
         )
-
-        if not parse_path:
-            logger.info(
-                "Missing shapred executable to run for yml in %s.", site_dir.name
-            )
-            return False
+        logger.info(log_msg, site_dir.name)
+        return False
 
     fetch_run_dir = outputs.find_latest_run_dir(
         output_dir, site_dir.parent.name, site_dir.name, PipelineStage.FETCH
