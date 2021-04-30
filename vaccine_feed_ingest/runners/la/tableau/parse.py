@@ -7,6 +7,8 @@ import sys
 
 from tableauscraper import utils
 
+from vaccine_feed_ingest.utils.parse import location_id_from_name
+
 
 def tableau_item_to_parsed_site(tableau_entry):
     """Put the tableau entry in something closer to the normalized format."""
@@ -26,6 +28,8 @@ def tableau_item_to_parsed_site(tableau_entry):
     else:
         minimum_age = 18
 
+    id = location_id_from_name(name)
+
     contact = {}
     if main_data["Dimension-value"] == "Website":
         contact["website"] = main_data["Value-alias"]
@@ -36,6 +40,7 @@ def tableau_item_to_parsed_site(tableau_entry):
         contact["phone"] = main_data["Phone-value"]
 
     out = {}
+    out["id"] = id
     if contact:
         out["contact"] = contact
     out["name"] = name
