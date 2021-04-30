@@ -324,6 +324,33 @@ optional = false
 python-versions = "*"
 
 [[package]]
+name = "dnspython"
+version = "2.1.0"
+description = "DNS toolkit"
+category = "main"
+optional = false
+python-versions = ">=3.6"
+
+[package.extras]
+dnssec = ["cryptography (>=2.6)"]
+doh = ["requests", "requests-toolbelt"]
+idna = ["idna (>=2.1)"]
+curio = ["curio (>=1.2)", "sniffio (>=1.1)"]
+trio = ["trio (>=0.14.0)", "sniffio (>=1.1)"]
+
+[[package]]
+name = "email-validator"
+version = "1.1.2"
+description = "A robust email syntax and deliverability validation library for Python 2.x/3.x."
+category = "main"
+optional = false
+python-versions = "*"
+
+[package.dependencies]
+dnspython = ">=1.15.0"
+idna = ">=2.0.0"
+
+[[package]]
 name = "entrypoints"
 version = "0.3"
 description = "Discover and load entry points from installed packages."
@@ -1293,6 +1320,7 @@ optional = false
 python-versions = ">=3.6.1"
 
 [package.dependencies]
+email-validator = {version = ">=1.0.3", optional = true, markers = "extra == \"email\""}
 typing-extensions = ">=3.7.4.3"
 
 [package.extras]
@@ -1844,14 +1872,14 @@ jellyfish = "0.6.1"
 
 [[package]]
 name = "vaccine-feed-ingest-schema"
-version = "0.2.1"
+version = "1.0.0"
 description = "Normalized data schema for the output of the vaccine-feed-ingest pipeline."
 category = "main"
 optional = false
 python-versions = ">=3.9"
 
 [package.dependencies]
-pydantic = "*"
+pydantic = {version = "*", extras = ["email"]}
 
 [package.extras]
 lint = ["flake8", "black", "mypy", "isort"]
@@ -1949,7 +1977,7 @@ test = ["pytest", "pytest-runner"]
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.9"
-content-hash = "35d86446e1d266e8a94e6df307ac2a49b1ed6a002c98a72a89d33ae5c0efd35d"
+content-hash = "909b5c7493f3b0b8022f3010a18a77d752f0bcd04f321522f2dea84997379345"
 
 [metadata.files]
 aiohttp = [
@@ -2155,6 +2183,14 @@ deprecation = [
 distlib = [
     {file = "distlib-0.3.1-py2.py3-none-any.whl", hash = "sha256:8c09de2c67b3e7deef7184574fc060ab8a793e7adbb183d942c389c8b13c52fb"},
     {file = "distlib-0.3.1.zip", hash = "sha256:edf6116872c863e1aa9d5bb7cb5e05a022c519a4594dc703843343a9ddd9bff1"},
+]
+dnspython = [
+    {file = "dnspython-2.1.0-py3-none-any.whl", hash = "sha256:95d12f6ef0317118d2a1a6fc49aac65ffec7eb8087474158f42f26a639135216"},
+    {file = "dnspython-2.1.0.zip", hash = "sha256:e4a87f0b573201a0f3727fa18a516b055fd1107e0e5477cded4a2de497df1dd4"},
+]
+email-validator = [
+    {file = "email-validator-1.1.2.tar.gz", hash = "sha256:1a13bd6050d1db4475f13e444e169b6fe872434922d38968c67cea9568cce2f0"},
+    {file = "email_validator-1.1.2-py2.py3-none-any.whl", hash = "sha256:094b1d1c60d790649989d38d34f69e1ef07792366277a2cf88684d03495d018f"},
 ]
 entrypoints = [
     {file = "entrypoints-0.3-py2.py3-none-any.whl", hash = "sha256:589f874b313739ad35be6e0cd7efde2a4e9b6fea91edcc34e58ecbb8dbe56d19"},
@@ -3186,8 +3222,8 @@ us = [
     {file = "us-2.0.2.tar.gz", hash = "sha256:cb11ad0d43deff3a1c3690c74f0c731cff5b862c73339df2edd91133e1496fbc"},
 ]
 vaccine-feed-ingest-schema = [
-    {file = "vaccine-feed-ingest-schema-0.2.1.tar.gz", hash = "sha256:5a7f31d13acdc36d9ebcd8076d71e7ef82375b23dbc0065832fe91453254d851"},
-    {file = "vaccine_feed_ingest_schema-0.2.1-py3-none-any.whl", hash = "sha256:157799ecc1ac10aac2b4ce825fffd761096726af98d8059f25f31122765c6f7a"},
+    {file = "vaccine-feed-ingest-schema-1.0.0.tar.gz", hash = "sha256:01c18d0c143616bafd4f33057f7915e3a143b661b94bf530cb94490d3e0cfd98"},
+    {file = "vaccine_feed_ingest_schema-1.0.0-py3-none-any.whl", hash = "sha256:3975c0dd2a2f25945ee50b0e4cd8fed98482a5b60a774fa38ba7ed160195599a"},
 ]
 virtualenv = [
     {file = "virtualenv-20.4.4-py2.py3-none-any.whl", hash = "sha256:a935126db63128861987a7d5d30e23e8ec045a73840eeccb467c148514e29535"},
