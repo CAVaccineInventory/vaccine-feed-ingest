@@ -40,7 +40,7 @@ def _get_id(site: dict) -> str:
     arcgis = "bbd8924909264baaa1a5a1564b393063"
     layer = 0
 
-    return f"{runner}:{site_name}:{arcgis}_{layer}:{data_id}"
+    return f"{runner}_{site_name}:{arcgis}_{layer}:{data_id}"
 
 
 # This currently tosses any address if it doesn't have a street address or zip because
@@ -156,7 +156,7 @@ def _get_normalized_location(site: dict, timestamp: str) -> schema.NormalizedLoc
         notes=None,
         active=_get_activated(site),
         source=schema.Source(
-            source="sc:arcgis",
+            source="sc_arcgis",
             id=site["attributes"]["GlobalID"],
             fetched_from_uri="https://opendata.arcgis.com/datasets/bbd8924909264baaa1a5a1564b393063_0.geojson",  # noqa: E501
             fetched_at=timestamp,

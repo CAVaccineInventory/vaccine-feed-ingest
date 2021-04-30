@@ -40,7 +40,7 @@ def _get_source(site: dict, timestamp: str) -> schema.Source:
         fetched_at=timestamp,
         fetched_from_uri="https://www.maine.gov/covid19/vaccines/vaccination-sites",
         id=_get_id(site),
-        source="me:maine_gov",
+        source="me_maine_gov",
     )
 
 
@@ -127,7 +127,7 @@ def _get_notes(site: dict) -> List[str]:
 
 def normalize(site: dict, timestamp: str) -> str:
     normalized = schema.NormalizedLocation(
-        id=("me:maine_gov:" + _get_id(site)),
+        id=("me_maine_gov:" + _get_id(site)),
         name=_get_name(site),
         contact=_get_contacts(site),
         source=_get_source(site, timestamp),
