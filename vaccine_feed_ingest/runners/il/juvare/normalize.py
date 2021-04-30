@@ -44,9 +44,6 @@ def _get_access(site: dict) -> location.Access:
 
 
 def _get_building_and_address(site: dict) -> Tuple[str, Optional[location.Address]]:
-    # NOTE: some locations are missing the ZIP code. We return None for these
-    # locations because the schema requires a ZIP code.
-
     # The street name often runs together with the city name, like this:
     # "3601 W 183rd St Hazel Crest IL 60429".
     # We look for punctuation or a street type (like "St") at the end of the
@@ -54,14 +51,14 @@ def _get_building_and_address(site: dict) -> Tuple[str, Optional[location.Addres
 
     match = re.match(
         r"""
-        (?P<building>[^0-9]*)        # building name
-        (?P<street>[0-9].*           # street address, must end with punctuation or street type
+        (?P<building>[^0-9]*)          # building name
+        (?P<street>[0-9].*             # street address, must end with punctuation or street type
             (\b(ave|avenue|blvd|boulevard|cir|circle|ct|court|dr|drive|hwy|highway|ln|lane|pkwy|parkway|st|street|way)\b\s*|[.,0-9]\s*|[\r\n])
         )
-        (?P<city>(\b\w+[ ]*)+)       # city
-        [,]?\s+(IL|Illinois)\b[.,]?  # state
-        \s+(?P<zip>\d{5})(-\d{4})?   # zip
-        (?P<extra>.*)                # building name, instructions, county name, "united states", etc.
+        (?P<city>(\b\w+[ ]*)+)         # city
+        [,]?\s+(IL|Illinois)\b[.,]?    # state
+        (\s+(?P<zip>\d{5}(-\d{4})?))?  # zip
+        (?P<extra>.*)                  # building name, instructions, county name, "united states", etc.
         """,
         site["location"],
         re.DOTALL | re.IGNORECASE | re.VERBOSE,
@@ -73,7 +70,7 @@ def _get_building_and_address(site: dict) -> Tuple[str, Optional[location.Addres
     address = location.Address(
         street1=match.group("street").strip(" ,\r\n"),
         city=match.group("city"),
-        state="IL",
+        state=location.State.ILLINOIS,
         zip=match.group("zip"),
     )
     building = match.group("building") or match.group("extra")
@@ -96,7 +93,9 @@ def _get_contact(site: dict) -> location.Contact:
     # it.
     direct_url = f"https://events.juvare.com/{site['organizer']}/{site['slug']}/"
 
-    return [location.Contact(contact_type="booking", website=direct_url)]
+    return [
+        location.Contact(contact_type=location.ContactType.BOOKING, website=direct_url)
+    ]
 
 
 def _get_inventory(site: dict) -> Optional[List[location.Vaccine]]:
@@ -108,15 +107,28 @@ def _get_inventory(site: dict) -> Optional[List[location.Vaccine]]:
     moderna = re.search("moderna", name, re.IGNORECASE)
     johnson = re.search("janssen|johnson.*johnson|j&j", name, re.IGNORECASE)
 
+    # The source only seems to list locations that have available appointment
+    # times, so they most likely have stock available.
     if pfizer:
         inventory.append(
-            location.Vaccine(vaccine="pfizer_biontech", supply_level="in_stock")
+            location.Vaccine(
+                vaccine=location.VaccineType.PFIZER_BIONTECH,
+                supply_level=location.VaccineSupply.IN_STOCK,
+            )
         )
     if moderna:
-        inventory.append(location.Vaccine(vaccine="moderna", supply_level="in_stock"))
+        inventory.append(
+            location.Vaccine(
+                vaccine=location.VaccineType.MODERNA,
+                supply_level=location.VaccineSupply.IN_STOCK,
+            )
+        )
     if johnson:
         inventory.append(
-            location.Vaccine(vaccine="johnson_johnson_janssen", supply_level="in_stock")
+            location.Vaccine(
+                vaccine=location.VaccineType.JOHNSON_JOHNSON_JANSSEN,
+                supply_level=location.VaccineSupply.IN_STOCK,
+            )
         )
 
     if len(inventory) == 0:
@@ -195,7 +207,7 @@ def _filter_name(building: str, site: dict) -> str:
         name = re.sub(r"([-:/])(\s+[-:/])+", r"\1 ", name)
         name = re.sub(r"\s+", " ", name)
         name = name.strip(" -:/")
-        # Short names are probably just "Clinic" or "Vaccine".
+        # Really short names are probably just "Clinic" or "Vaccine".
         if len(name) > 7:
             return name
 
@@ -225,7 +237,7 @@ def normalize(site: dict, timestamp: str) -> str:
         latlng = None
 
     normalized = location.NormalizedLocation(
-        id=f"il_juvare:{site['slug']}",
+        id=f"il_juvare:{site['slug'].replace('-','_')}",
         name=_filter_name(building, site),
         address=address,
         location=latlng,
