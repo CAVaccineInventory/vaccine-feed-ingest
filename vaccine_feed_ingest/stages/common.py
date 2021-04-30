@@ -15,6 +15,7 @@ class PipelineStage(str, enum.Enum):
     PARSE = "parse"
     NORMALIZE = "normalize"
     ENRICH = "enrich"
+    LOAD_TO_VIAL = "load-to-vial"
 
 
 # Root name for command or config to run for each stage e.g. fetch.py

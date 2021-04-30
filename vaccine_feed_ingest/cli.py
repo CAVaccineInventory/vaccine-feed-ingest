@@ -7,7 +7,7 @@ import datetime
 import logging
 import os
 import pathlib
-from typing import Callable, Optional, Sequence
+from typing import Callable, Collection, Optional, Sequence
 
 import click
 import dotenv
@@ -70,6 +70,17 @@ def _state_option() -> Callable:
 
 def _sites_argument() -> Callable:
     return click.argument("sites", nargs=-1, type=str)
+
+
+def _stages_option() -> Callable:
+    return click.option(
+        "--stages",
+        type=str,
+        default="fetch,parse,normalize",
+        callback=lambda ctx, param, value: [
+            common.PipelineStage(item.strip().lower()) for item in value.split(",")
+        ],
+    )
 
 
 def _vial_server_option() -> Callable:
@@ -296,6 +307,75 @@ def load_to_vial(
         enable_create,
         candidate_distance,
     )
+
+
+@cli.command()
+@_sites_argument()
+@_state_option()
+@_output_dir_option()
+@_dry_run_option()
+@_stages_option()
+@_vial_server_option()
+@_vial_apikey_option()
+@_match_option()
+@_create_option()
+@_candidate_distance_option()
+def pipeline(
+    sites: Optional[Sequence[str]],
+    state: Optional[str],
+    output_dir: pathlib.Path,
+    dry_run: bool,
+    stages: Collection[common.PipelineStage],
+    vial_server: str,
+    vial_apikey: str,
+    enable_match: bool,
+    enable_create: bool,
+    candidate_distance: float,
+) -> None:
+    """Run all stages in succession for specified sites."""
+    timestamp = _generate_run_timestamp()
+    site_dirs = site.get_site_dirs(state, sites)
+
+    sites_to_load = []
+
+    for site_dir in site_dirs:
+        if common.PipelineStage.FETCH in stages:
+            fetch_success = ingest.run_fetch(site_dir, output_dir, timestamp)
+
+            if not fetch_success:
+                continue
+
+        if common.PipelineStage.PARSE in stages:
+            parse_success = ingest.run_parse(site_dir, output_dir, timestamp)
+
+            if not parse_success:
+                continue
+
+        if common.PipelineStage.NORMALIZE in stages:
+            normalize_success = ingest.run_normalize(site_dir, output_dir, timestamp)
+
+            if not normalize_success:
+                continue
+
+        if common.PipelineStage.ENRICH in stages:
+            enrich_success = ingest.run_enrich(site_dir, output_dir, timestamp)
+
+            if not enrich_success:
+                continue
+
+        sites_to_load.append(site_dir)
+
+    if common.PipelineStage.LOAD_TO_VIAL in stages and sites_to_load:
+        load.load_sites_to_vial(
+            sites_to_load,
+            output_dir,
+            dry_run=dry_run,
+            vial_server=vial_server,
+            vial_apikey=vial_apikey,
+            enable_match=enable_match,
+            enable_create=enable_create,
+            candidate_distance=candidate_distance,
+        )
 
 
 @cli.command()
