@@ -12,7 +12,7 @@ from vaccine_feed_ingest_schema import location
 
 from ..utils.validation import BOUNDING_BOX
 from . import outputs, site
-from .common import RUNNERS_DIR, STAGE_OUTPUT_SUFFIX, PipelineStage, STAGE_CMD_NAME
+from .common import STAGE_OUTPUT_SUFFIX, PipelineStage
 
 logger = logging.getLogger("ingest")
 
@@ -22,10 +22,13 @@ def run_fetch(
     timestamp: str,
     dry_run: bool = False,
 ) -> bool:
-    fetch_path, yml_path = resolve_executable(site_dir, PipelineStage.FETCH)
+    fetch_path, yml_path = site.resolve_executable(site_dir, PipelineStage.FETCH)
     if not fetch_path:
-        log_msg = "Missing shared executable to run for yml in %s." if yml_path \
+        log_msg = (
+            "Missing shared executable to run for yml in %s."
+            if yml_path
             else "No fetch cmd or .yml config for %s to run."
+        )
         logger.info(log_msg, site_dir.name)
         return False
 
@@ -76,10 +79,13 @@ def run_parse(
     validate: bool = True,
     dry_run: bool = False,
 ) -> bool:
-    parse_path, yml_path = resolve_executable(site_dir, PipelineStage.PARSE)
+    parse_path, yml_path = site.resolve_executable(site_dir, PipelineStage.PARSE)
     if not parse_path:
-        log_msg = "Missing shared executable to run for yml in %s." if yml_path \
+        log_msg = (
+            "Missing shared executable to run for yml in %s."
+            if yml_path
             else "No parse cmd or .yml config for %s to run."
+        )
         logger.info(log_msg, site_dir.name)
         return False
 
