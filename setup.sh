@@ -71,9 +71,9 @@ setup_linux() {
         python3.9 \
         curl
 
-    curl -sSL https://raw.githubusercontent.com/python-poetry/poetry/master/get-poetry.py | python3.9 -
+    curl -sSL https://raw.githubusercontent.com/python-poetry/poetry/master/install-poetry.py | python3.9 -
 
-    "$HOME"/.poetry/bin/poetry install --extras lint
+    "$HOME"/.local/bin/poetry install --extras lint
 
 }
 
