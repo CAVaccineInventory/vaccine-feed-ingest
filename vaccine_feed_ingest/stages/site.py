@@ -122,7 +122,7 @@ def resolve_executable(
     site_dir: pathlib.Path, stage: PipelineStage
 ) -> Tuple[Optional[pathlib.Path], Optional[pathlib.Path]]:
     """Returns the executable and yml paths for specified site/stage."""
-    if stage not in (PipelineStage.FETCH, PipelineStage.PARSE):
+    if stage not in (PipelineStage.FETCH, PipelineStage.PARSE, PipelineStage.NORMALIZE):
         raise Exception(f"Resolution not supported for stage {STAGE_CMD_NAME[stage]}")
     executable_path = find_executeable(site_dir, stage)
     if executable_path:

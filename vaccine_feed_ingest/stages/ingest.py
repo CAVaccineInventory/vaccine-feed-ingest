@@ -191,13 +191,9 @@ def run_normalize(
     dry_run: bool = False,
     fail_on_runner_error: bool = True,
 ) -> bool:
-    normalize_path = site.find_executeable(site_dir, PipelineStage.NORMALIZE)
-    yml_path = None
-    if not normalize_path:
-        yml_path = site.find_yml(site_dir, PipelineStage.NORMALIZE)
-        normalize_path = site.find_executeable(
-            RUNNERS_DIR.joinpath("_shared"), PipelineStage.NORMALIZE
-        )
+    normalize_path, yml_path = site.resolve_executable(
+        site_dir, PipelineStage.NORMALIZE
+    )
     if not normalize_path:
         logger.info("No normalize cmd for %s to run.", site_dir.name)
         return False

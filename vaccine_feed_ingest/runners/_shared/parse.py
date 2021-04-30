@@ -126,7 +126,7 @@ elif config["parser"] == "prepmod":
         for title in soup.select(".text-xl.font-black"):
             parent = title.parent
             combined_name = title.get_text().strip()
-            name, date = combined_name.split(" on ")
+            name, date = combined_name.rsplit(" on ", 1)
             address = title.find_next_sibling("p").get_text().strip()
             vaccines = _prepmod_find_data_item(parent, "Vaccinations offered", -2)
             ages = _prepmod_find_data_item(parent, "Age groups served", -1)
