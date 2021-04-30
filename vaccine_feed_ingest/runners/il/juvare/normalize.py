@@ -8,11 +8,11 @@ import re
 import sys
 from typing import List, Optional, Tuple
 
-from vaccine_feed_ingest_schema import schema  # noqa: E402
+from vaccine_feed_ingest_schema import location  # noqa: E402
 
 
-def _get_source(site: dict, timestamp: str) -> schema.Source:
-    return schema.Source(
+def _get_source(site: dict, timestamp: str) -> location.Source:
+    return location.Source(
         source="il_juvare",
         id=site["slug"],
         fetched_from_uri="https://covidvaccination.dph.illinois.gov/",
@@ -29,21 +29,21 @@ def _parse_date(date: str) -> Optional[str]:
     return f"{year:04}-{month:02}-{day:02}"
 
 
-def _get_opening_dates(site: dict) -> schema.OpenDate:
+def _get_opening_dates(site: dict) -> location.OpenDate:
     return [
-        schema.OpenDate(
+        location.OpenDate(
             opens=_parse_date(site["dateFrom"]), closes=_parse_date(site["dateTo"])
         )
     ]
 
 
-def _get_access(site: dict) -> schema.Access:
+def _get_access(site: dict) -> location.Access:
     if re.search(r"\bdrive[- ](thru|up)\b", site["name"], flags=re.IGNORECASE):
-        return schema.Access(drive=True)
+        return location.Access(drive=True)
     return None
 
 
-def _get_building_and_address(site: dict) -> Tuple[str, Optional[schema.Address]]:
+def _get_building_and_address(site: dict) -> Tuple[str, Optional[location.Address]]:
     # NOTE: some locations are missing the ZIP code. We return None for these
     # locations because the schema requires a ZIP code.
 
@@ -70,7 +70,7 @@ def _get_building_and_address(site: dict) -> Tuple[str, Optional[schema.Address]
     if not match:
         return ("", None)
 
-    address = schema.Address(
+    address = location.Address(
         street1=match.group("street").strip(" ,\r\n"),
         city=match.group("city"),
         state="IL",
@@ -87,7 +87,7 @@ def _get_building_and_address(site: dict) -> Tuple[str, Optional[schema.Address]
     return (building, address)
 
 
-def _get_contact(site: dict) -> schema.Contact:
+def _get_contact(site: dict) -> location.Contact:
     # indirect_url = "https://covidvaccination.dph.illinois.gov/"
 
     # NOTE: This direct url bypasses the consent form used at the indirect url,
@@ -96,10 +96,10 @@ def _get_contact(site: dict) -> schema.Contact:
     # it.
     direct_url = f"https://events.juvare.com/{site['organizer']}/{site['slug']}/"
 
-    return [schema.Contact(contact_type="booking", website=direct_url)]
+    return [location.Contact(contact_type="booking", website=direct_url)]
 
 
-def _get_inventory(site: dict) -> Optional[List[schema.Vaccine]]:
+def _get_inventory(site: dict) -> Optional[List[location.Vaccine]]:
     name = site["name"]
 
     inventory = []
@@ -110,13 +110,13 @@ def _get_inventory(site: dict) -> Optional[List[schema.Vaccine]]:
 
     if pfizer:
         inventory.append(
-            schema.Vaccine(vaccine="pfizer_biontech", supply_level="in_stock")
+            location.Vaccine(vaccine="pfizer_biontech", supply_level="in_stock")
         )
     if moderna:
-        inventory.append(schema.Vaccine(vaccine="moderna", supply_level="in_stock"))
+        inventory.append(location.Vaccine(vaccine="moderna", supply_level="in_stock"))
     if johnson:
         inventory.append(
-            schema.Vaccine(vaccine="johnson_johnson_janssen", supply_level="in_stock")
+            location.Vaccine(vaccine="johnson_johnson_janssen", supply_level="in_stock")
         )
 
     if len(inventory) == 0:
@@ -218,20 +218,20 @@ def normalize(site: dict, timestamp: str) -> str:
     building, address = _get_building_and_address(site)
 
     if site["lat"] and site["lon"]:
-        location: Optional[schema.LatLng] = schema.LatLng(
+        latlng: Optional[location.LatLng] = location.LatLng(
             latitude=site["lat"], longitude=site["lon"]
         )
     else:
-        location = None
+        latlng = None
 
-    normalized = schema.NormalizedLocation(
+    normalized = location.NormalizedLocation(
         id=f"il_juvare:{site['slug']}",
         name=_filter_name(building, site),
         address=address,
-        location=location,
+        location=latlng,
         contact=_get_contact(site),
         opening_dates=_get_opening_dates(site),
-        availability=schema.Availability(appointments=True),
+        availability=location.Availability(appointments=True),
         inventory=_get_inventory(site),
         access=_get_access(site),
         active=True,
