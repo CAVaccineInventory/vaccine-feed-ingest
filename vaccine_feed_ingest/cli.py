@@ -13,7 +13,6 @@ import click
 import dotenv
 import pathy
 
-from . import vial
 from .stages import common, ingest, load, site
 
 # Configure logger
@@ -287,35 +286,16 @@ def load_to_vial(
     """Load specified sites to vial server."""
     site_dirs = site.get_site_dirs(state, sites)
 
-    with vial.vial_client(vial_server, vial_apikey) as vial_http:
-        import_run_id = vial.start_import_run(vial_http)
-
-        if enable_match or enable_create:
-            locations = vial.retrieve_existing_locations_as_index(vial_http)
-
-        for site_dir in site_dirs:
-            imported_locations = load.run_load_to_vial(
-                vial_http,
-                site_dir,
-                output_dir,
-                import_run_id,
-                locations,
-                enable_match=enable_match,
-                enable_create=enable_create,
-                candidate_distance=candidate_distance,
-                dry_run=dry_run,
-            )
-
-            # If data was loaded then refresh existing locations
-            if locations is not None and imported_locations:
-                source_ids = [
-                    loc.source_uid
-                    for loc in imported_locations
-                    if loc.match and loc.match.action == "new"
-                ]
-
-                if source_ids:
-                    vial.update_existing_locations(vial_http, locations, source_ids)
+    load.load_sites_to_vial(
+        site_dirs,
+        output_dir,
+        dry_run,
+        vial_server,
+        vial_apikey,
+        enable_match,
+        enable_create,
+        candidate_distance,
+    )
 
 
 @cli.command()
