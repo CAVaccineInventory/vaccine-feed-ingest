@@ -22,6 +22,7 @@ def _get_source(site: dict, timestamp: str) -> location.Source:
 
 
 def _parse_date(date: str) -> Optional[str]:
+    # Input data always looks like "3/23/2021, 9:00 AM", unless it's null.
     match = re.match(r"(\d+)/(\d+)/(\d+).*", date or "")
     if not match:
         return None
@@ -44,10 +45,22 @@ def _get_access(site: dict) -> location.Access:
 
 
 def _get_building_and_address(site: dict) -> Tuple[str, Optional[location.Address]]:
+    # Input has no consistent format. Examples:
+    # - ""
+    # - "100 E. Jeffery St. Kankakee, IL 60901"
+    # - "100 S Main St, Crystal Lake, IL 60014 (Enter off Crystal Lake Ave.)"
+    # - "3330 W 177th St \r\nSuite 3F\r\nHazel Crest IL\r\nEmerge MedStaffing"
+    # - "Bushnell-Prairie City High School\r\n845 N Walnut St\r\nBushnell, IL 61422"
+
     # The street name often runs together with the city name, like this:
-    # "3601 W 183rd St Hazel Crest IL 60429".
+    # - "3601 W 183rd St Hazel Crest IL 60429".
     # We look for punctuation or a street type (like "St") at the end of the
     # street name.
+
+    # If there's extra text before or after the address, like "Emerge
+    # MedStaffing" or "Bushnell-Prairie City High School", we remove it from
+    # the address and return it separately. It's probably a building name, and
+    # the _filter_name() function may use it as the name of the location.
 
     match = re.match(
         r"""
@@ -79,6 +92,7 @@ def _get_building_and_address(site: dict) -> Tuple[str, Optional[location.Addres
         building,
         flags=re.IGNORECASE,
     ):
+        # Not a building name.
         building = ""
     building = building.strip(" ,\r\n@.")
     return (building, address)
@@ -138,10 +152,20 @@ def _get_inventory(site: dict) -> Optional[List[location.Vaccine]]:
 
 
 def _filter_name(building: str, site: dict) -> str:
+    # Inputs loosely follow the format "dates - county - name - vaccine type",
+    # but there are lots of inconsistencies. Examples:
+    # - "04/01/2021 – Will County – State Mass Vaccination Site"
+    # - "04/19 - 08/31 Emerge MedStaffing - Moderna 1st and 2nd Dose"
+    # - "05/23/2021 - Marion County - ILNG Rural Outreach Vaccination Clinic - Moderna 2nd Dose - J&J"
+    # - "Friday 4/30 -McHenry County-McHenry County Residents: PFIZER 1ST AND 2ND DOSES-McHenry, IL"
+    # - "May 11 to May 21 - Fayette County  - Health Dept 1st and 2nd dose Moderna Clinic"
+    # - "May 1-4, 2021 \"It's Your Turn\" Knox County Unified Command Covid-19 Vaccine- 1st Dose"
+
     if building:
-        # The building name from the address is almost always better than the
-        # name from the "name" field. For example, the address has "West
-        # Prairie High School" when the name field has "McDonough - (WPHS)".
+        # When there's a building name in the address, it's almost always
+        # better than the more generic name from the "name" field. For example,
+        # the address has "West Prairie High School" when the name field has
+        # "McDonough - (WPHS)".
         return re.sub(r"\r?\n", " - ", building)
 
     name = site["name"]
