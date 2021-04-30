@@ -74,8 +74,15 @@ setup_linux() {
 
     curl -sSL https://raw.githubusercontent.com/python-poetry/poetry/master/install-poetry.py | python3.9 -
 
+    echo "Installing all of our python dependencies using Poetry."
+
     "$HOME"/.local/bin/poetry install --extras lint
 
+    echo "Install done."
+    echo ""
+    echo "Try this command next:"
+    echo ""
+    echo "poetry run vaccine-feed-ingest --help"
 }
 
 setup_unsupported() {
