@@ -29,6 +29,23 @@ def normalize(site: dict, timestamp: str) -> dict:
             schema.Link(authority=parsed_provider_link[0], id=parsed_provider_link[1])
         )
 
+    contacts = []
+
+    if site["booking"]["phone"] and site["booking"]["phone"].lower() != "none":
+        contacts.append(
+            schema.Contact(contact_type="booking", phone=site["booking"]["phone"])
+        )
+
+    if site["booking"]["url"] and site["booking"]["url"].lower() != "none":
+        contacts.append(
+            schema.Contact(contact_type="booking", website=site["booking"]["url"])
+        )
+
+    if site["booking"]["info"] and site["booking"]["info"].lower() != "none":
+        contacts.append(
+            schema.Contact(contact_type="booking", other=site["booking"]["info"])
+        )
+
     return schema.NormalizedLocation(
         id=f"sf_gov:{site['id']}",
         name=site["name"],
@@ -37,20 +54,17 @@ def normalize(site: dict, timestamp: str) -> dict:
             street2=street2,
             city=site["location"]["city"],
             state="CA",
-            zip=site["location"]["zip"],
+            zip=(
+                site["location"]["zip"]
+                if site["location"]["zip"] and site["location"]["zip"].lower() != "none"
+                else None
+            ),
         ),
         location=schema.LatLng(
             latitude=site["location"]["lat"],
             longitude=site["location"]["lng"],
         ),
-        contact=[
-            schema.Contact(
-                contact_type="booking",
-                phone=site["booking"]["phone"],
-                website=site["booking"]["url"],
-                other=site["booking"]["info"],
-            ),
-        ],
+        contact=contacts,
         languages=[k for k, v in site["access"]["languages"].items() if v],
         opening_dates=None,
         opening_hours=None,
