@@ -14,7 +14,7 @@ def test_provider_id_from_name():
     _test_provider("SAVON PHARMACY #585", "albertsons", "585")
     _test_provider("Pavilions PHARMACY #8545", "pavilions", "8545")
     _test_provider("Walmart PHARMACY 10-585", "walmart", "585")
-    _test_provider("Cvs 104", "cvs", "4")  # <== TODO: !!fix!!
+    _test_provider("Cvs 104", "cvs", "104")
     _test_provider("Cvs Store 104", "cvs", "104")
     _test_provider("Cvs Pharmacy 104", "cvs", "104")
     _test_provider("Cvs StorePharmacy 104", "cvs", "104")
@@ -22,6 +22,7 @@ def test_provider_id_from_name():
     _test_provider("Cvs Store #104", "cvs", "104")
     _test_provider("Cvs Pharmacy #104", "cvs", "104")
     _test_provider("Cvs StorePharmacy #104", "cvs", "104")
+    _test_provider("Cvs StorePharmacy, Inc #104", "cvs", "104")
     _test_provider("Cvs StorePharmacy, Inc. #104", "cvs", "104")
 
     # negative cases
