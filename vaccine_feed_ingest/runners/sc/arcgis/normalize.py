@@ -91,7 +91,6 @@ def _get_contacts(site: dict) -> Optional[List[schema.Contact]]:
     url = site["attributes"]["URL"]
     if url:
         url = url if 'http' in url else "https://" + url
-        print(url)
         URL_RE = re.compile(r"^((https?):\/\/)(www.)?[a-z0-9]+\.[a-z]+(\/?[a-zA-Z0-9#]+\/?)*$")
         valid = URL_RE.match(url)
         if valid:
