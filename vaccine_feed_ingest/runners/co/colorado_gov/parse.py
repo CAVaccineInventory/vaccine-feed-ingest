@@ -13,7 +13,7 @@ logger = logging.getLogger("co/colorado_gov/parse.py")
 
 def parse_point(element):
     coords = element.coordinates.text.strip().split(",")
-    return {"long": coords[1], "lat": coords[0]}
+    return {"long": coords[0], "lat": coords[1]}
 
 
 def parse_extended_data(element):
