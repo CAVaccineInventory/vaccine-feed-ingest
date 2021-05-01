@@ -21,7 +21,7 @@ logging.basicConfig(
 )
 logger = logging.getLogger("tn/vaccinate_gov/normalize.py")
 
-SOURCE_NAME = "tn:vaccinate_gov"
+SOURCE_NAME = "tn_vaccinate_gov"
 
 
 def _get_id(site: dict) -> str:
