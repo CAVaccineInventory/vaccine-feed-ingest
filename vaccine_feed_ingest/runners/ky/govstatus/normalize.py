@@ -63,7 +63,6 @@ def _get_contacts(site: dict):
     if "register_phone" in site:
         raw_phone = site["register_phone"]
         if raw_phone:
-            print(raw_phone)
             raw_phone = raw_phone.lstrip("tel:")
             raw_phone = raw_phone.lstrip(" ")
             raw_phone = raw_phone.lstrip("1")
