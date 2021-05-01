@@ -30,9 +30,9 @@ def _get_city(site: dict) -> str:
 def _get_id(site: dict) -> str:
     name = _get_name(site)
     city = _get_city(site)
-    
+
     id = f"{name}_{city}".lower()
-    id = id.replace(" ", "_").replace(u"\u2019", "_")
+    id = id.replace(" ", "_").replace("\u2019", "_")
     id = id.replace(".", "_").replace(",", "_").replace("'", "_")
     id = id.replace("(", "_").replace(")", "_").replace("/", "_")
 
@@ -53,7 +53,7 @@ def _normalize_phone(raw_phone: str) -> Optional[str]:
     raw_phone = raw_phone.lstrip("1")
     raw_phone = raw_phone.lstrip("-")
     raw_phone = raw_phone.lstrip(" ")
-    raw_phone = raw_phone.replace(u"\u2013", "-")
+    raw_phone = raw_phone.replace("\u2013", "-")
     if raw_phone == "":
         return None
     elif len(raw_phone) == 8:
