@@ -8,16 +8,15 @@ import re
 import sys
 from typing import List, Optional
 
-from vaccine_feed_ingest_schema import location as schema
+from vaccine_feed_ingest.schema import schema  # noqa: E402
 
-CITY_RE = re.compile(r"^([\w ]+), NY$")
-# the providerName field smells like it's being parsed from someplace else,
-# a good number of them have leading \u1d42 and/or *, which we want to clean.
-# there's a bunch with a city name in them, but no real pattern to it, so
-# we'll leave that for now.
-NAME_CLEAN_RE = re.compile("^[\u1d42*]+")
-
-logger = logging.getLogger(__name__)
+# Configure logger
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s %(levelname)s:%(name)s:%(message)s",
+    datefmt="%m/%d/%Y %H:%M:%S",
+)
+logger = logging.getLogger("me/maine_gov/normalize.py")
 
 
 def _get_name(site: dict) -> str:
@@ -40,7 +39,7 @@ def _get_source(site: dict, timestamp: str) -> schema.Source:
         fetched_at=timestamp,
         fetched_from_uri="https://www.maine.gov/covid19/vaccines/vaccination-sites",
         id=_get_id(site),
-        source="me_maine_gov",
+        source="me:maine_gov",
     )
 
 
@@ -51,9 +50,10 @@ def _normalize_phone(raw_phone: str) -> Optional[str]:
     if raw_phone == "":
         return None
     elif len(raw_phone) == 8:
-        return "(???) " + raw_phone[0:3] + "-" + raw_phone[4:8]
+        # 207 is the only area code in Maine
+        return f"(207) {raw_phone[0:3]}-{raw_phone[4:8]}"
     elif raw_phone[3] == "-" or raw_phone[7] == "-":
-        return "(" + raw_phone[0:3] + ") " + raw_phone[4:7] + "-" + raw_phone[8:12]
+        return f"({raw_phone[0:3]}) {raw_phone[4:7]}-{raw_phone[8:12]}"
     # elif len(raw_phone) == 10:
     #    return "(" + raw_phone[0:3] + ") " + raw_phone[3:6] + "-" + raw_phone[6:10]
     else:
@@ -127,7 +127,7 @@ def _get_notes(site: dict) -> List[str]:
 
 def normalize(site: dict, timestamp: str) -> str:
     normalized = schema.NormalizedLocation(
-        id=("me_maine_gov:" + _get_id(site)),
+        id=("me:maine_gov:" + _get_id(site)),
         name=_get_name(site),
         contact=_get_contacts(site),
         source=_get_source(site, timestamp),
