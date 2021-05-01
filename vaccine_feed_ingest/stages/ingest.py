@@ -5,11 +5,12 @@ import logging
 import pathlib
 import subprocess
 import tempfile
+from typing import List
 
 import pydantic
 from vaccine_feed_ingest_schema import location
 
-from ..utils.validation import BOUNDING_BOX, BOUNDING_BOX_GUAM
+from ..utils.validation import BOUNDING_BOX, BOUNDING_BOX_GUAM, BoundingBox
 from . import outputs, site
 from .common import STAGE_OUTPUT_SUFFIX, PipelineStage
 
@@ -325,7 +326,9 @@ def _validate_normalized(output_dir: pathlib.Path) -> bool:
     return True
 
 
-def validate_bounding_boxes(location, bounding_boxes):
+def validate_bounding_boxes(
+    location: location.LatLng, bounding_boxes: List[BoundingBox]
+) -> bool:
     for boundingbox in bounding_boxes:
         if boundingbox.latitude.contains(
             location.latitude
