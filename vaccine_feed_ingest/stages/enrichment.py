@@ -1,14 +1,15 @@
 """Method for enriching location records after that are normalized"""
-import logging
 import pathlib
 
 import pydantic
 from vaccine_feed_ingest_schema import location
 
+from vaccine_feed_ingest.utils.log import getLogger
+
 from . import outputs
 from .common import STAGE_OUTPUT_SUFFIX, PipelineStage
 
-logger = logging.getLogger("enrichment")
+logger = getLogger(__file__)
 
 
 def enrich_locations(input_dir: pathlib.Path, output_dir: pathlib.Path) -> bool:

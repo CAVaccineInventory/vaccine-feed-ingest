@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 
 import json
-import logging
 import os
 import pathlib
 import sys
@@ -9,13 +8,9 @@ from typing import List
 
 import yaml
 
-# Configure logger
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s %(levelname)s:%(name)s:%(message)s",
-    datefmt="%m/%d/%Y %H:%M:%S",
-)
-logger = logging.getLogger("_shared/parse.py")
+from vaccine_feed_ingest.utils.log import getLogger
+
+logger = getLogger(__file__)
 
 OUTPUT_DIR = pathlib.Path(sys.argv[1])
 INPUT_DIR = pathlib.Path(sys.argv[2])

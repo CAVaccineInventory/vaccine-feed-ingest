@@ -1,13 +1,14 @@
 """Helper methods for finding code and configs for each site"""
 
-import logging
 import os
 import pathlib
 from typing import Iterator, Optional, Sequence, Tuple
 
+from vaccine_feed_ingest.utils.log import getLogger
+
 from .common import RUNNERS_DIR, STAGE_CMD_NAME, PipelineStage
 
-logger = logging.getLogger("ingest")
+logger = getLogger(__file__)
 
 
 def get_site_dirs_for_state(state: Optional[str] = None) -> Iterator[pathlib.Path]:

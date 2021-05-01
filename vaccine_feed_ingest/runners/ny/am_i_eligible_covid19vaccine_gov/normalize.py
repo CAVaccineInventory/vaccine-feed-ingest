@@ -2,13 +2,14 @@
 
 import datetime
 import json
-import logging
 import pathlib
 import re
 import sys
 from typing import List, Optional
 
 from vaccine_feed_ingest_schema import location as schema
+
+from vaccine_feed_ingest.utils.log import getLogger
 
 CITY_RE = re.compile(r"^([\w ]+), NY$")
 # the providerName field smells like it's being parsed from someplace else,
@@ -17,7 +18,7 @@ CITY_RE = re.compile(r"^([\w ]+), NY$")
 # we'll leave that for now.
 NAME_CLEAN_RE = re.compile("^[\u1d42*]+")
 
-logger = logging.getLogger(__name__)
+logger = getLogger(__file__)
 
 
 def _get_inventory(raw: str) -> Optional[List[schema.Vaccine]]:

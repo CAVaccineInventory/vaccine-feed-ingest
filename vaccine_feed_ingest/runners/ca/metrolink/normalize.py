@@ -2,18 +2,14 @@
 
 import datetime
 import json
-import logging
 import pathlib
 import sys
 
 from vaccine_feed_ingest_schema import schema  # noqa: E402
 
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s %(levelname)s:%(name)s:%(message)s",
-    datefmt="%m/%d/%Y %H:%M:%S",
-)
-logger = logging.getLogger("ca/metrolink/normalize.py")
+from vaccine_feed_ingest.utils.log import getLogger
+
+logger = getLogger(__file__)
 
 _source_name = "ca_metrolink"
 

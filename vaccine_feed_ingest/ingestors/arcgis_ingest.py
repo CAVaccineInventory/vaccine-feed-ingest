@@ -1,22 +1,18 @@
 #!/usr/bin/env python3
 
 import json
-import logging
 from os.path import join
 from typing import Optional, Sequence
 
 import urllib3
 from arcgis import GIS
 
+from vaccine_feed_ingest.utils.log import getLogger
+
 http = urllib3.PoolManager()
 
-# Configure logger
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s %(levelname)s:%(name)s:%(message)s",
-    datefmt="%m/%d/%Y %H:%M:%S",
-)
-logger = logging.getLogger("arcgis")
+
+logger = getLogger(__file__)
 
 
 def fetch_geojson(

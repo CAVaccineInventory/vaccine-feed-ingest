@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
 
-import logging
 import pathlib
 import sys
 
 import yaml
+
+from vaccine_feed_ingest.utils.log import getLogger
 
 # import arcgis ingestor
 shared_dir = pathlib.Path(__file__).parent
@@ -14,13 +15,7 @@ sys.path.append(str(root_dir))
 
 from ingestors import arcgis_ingest  # noqa: E402
 
-# Configure logger
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s %(levelname)s:%(name)s:%(message)s",
-    datefmt="%m/%d/%Y %H:%M:%S",
-)
-logger = logging.getLogger("_shared/fetch.py")
+logger = getLogger(__file__)
 
 output_dir = sys.argv[1]
 yml_config = sys.argv[2]
