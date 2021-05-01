@@ -7,7 +7,7 @@ import datetime
 import logging
 import os
 import pathlib
-from typing import Callable, Collection, Optional, Sequence
+from typing import Callable, Collection, Dict, Optional, Sequence
 
 import click
 import dotenv
@@ -118,6 +118,36 @@ def _create_option() -> Callable:
         "enable_create",
         type=bool,
         default=lambda: os.environ.get("ENABLE_CREATE", "false").lower() == "true",
+    )
+
+
+def _match_ids_option() -> Callable:
+    return click.option(
+        "--match-ids",
+        "match_ids",
+        type=str,
+        callback=lambda ctx, param, value: (
+            dict(
+                [
+                    tuple([v.strip() for v in pair.split("=", maxsplit=1)])
+                    for pair in [item.strip() for item in value.split(",") if item]
+                    if pair and '=' in pair
+                ]
+            )
+            if value else None
+        ),
+    )
+
+
+def _create_ids_option() -> Callable:
+    return click.option(
+        "--create-ids",
+        "create_ids",
+        type=str,
+        callback=lambda ctx, param, value: (
+            [item.strip() for item in value.split(",")]
+            if value else None
+        ),
     )
 
 
@@ -282,6 +312,8 @@ def enrich(
 @_vial_apikey_option()
 @_match_option()
 @_create_option()
+@_match_ids_option()
+@_create_ids_option()
 @_candidate_distance_option()
 def load_to_vial(
     sites: Optional[Sequence[str]],
@@ -292,20 +324,31 @@ def load_to_vial(
     vial_apikey: str,
     enable_match: bool,
     enable_create: bool,
+    match_ids: Optional[Dict[str, str]],
+    create_ids: Optional[Collection[str]],
     candidate_distance: float,
 ) -> None:
     """Load specified sites to vial server."""
     site_dirs = site.get_site_dirs(state, sites)
 
+    if match_ids and create_ids:
+        conflicting_ids = set(match_ids.keys()) & set(create_ids)
+        if conflicting_ids:
+            raise Exception(
+                f"Conflicting match and create action for source ids: {conflicting_ids}"
+            )
+
     load.load_sites_to_vial(
         site_dirs,
         output_dir,
-        dry_run,
-        vial_server,
-        vial_apikey,
-        enable_match,
-        enable_create,
-        candidate_distance,
+        dry_run=dry_run,
+        vial_server=vial_server,
+        vial_apikey=vial_apikey,
+        enable_match=enable_match,
+        enable_create=enable_create,
+        match_ids=match_ids,
+        create_ids=create_ids,
+        candidate_distance=candidate_distance,
     )
 
 
@@ -319,6 +362,8 @@ def load_to_vial(
 @_vial_apikey_option()
 @_match_option()
 @_create_option()
+@_match_ids_option()
+@_create_ids_option()
 @_candidate_distance_option()
 def pipeline(
     sites: Optional[Sequence[str]],
@@ -330,6 +375,8 @@ def pipeline(
     vial_apikey: str,
     enable_match: bool,
     enable_create: bool,
+    match_ids: Optional[Dict[str, str]],
+    create_ids: Optional[Collection[str]],
     candidate_distance: float,
 ) -> None:
     """Run all stages in succession for specified sites."""
@@ -374,6 +421,8 @@ def pipeline(
             vial_apikey=vial_apikey,
             enable_match=enable_match,
             enable_create=enable_create,
+            match_ids=match_ids,
+            create_ids=create_ids,
             candidate_distance=candidate_distance,
         )
 
