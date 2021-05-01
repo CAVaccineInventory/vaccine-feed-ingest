@@ -1,0 +1,4 @@
+---
+state: ny
+site: northwell_health
+parser: json_list
