@@ -29,9 +29,9 @@ logger = logging.getLogger("us/giscorps_vaccine_providers/normalize.py")
 
 def _get_availability(site: dict) -> schema.Availability:
     appt_only = site["attributes"]["appt_only"]
-    if (appt_only == "Yes"):
+    if appt_only == "Yes":
         return schema.Availability(appointments=True)
-    elif (appt_only is not None):
+    elif appt_only is not None:
         return schema.Availability(drop_in=True)
 
     return None
@@ -89,8 +89,7 @@ def _get_contacts(site: dict) -> Optional[List[schema.Contact]]:
     # if site["attributes"]["publicEmail"]:
     #     contacts.append(schema.Contact(email=site["attributes"]["publicEmail"]))
 
-
-    # there are multiple urls, vaccine, agency, health dept. etc    
+    # there are multiple urls, vaccine, agency, health dept. etc
     if site["attributes"]["vaccine_url"]:
         contacts.append(schema.Contact(website=site["attributes"]["vaccine_url"]))
 
@@ -108,7 +107,7 @@ def _get_notes(site: dict) -> Optional[List[str]]:
 
 
 def _get_active(site: dict) -> Optional[bool]:
-    # end date may be important to check to determine if the site is historicle or current but i dont really feel like digging through the docs rn. see https://github.com/CAVaccineInventory/vaccine-feed-ingest/pull/119 for links that eventually lead to specs on the 
+    # end date may be important to check to determine if the site is historicle or current but i dont really feel like digging through the docs rn. see https://github.com/CAVaccineInventory/vaccine-feed-ingest/pull/119 for links that eventually lead to specs on the
     # end_date = site["attributes"].get("end_date")
 
     status = site["attributes"].get("status")
@@ -118,11 +117,10 @@ def _get_active(site: dict) -> Optional[bool]:
         "Closed": False,
         "Testing Restricted": True,
         "Scheduled to Open": False,
-        "Temporarily Closed": False
+        "Temporarily Closed": False,
     }
 
     return try_lookup(status_options, status, None, name="active status lookup")
-
 
 
 def _get_access(site: dict) -> Optional[List[str]]:
@@ -139,17 +137,19 @@ def _get_access(site: dict) -> Optional[List[str]]:
         "Partially": "partial",
         "Unknown": "no",
         "Not Applicable": "no",
-        "NA": "no"
+        "NA": "no",
     }
-    wheelchair_bool = try_lookup(wheelchair_options, wheelchair, "no", name="wheelchair access")
-    
+    wheelchair_bool = try_lookup(
+        wheelchair_options, wheelchair, "no", name="wheelchair access"
+    )
+
     return schema.Access(drive=drive_bool, wheelchair=wheelchair_bool)
 
 
 def try_lookup(mapping, value, default, name=None):
     if value is None:
         return default
-        
+
     try:
         return mapping[value]
     except KeyError as e:
@@ -166,7 +166,6 @@ def _get_published_at(site: dict) -> Optional[str]:
         return date.isoformat()
 
     return None
-
 
 
 def try_get_list(lis, index, default=None):
@@ -187,21 +186,25 @@ def _get_normalized_location(site: dict, timestamp: str) -> schema.NormalizedLoc
     addrsplit = site["attributes"]["fulladdr"].split(", ")
 
     city_state_zip = addrsplit[1].split(" ") if try_get_list(addrsplit, 1) else None
- 
+
     return schema.NormalizedLocation(
         id=_get_id(site),
         name=site["attributes"]["name"],
         address=schema.Address(
             street1=addrsplit[0],
             street2=None,
-            city=site["attributes"]["municipality"] or try_get_list(city_state_zip, -3, default=""),
-            state=site["attributes"]["State"] or try_get_list(city_state_zip, -2, default=""),
+            city=site["attributes"]["municipality"]
+            or try_get_list(city_state_zip, -3, default=""),
+            state=site["attributes"]["State"]
+            or try_get_list(city_state_zip, -2, default=""),
             zip=try_get_list(city_state_zip, -1, default=""),
         ),
         location=schema.LatLng(
             latitude=site["geometry"]["y"] if site.get("geometry") else None,
             longitude=site["geometry"]["x"] if site.get("geometry") else None,
-        ) if site.get("geometry") else None,# this is convuluted. ask Adrian (the author) if theres questions
+        )
+        if site.get("geometry")
+        else None,  # this is convuluted. ask Adrian (the author) if theres questions
         contact=_get_contacts(site),
         languages=None,
         opening_dates=None,
