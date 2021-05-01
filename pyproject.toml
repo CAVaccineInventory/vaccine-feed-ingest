@@ -35,6 +35,8 @@ beautifulsoup4 = "^4.9.3"
 vaccine-feed-ingest-schema = "^1.1.0"
 aiohttp = "^3.7.4"
 TableauScraper = "^0.1.11"
+lxml = "^4.6.3"
+pykml = "^0.2.0"
 
 [tool.poetry.dev-dependencies]
 tox = "^3.23.0"
