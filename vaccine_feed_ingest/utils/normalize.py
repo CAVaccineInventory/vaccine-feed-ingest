@@ -38,3 +38,17 @@ def provider_id_from_name(name: str) -> Optional[Tuple[str, str]]:
         return "cvs", str(int(m.group(1)))
 
     return None
+
+
+ZIP_RE = re.compile(r"([0-9]{5})([0-9]{4})")
+
+
+def normalize_zip(zipc: Optional[str]) -> Optional[str]:
+    if zipc is not None:
+        if ZIP_RE.match(zipc):
+            zipc = ZIP_RE.sub(r"\1-\2", zipc)
+        length = len(zipc)
+        if length != 5 and length != 10:
+            zipc = None
+
+    return zipc
