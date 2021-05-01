@@ -305,12 +305,9 @@ def _validate_normalized(output_dir: pathlib.Path) -> bool:
                     return False
 
                 if normalized_location.location:
-                    result = VACCINATE_THE_STATES_BOUNDARY.contains(
+                    if not VACCINATE_THE_STATES_BOUNDARY.contains(
                         normalized_location.location
-                    )
-
-                    # if false, return false
-                    if not result:
+                    ):
                         logger.warning(
                             "Invalid latitude or longitude in %s at line %d: %s is outside approved bounds (%s)",
                             filepath,
