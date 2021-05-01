@@ -59,7 +59,7 @@ def _get_address(site: dict) -> Optional[schema.Address]:
         if len(site["address"]["lines"]) < 2
         else " / ".join(site["address"]["lines"][1:]),
         city=_get_city(site),
-        zip=site["address"]["zip"] if site["address"]["zip"] else "0",
+        zip=site["address"]["zip"],
         state=site["address"]["state"],
     )
 
