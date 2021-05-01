@@ -6,6 +6,7 @@ import sys
 
 import requests
 
+base_url = "https://api.northwell.edu/"
 url = "https://api.northwell.edu/v2/vax-locations/all"
 
 
@@ -16,7 +17,7 @@ def get_paginated_urls():
 
 
 def get_locations(page_url):
-    response = requests.get(url)
+    response = requests.get(base_url + page_url)
     data = response.json()
     return data["response"]["locations"]
 
