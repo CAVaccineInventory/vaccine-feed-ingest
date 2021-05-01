@@ -5,18 +5,15 @@ import logging
 import pathlib
 import subprocess
 import tempfile
-from typing import List
 
 import pydantic
 from vaccine_feed_ingest_schema import location
 
-from ..utils.validation import BOUNDING_BOX, BOUNDING_BOX_GUAM, BoundingBox
+from ..utils.validation import VACCINATE_THE_STATES_BOUNDARY
 from . import outputs, site
 from .common import STAGE_OUTPUT_SUFFIX, PipelineStage
 
 logger = logging.getLogger("ingest")
-
-APPROVED_BOUNDS = [BOUNDING_BOX, BOUNDING_BOX_GUAM]
 
 
 def run_fetch(
@@ -308,8 +305,8 @@ def _validate_normalized(output_dir: pathlib.Path) -> bool:
                     return False
 
                 if normalized_location.location:
-                    result = validate_bounding_boxes(
-                        normalized_location.location, APPROVED_BOUNDS
+                    result = VACCINATE_THE_STATES_BOUNDARY.contains(
+                        normalized_location.location
                     )
 
                     # if false, return false
@@ -319,17 +316,8 @@ def _validate_normalized(output_dir: pathlib.Path) -> bool:
                             filepath,
                             line_no,
                             normalized_location.location,
-                            APPROVED_BOUNDS,
+                            VACCINATE_THE_STATES_BOUNDARY,
                         )
                         return False
 
     return True
-
-
-def validate_bounding_boxes(
-    location: location.LatLng, bounding_boxes: List[BoundingBox]
-) -> bool:
-    for boundingbox in bounding_boxes:
-        if boundingbox.contains(location):
-            return True
-    return False

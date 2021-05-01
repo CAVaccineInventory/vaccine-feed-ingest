@@ -1,5 +1,7 @@
 """Shared constants for validation"""
 
+from typing import List
+
 from pydantic import BaseModel
 from vaccine_feed_ingest_schema import location
 
@@ -20,6 +22,16 @@ class BoundingBox(BaseModel):
         return self.latitude.contains(lat_lng.latitude) and self.longitude.contains(
             lat_lng.longitude
         )
+
+
+class BoundingBoxes(BaseModel):
+    boxes: List[BoundingBox]
+
+    def contains(self, lat_lng: location.LatLng) -> bool:
+        for box in self.boxes:
+            if box.contains(lat_lng):
+                return True
+        return False
 
 
 BOUNDING_BOX = BoundingBox(
@@ -43,3 +55,5 @@ BOUNDING_BOX_GUAM = BoundingBox(
         maximum=146.330609,
     ),
 )
+
+VACCINATE_THE_STATES_BOUNDARY = BoundingBoxes(boxes=[BOUNDING_BOX, BOUNDING_BOX_GUAM])
