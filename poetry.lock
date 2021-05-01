@@ -1869,7 +1869,7 @@ doc = ["mkdocs (>=1.1.2,<2.0.0)", "mkdocs-material (>=5.4.0,<6.0.0)", "markdown-
 
 [[package]]
 name = "typing-extensions"
-version = "3.7.4.3"
+version = "3.10.0.0"
 description = "Backported and Experimental Type Hints for Python 3.5+"
 category = "main"
 optional = false
@@ -1909,7 +1909,7 @@ jellyfish = "0.6.1"
 
 [[package]]
 name = "vaccine-feed-ingest-schema"
-version = "1.1.0"
+version = "1.2.0"
 description = "Normalized data schema for the output of the vaccine-feed-ingest pipeline."
 category = "main"
 optional = false
@@ -2014,7 +2014,7 @@ test = ["pytest", "pytest-runner"]
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.9"
-content-hash = "9789f39c778b42942513ac0520b25040064fbc93f03d3bb6b671feea0dcf7732"
+content-hash = "c4eb5d4521f192ac9618dac212bfd6b1011ab17857611a0320d93b02411a2207"
 
 [metadata.files]
 aiohttp = [
@@ -3270,9 +3270,9 @@ typer = [
     {file = "typer-0.3.2.tar.gz", hash = "sha256:5455d750122cff96745b0dec87368f56d023725a7ebc9d2e54dd23dc86816303"},
 ]
 typing-extensions = [
-    {file = "typing_extensions-3.7.4.3-py2-none-any.whl", hash = "sha256:dafc7639cde7f1b6e1acc0f457842a83e722ccca8eef5270af2d74792619a89f"},
-    {file = "typing_extensions-3.7.4.3-py3-none-any.whl", hash = "sha256:7cb407020f00f7bfc3cb3e7881628838e69d8f3fcab2f64742a5e76b2f841918"},
-    {file = "typing_extensions-3.7.4.3.tar.gz", hash = "sha256:99d4073b617d30288f569d3f13d2bd7548c3a7e4c8de87db09a9d29bb3a4a60c"},
+    {file = "typing_extensions-3.10.0.0-py2-none-any.whl", hash = "sha256:0ac0f89795dd19de6b97debb0c6af1c70987fd80a2d62d1958f7e56fcc31b497"},
+    {file = "typing_extensions-3.10.0.0-py3-none-any.whl", hash = "sha256:779383f6086d90c99ae41cf0ff39aac8a7937a9283ce0a414e5dd782f4c94a84"},
+    {file = "typing_extensions-3.10.0.0.tar.gz", hash = "sha256:50b6f157849174217d0656f99dc82fe932884fb250826c18350e159ec6cdf342"},
 ]
 ujson = [
     {file = "ujson-4.0.2-cp36-cp36m-macosx_10_14_x86_64.whl", hash = "sha256:e390df0dcc7897ffb98e17eae1f4c442c39c91814c298ad84d935a3c5c7a32fa"},
@@ -3305,8 +3305,8 @@ us = [
     {file = "us-2.0.2.tar.gz", hash = "sha256:cb11ad0d43deff3a1c3690c74f0c731cff5b862c73339df2edd91133e1496fbc"},
 ]
 vaccine-feed-ingest-schema = [
-    {file = "vaccine-feed-ingest-schema-1.1.0.tar.gz", hash = "sha256:81514c1e5d504001b9f4d80a4436cf413d4175f4082e616bc9e4798875011cbe"},
-    {file = "vaccine_feed_ingest_schema-1.1.0-py3-none-any.whl", hash = "sha256:0bcabe9a54792c6960b02716165e9b9d1cb951a0fd20a512c43d23b5b3616b9e"},
+    {file = "vaccine-feed-ingest-schema-1.2.0.tar.gz", hash = "sha256:95f694dec5ca6e163886b6da79d0a852f03442483c7a0ab0ec091053b0bd06bb"},
+    {file = "vaccine_feed_ingest_schema-1.2.0-py3-none-any.whl", hash = "sha256:c4bcd8c54fc74d9e095375386087189399fe3dcf04989b15e36011a4533249b0"},
 ]
 virtualenv = [
     {file = "virtualenv-20.4.4-py2.py3-none-any.whl", hash = "sha256:a935126db63128861987a7d5d30e23e8ec045a73840eeccb467c148514e29535"},
