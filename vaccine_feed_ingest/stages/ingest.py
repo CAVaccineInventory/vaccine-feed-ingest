@@ -326,21 +326,9 @@ def _validate_normalized(output_dir: pathlib.Path) -> bool:
 
 
 def validate_bounding_boxes(location, bounding_boxes):
-    results = []
-
     for boundingbox in bounding_boxes:
-        if not boundingbox.latitude.contains(
+        if boundingbox.latitude.contains(
             location.latitude
-        ) or not boundingbox.longitude.contains(location.longitude):
-            results.append(False)
-
-        results.append(True)
-
-    # only fail if all bounding boxes fail
-    try:
-        results.index(True)
-    except ValueError:
-        # if True is not in the list, then they all failed, so fail
-        return False
-
-    return True
+        ) and boundingbox.longitude.contains(location.longitude):
+            return True
+    return False
