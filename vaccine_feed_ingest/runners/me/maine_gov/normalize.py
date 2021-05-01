@@ -10,14 +10,13 @@ from typing import List, Optional
 
 from vaccine_feed_ingest_schema import location as schema
 
-CITY_RE = re.compile(r"^([\w ]+), NY$")
-# the providerName field smells like it's being parsed from someplace else,
-# a good number of them have leading \u1d42 and/or *, which we want to clean.
-# there's a bunch with a city name in them, but no real pattern to it, so
-# we'll leave that for now.
-NAME_CLEAN_RE = re.compile("^[\u1d42*]+")
-
-logger = logging.getLogger(__name__)
+# Configure logger
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s %(levelname)s:%(name)s:%(message)s",
+    datefmt="%m/%d/%Y %H:%M:%S",
+)
+logger = logging.getLogger("me/maine_gov/normalize.py")
 
 
 def _get_name(site: dict) -> str:
@@ -31,7 +30,13 @@ def _get_city(site: dict) -> str:
 def _get_id(site: dict) -> str:
     name = _get_name(site)
     city = _get_city(site)
-    return f"{name}:{city}"
+
+    id = f"{name}_{city}".lower()
+    id = id.replace(" ", "_").replace("\u2019", "_")
+    id = id.replace(".", "_").replace(",", "_").replace("'", "_")
+    id = id.replace("(", "_").replace(")", "_").replace("/", "_")
+
+    return id
 
 
 def _get_source(site: dict, timestamp: str) -> schema.Source:
@@ -48,16 +53,18 @@ def _normalize_phone(raw_phone: str) -> Optional[str]:
     raw_phone = raw_phone.lstrip("1")
     raw_phone = raw_phone.lstrip("-")
     raw_phone = raw_phone.lstrip(" ")
+    raw_phone = raw_phone.replace("\u2013", "-")
     if raw_phone == "":
         return None
     elif len(raw_phone) == 8:
-        return "(???) " + raw_phone[0:3] + "-" + raw_phone[4:8]
+        # 207 is the only area code in Maine
+        phone = f"(207) {raw_phone[0:3]}-{raw_phone[4:8]}"
     elif raw_phone[3] == "-" or raw_phone[7] == "-":
-        return "(" + raw_phone[0:3] + ") " + raw_phone[4:7] + "-" + raw_phone[8:12]
-    # elif len(raw_phone) == 10:
-    #    return "(" + raw_phone[0:3] + ") " + raw_phone[3:6] + "-" + raw_phone[6:10]
+        phone = f"({raw_phone[0:3]}) {raw_phone[4:7]}-{raw_phone[8:12]}"
     else:
-        return raw_phone[0:14]
+        phone = raw_phone[0:14]
+
+    return phone
 
 
 def _get_contacts(site: dict) -> List[schema.Contact]:
@@ -73,7 +80,7 @@ def _get_contacts(site: dict) -> List[schema.Contact]:
 
     website_matches = re.search('href="(http.*)"', scheduling_info_raw)
     if website_matches:
-        website = website_matches.group(1)
+        website = website_matches.group(1).split(" ")[0]
     else:
         website = None
 
