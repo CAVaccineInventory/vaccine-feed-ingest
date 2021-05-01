@@ -73,7 +73,7 @@ output_file = output_dir / "data.parsed.ndjson"
 with input_file.open() as fin:
     content = fin.read()
     sites = []
-    soup = BeautifulSoup(content, "html.parser")
+    soup = BeautifulSoup(content, "html5lib")
     table = soup.find(id="table")
 
     for row in table.find("tbody").find_all("tr"):
