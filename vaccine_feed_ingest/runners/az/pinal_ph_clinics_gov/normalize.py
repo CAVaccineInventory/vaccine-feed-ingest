@@ -46,17 +46,17 @@ def _get_name(site: dict) -> str:
 
 def _get_address(site: dict) -> Optional[schema.Address]:
     raw_address = site["Address"]
-    
+
     zip = raw_address[-5:]
     raw_address = raw_address.rstrip(zip)
     raw_address = raw_address.rstrip().rstrip(",").rstrip()
-    
+
     raw_address = raw_address.rstrip("AZ")
     raw_address = raw_address.rstrip().rstrip(",").rstrip()
-    
+
     raw_address = raw_address.rstrip(_get_city(site))
     raw_address = raw_address.rstrip().rstrip(",").rstrip()
-    
+
     address_lines = raw_address.split(", ")
 
     return schema.Address(
@@ -75,13 +75,21 @@ def _get_contacts(site: dict) -> List[schema.Contact]:
 
 def _get_open_hours(site: dict) -> List[schema.OpenHour]:
     raw_hours = site["WIC Hours"]
-    
+
     raw_times = raw_hours.split(" ")[-1]
     raw_open = raw_times.split("-")[0]
-    opens = f"{raw_open[:-2]}:00:00" if raw_open[-2:] == "am" else f"{int(raw_open[:-2]) + 12}:00:00"
+    opens = (
+        f"{raw_open[:-2]}:00:00"
+        if raw_open[-2:] == "am"
+        else f"{int(raw_open[:-2]) + 12}:00:00"
+    )
     raw_close = raw_times.split("-")[1]
-    closes = f"{raw_close[:-2]}:00:00" if raw_close[-2:] == "am" else f"{int(raw_close[:-2]) + 12}:00:00"
-    
+    closes = (
+        f"{raw_close[:-2]}:00:00"
+        if raw_close[-2:] == "am"
+        else f"{int(raw_close[:-2]) + 12}:00:00"
+    )
+
     raw_hours = " ".join(raw_hours.split(" ")[:-1])
     days_of_week = []
     if raw_hours[-12:] == "of the Month":
@@ -91,7 +99,15 @@ def _get_open_hours(site: dict) -> List[schema.OpenHour]:
         end_day_of_week = raw_hours.split(" to ")[1].lower()
 
         in_range = False
-        for day in [schema.DayOfWeek.SUNDAY, schema.DayOfWeek.MONDAY, schema.DayOfWeek.TUESDAY, schema.DayOfWeek.WEDNESDAY, schema.DayOfWeek.THURSDAY, schema.DayOfWeek.FRIDAY, schema.DayOfWeek.SATURDAY]:
+        for day in [
+            schema.DayOfWeek.SUNDAY,
+            schema.DayOfWeek.MONDAY,
+            schema.DayOfWeek.TUESDAY,
+            schema.DayOfWeek.WEDNESDAY,
+            schema.DayOfWeek.THURSDAY,
+            schema.DayOfWeek.FRIDAY,
+            schema.DayOfWeek.SATURDAY,
+        ]:
             if day == start_day_of_week:
                 in_range = True
             if in_range:
@@ -100,8 +116,10 @@ def _get_open_hours(site: dict) -> List[schema.OpenHour]:
                 in_range = False
     else:
         days_of_week = [raw_hours.rstrip("s").lower()]
-    
-    return [schema.OpenHour(day=day, opens=opens, closes=closes) for day in days_of_week]
+
+    return [
+        schema.OpenHour(day=day, opens=opens, closes=closes) for day in days_of_week
+    ]
 
 
 # may encode Nth-day_of_week info that current schema can't represent
