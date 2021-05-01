@@ -12,6 +12,8 @@ from typing import List, Optional
 from vaccine_feed_ingest_schema import location as schema
 
 # Configure logger
+from vaccine_feed_ingest.utils.normalize import normalize_zip
+
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s %(levelname)s:%(name)s:%(message)s",
@@ -46,15 +48,7 @@ def _get_id(site: dict) -> str:
 # This currently tosses any address if it doesn't have a street address or zip because
 # the schema doesn't allow optionals for those
 def _get_address(site: dict) -> Optional[schema.Address]:
-    ZIP_RE = re.compile(r"([0-9]{5})([0-9]{4})")
-    zipc = site["attributes"]["SiteZip"]
-
-    if zipc is not None:
-        if ZIP_RE.match(zipc):
-            zipc = ZIP_RE.sub(r"\1-\2", zipc)
-        length = len(zipc)
-        if length != 5 and length != 10:
-            zipc = None
+    zipc = normalize_zip(site["attributes"]["SiteZip"])
 
     return schema.Address(
         street1=site["attributes"]["SiteAddress"],
@@ -151,7 +145,12 @@ def _get_inventory(site: dict) -> Optional[List[schema.Vaccine]]:
     return None
 
 
-def _get_normalized_location(site: dict, timestamp: str) -> schema.NormalizedLocation:
+def _get_normalized_location(
+    site: dict, timestamp: str
+) -> Optional[schema.NormalizedLocation]:
+    if len(site["attributes"]["loc_name"]) > 256:
+        return None
+
     return schema.NormalizedLocation(
         id=_get_id(site),
         name=site["attributes"]["loc_name"],
@@ -202,6 +201,9 @@ for in_filepath in json_filepaths:
                 normalized_site = _get_normalized_location(
                     parsed_site, parsed_at_timestamp
                 )
+
+                if not normalized_site:
+                    continue
 
                 json.dump(normalized_site.dict(), fout)
                 fout.write("\n")
