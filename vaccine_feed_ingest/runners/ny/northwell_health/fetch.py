@@ -25,7 +25,7 @@ def get_locations(page_url):
 def main():
     output_dir = sys.argv[1]
     if output_dir is None:
-        print("Must pass an output_dir as first argument")
+        raise Exception("Must pass an output_dir as first argument")
 
     page_urls = get_paginated_urls()
     for index, page_url in enumerate(page_urls):
@@ -36,4 +36,4 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main())

@@ -5,11 +5,16 @@ import sys
 
 import requests
 
+from vaccine_feed_ingest.utils.log import getLogger
+
+logger = getLogger(__file__)
+
 base_url = "https://prepmod.doh.wa.gov/clinic/search"
 
 output_dir = sys.argv[1]
 if output_dir is None:
-    print("Must pass an output_dir as first argument")
+    logger.error("Must pass an output_dir as first argument")
+    sys.exit(1)
 
 page = 1
 while True:

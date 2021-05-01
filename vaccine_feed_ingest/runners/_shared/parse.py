@@ -29,7 +29,7 @@ def _get_config(yml_config: pathlib.Path) -> dict:
         try:
             config = yaml.safe_load(stream)
         except yaml.YAMLError as exc:
-            print(exc)
+            logger.error(exc)
 
     _enforce_keys(config, ["state", "site", "parser"])
 

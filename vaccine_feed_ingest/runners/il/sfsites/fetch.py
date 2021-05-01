@@ -6,8 +6,12 @@ import sys
 
 import requests
 
+from vaccine_feed_ingest.utils.log import getLogger
+
+logger = getLogger(__file__)
+
 if len(sys.argv) < 2:
-    print("Must pass an output_dir as first argument")
+    logger.error("Must pass an output_dir as first argument")
     sys.exit(1)
 output_dir = sys.argv[1]
 

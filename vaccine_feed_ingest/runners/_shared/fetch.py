@@ -25,7 +25,7 @@ with open(yml_config, "r") as stream:
     try:
         config = yaml.safe_load(stream)
     except yaml.YAMLError as exc:
-        print(exc)
+        logger.error(exc)
 
 try:
     state = config["state"]
