@@ -30,7 +30,13 @@ def _get_city(site: dict) -> str:
 def _get_id(site: dict) -> str:
     name = _get_name(site)
     city = _get_city(site)
-    return f"{name}:{city}"
+    
+    id = f"{name}_{city}".lower()
+    id = id.replace(" ", "_").replace(u"\u2019", "_")
+    id = id.replace(".", "_").replace(",", "_").replace("'", "_")
+    id = id.replace("(", "_").replace(")", "_").replace("/", "_")
+
+    return id
 
 
 def _get_source(site: dict, timestamp: str) -> schema.Source:
@@ -39,7 +45,7 @@ def _get_source(site: dict, timestamp: str) -> schema.Source:
         fetched_at=timestamp,
         fetched_from_uri="https://www.maine.gov/covid19/vaccines/vaccination-sites",
         id=_get_id(site),
-        source="me:maine_gov",
+        source="me_maine_gov",
     )
 
 
@@ -47,17 +53,18 @@ def _normalize_phone(raw_phone: str) -> Optional[str]:
     raw_phone = raw_phone.lstrip("1")
     raw_phone = raw_phone.lstrip("-")
     raw_phone = raw_phone.lstrip(" ")
+    raw_phone = raw_phone.replace(u"\u2013", "-")
     if raw_phone == "":
         return None
     elif len(raw_phone) == 8:
         # 207 is the only area code in Maine
-        return f"(207) {raw_phone[0:3]}-{raw_phone[4:8]}"
+        phone = f"(207) {raw_phone[0:3]}-{raw_phone[4:8]}"
     elif raw_phone[3] == "-" or raw_phone[7] == "-":
-        return f"({raw_phone[0:3]}) {raw_phone[4:7]}-{raw_phone[8:12]}"
-    # elif len(raw_phone) == 10:
-    #    return "(" + raw_phone[0:3] + ") " + raw_phone[3:6] + "-" + raw_phone[6:10]
+        phone = f"({raw_phone[0:3]}) {raw_phone[4:7]}-{raw_phone[8:12]}"
     else:
-        return raw_phone[0:14]
+        phone = raw_phone[0:14]
+
+    return phone
 
 
 def _get_contacts(site: dict) -> List[schema.Contact]:
@@ -73,7 +80,7 @@ def _get_contacts(site: dict) -> List[schema.Contact]:
 
     website_matches = re.search('href="(http.*)"', scheduling_info_raw)
     if website_matches:
-        website = website_matches.group(1)
+        website = website_matches.group(1).split(" ")[0]
     else:
         website = None
 
@@ -127,7 +134,7 @@ def _get_notes(site: dict) -> List[str]:
 
 def normalize(site: dict, timestamp: str) -> str:
     normalized = schema.NormalizedLocation(
-        id=("me:maine_gov:" + _get_id(site)),
+        id=("me_maine_gov:" + _get_id(site)),
         name=_get_name(site),
         contact=_get_contacts(site),
         source=_get_source(site, timestamp),
