@@ -1,6 +1,6 @@
 import logging
 import pathlib
-from typing import Iterator, List, Optional
+from typing import Iterable, Iterator, List, Optional
 
 import jellyfish
 import pydantic
@@ -18,38 +18,80 @@ from .common import STAGE_OUTPUT_SUFFIX, PipelineStage
 logger = logging.getLogger("load")
 
 
+def load_sites_to_vial(
+    site_dirs: Iterable[pathlib.Path],
+    output_dir: pathlib.Path,
+    dry_run: bool,
+    vial_server: str,
+    vial_apikey: str,
+    enable_match: bool,
+    enable_create: bool,
+    candidate_distance: float,
+) -> None:
+    """Load list of sites to vial"""
+    with vial.vial_client(vial_server, vial_apikey) as vial_http:
+        import_run_id = vial.start_import_run(vial_http)
+
+        if enable_match or enable_create:
+            locations = vial.retrieve_existing_locations_as_index(vial_http)
+
+        for site_dir in site_dirs:
+            imported_locations = run_load_to_vial(
+                site_dir,
+                output_dir,
+                dry_run=dry_run,
+                vial_http=vial_http,
+                import_run_id=import_run_id,
+                locations=locations,
+                enable_match=enable_match,
+                enable_create=enable_create,
+                candidate_distance=candidate_distance,
+            )
+
+            # If data was loaded then refresh existing locations
+            if locations is not None and imported_locations:
+                source_ids = [
+                    loc.source_uid
+                    for loc in imported_locations
+                    if loc.match and loc.match.action == "new"
+                ]
+
+                if source_ids:
+                    vial.update_existing_locations(vial_http, locations, source_ids)
+
+
 def run_load_to_vial(
-    vial_http: urllib3.connectionpool.ConnectionPool,
     site_dir: pathlib.Path,
     output_dir: pathlib.Path,
+    dry_run: bool,
+    vial_http: urllib3.connectionpool.ConnectionPool,
     import_run_id: str,
     locations: Optional[rtree.index.Index],
     enable_match: bool = True,
     enable_create: bool = False,
     candidate_distance: float = 0.6,
-    dry_run: bool = False,
 ) -> Optional[List[load.ImportSourceLocation]]:
     """Load source to vial source locations"""
-    normalize_run_dir = outputs.find_latest_run_dir(
-        output_dir, site_dir.parent.name, site_dir.name, PipelineStage.NORMALIZE
+    ennrich_run_dir = outputs.find_latest_run_dir(
+        output_dir, site_dir.parent.name, site_dir.name, PipelineStage.ENRICH
     )
-    if not normalize_run_dir:
+    if not ennrich_run_dir:
         logger.warning(
-            "Skipping load for %s because there is no data from normalize stage",
+            "Skipping load for %s because there is no data from enrich stage",
             site_dir.name,
         )
         return None
 
     if not outputs.data_exists(
-        normalize_run_dir, suffix=STAGE_OUTPUT_SUFFIX[PipelineStage.NORMALIZE]
+        ennrich_run_dir, suffix=STAGE_OUTPUT_SUFFIX[PipelineStage.ENRICH]
     ):
-        logger.warning("No normalize data available to load for %s.", site_dir.name)
+        logger.warning("No enriched data available to load for %s.", site_dir.name)
         return None
 
     num_imported_locations = 0
 
     for filepath in outputs.iter_data_paths(
-        normalize_run_dir, suffix=STAGE_OUTPUT_SUFFIX[PipelineStage.NORMALIZE]
+        ennrich_run_dir, suffix=STAGE_OUTPUT_SUFFIX[PipelineStage.ENRICH]
     ):
         import_locations = []
         with filepath.open() as src_file:

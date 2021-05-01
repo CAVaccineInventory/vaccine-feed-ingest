@@ -9,8 +9,8 @@ import tempfile
 import pydantic
 from vaccine_feed_ingest_schema import location
 
-from ..utils.validation import BOUNDING_BOX
-from . import outputs, site
+from ..utils.validation import VACCINATE_THE_STATES_BOUNDARY
+from . import enrichment, outputs, site
 from .common import STAGE_OUTPUT_SUFFIX, PipelineStage
 
 logger = logging.getLogger("ingest")
@@ -264,6 +264,71 @@ def run_normalize(
     return True
 
 
+def run_enrich(
+    site_dir: pathlib.Path,
+    output_dir: pathlib.Path,
+    timestamp: str,
+    dry_run: bool = False,
+) -> bool:
+    normalize_run_dir = outputs.find_latest_run_dir(
+        output_dir, site_dir.parent.name, site_dir.name, PipelineStage.NORMALIZE
+    )
+    if not normalize_run_dir:
+        logger.warning(
+            "Skipping enrich for %s because there is no data from normalize stage",
+            site_dir.name,
+        )
+        return False
+
+    if not outputs.data_exists(
+        normalize_run_dir, suffix=STAGE_OUTPUT_SUFFIX[PipelineStage.NORMALIZE]
+    ):
+        logger.warning("No normalize data available to enrich for %s.", site_dir.name)
+        return False
+
+    with tempfile.TemporaryDirectory(
+        f"_enrich_{site_dir.parent.name}_{site_dir.name}"
+    ) as tmp_str:
+        tmp_dir = pathlib.Path(tmp_str)
+
+        enrich_output_dir = tmp_dir / "output"
+        enrich_input_dir = tmp_dir / "input"
+
+        enrich_output_dir.mkdir(parents=True, exist_ok=True)
+        enrich_input_dir.mkdir(parents=True, exist_ok=True)
+
+        outputs.copy_files(normalize_run_dir, enrich_input_dir)
+
+        logger.info(
+            "Enriching %s/%s and saving enriched output to %s",
+            site_dir.parent.name,
+            site_dir.name,
+            enrich_output_dir,
+        )
+
+        success = enrichment.enrich_locations(enrich_input_dir, enrich_output_dir)
+
+        if not success:
+            return False
+
+        if not dry_run:
+            enrich_run_dir = outputs.generate_run_dir(
+                output_dir,
+                site_dir.parent.name,
+                site_dir.name,
+                PipelineStage.ENRICH,
+                timestamp,
+            )
+
+            logger.info(
+                "Copying files from %s to %s", enrich_output_dir, enrich_run_dir
+            )
+
+            outputs.copy_files(enrich_output_dir, enrich_run_dir)
+
+    return True
+
+
 def _validate_parsed(output_dir: pathlib.Path) -> bool:
     """Validate output files are valid ndjson records."""
     for filepath in outputs.iter_data_paths(
@@ -305,17 +370,16 @@ def _validate_normalized(output_dir: pathlib.Path) -> bool:
                     return False
 
                 if normalized_location.location:
-                    if not BOUNDING_BOX.latitude.contains(
-                        normalized_location.location.latitude
-                    ) or not BOUNDING_BOX.longitude.contains(
-                        normalized_location.location.longitude
+                    if not VACCINATE_THE_STATES_BOUNDARY.contains(
+                        normalized_location.location
                     ):
                         logger.warning(
                             "Invalid latitude or longitude in %s at line %d: %s is outside approved bounds (%s)",
                             filepath,
                             line_no,
                             normalized_location.location,
-                            BOUNDING_BOX,
+                            VACCINATE_THE_STATES_BOUNDARY,
                         )
                         return False
+
     return True
