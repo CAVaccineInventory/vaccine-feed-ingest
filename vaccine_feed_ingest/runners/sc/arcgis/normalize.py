@@ -148,7 +148,7 @@ def _get_inventory(site: dict) -> Optional[List[schema.Vaccine]]:
 def _get_normalized_location(site: dict, timestamp: str) -> schema.NormalizedLocation:
     return schema.NormalizedLocation(
         id=_get_id(site),
-        name=site["attributes"]["loc_name"],
+        name=site["attributes"]["loc_name"][:256],
         address=_get_address(site),
         location=schema.LatLng(
             latitude=site["geometry"]["y"],
