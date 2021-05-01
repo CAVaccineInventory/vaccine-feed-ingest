@@ -3,11 +3,14 @@
 import json
 import pathlib
 import sys
+from typing import List
 
 from bs4 import BeautifulSoup, PageElement
 
 
 def find_table(doc: BeautifulSoup) -> PageElement:
+    """Locates the table of clinic data"""
+
     def is_datatable_th(tag):
         return (
             tag.name == "th"
@@ -27,7 +30,11 @@ def find_table(doc: BeautifulSoup) -> PageElement:
     return table_el
 
 
-def parse_landing(input_file):
+def parse_landing(input_file: pathlib.Path) -> List[dict]:
+    """
+    Locate the clinic table on page and return a list of dicts where each field
+    matches the table header
+    """
     with input_file.open() as f:
         doc = BeautifulSoup(f, "html.parser")
     if doc is None:
