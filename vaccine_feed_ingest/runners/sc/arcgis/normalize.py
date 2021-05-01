@@ -145,10 +145,15 @@ def _get_inventory(site: dict) -> Optional[List[schema.Vaccine]]:
     return None
 
 
-def _get_normalized_location(site: dict, timestamp: str) -> schema.NormalizedLocation:
+def _get_normalized_location(
+    site: dict, timestamp: str
+) -> Optional[schema.NormalizedLocation]:
+    if len(site["attributes"]["loc_name"]) > 256:
+        return None
+
     return schema.NormalizedLocation(
         id=_get_id(site),
-        name=site["attributes"]["loc_name"][:256],
+        name=site["attributes"]["loc_name"],
         address=_get_address(site),
         location=schema.LatLng(
             latitude=site["geometry"]["y"],
@@ -196,6 +201,9 @@ for in_filepath in json_filepaths:
                 normalized_site = _get_normalized_location(
                     parsed_site, parsed_at_timestamp
                 )
+
+                if not normalized_site:
+                    continue
 
                 json.dump(normalized_site.dict(), fout)
                 fout.write("\n")
