@@ -63,6 +63,7 @@ def _get_contacts(site: dict):
     if "register_phone" in site:
         raw_phone = site["register_phone"]
         if raw_phone:
+            print(raw_phone)
             raw_phone = raw_phone.lstrip("tel:")
             raw_phone = raw_phone.lstrip(" ")
             raw_phone = raw_phone.lstrip("1")
@@ -82,16 +83,7 @@ def _get_contacts(site: dict):
             phone_notes = phone_notes.lstrip(";")
             phone_notes = phone_notes.lstrip(" ")
 
-            if phone_notes:
-                ret.append(
-                    schema.Contact(
-                        phone=phone,
-                        other=f"phone_notes:{phone_notes}",
-                        contact_type="booking",
-                    )
-                )
-            else:
-                ret.append(schema.Contact(phone=phone, contact_type="booking"))
+            ret.append(schema.Contact(phone=phone, contact_type="booking"))
 
     if "register_online_url" in site:
         website = site["register_online_url"]
