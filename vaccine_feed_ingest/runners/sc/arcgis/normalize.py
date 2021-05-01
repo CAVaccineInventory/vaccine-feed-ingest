@@ -6,7 +6,6 @@ import logging
 import os
 import pathlib
 import re
-import re
 import sys
 from typing import List, Optional
 
@@ -50,7 +49,7 @@ def _get_address(site: dict) -> Optional[schema.Address]:
     ZIP_RE = re.compile(r"([0-9]{5})([0-9]{4})")
     zipc = site["attributes"]["SiteZip"]
 
-    if zipc != None:
+    if zipc is not None:
         if ZIP_RE.match(zipc):
             zipc = ZIP_RE.sub(r"\1-\2", zipc)
         length = len(zipc)
@@ -84,14 +83,24 @@ def _get_contacts(site: dict) -> Optional[List[schema.Contact]]:
     # other stuff like numbers, hours of operation, etc
     if site["attributes"]["Contact"]:
         if "@" in site["attributes"]["Contact"]:
-            contacts.append(schema.Contact(contact_type="general", email=site["attributes"]["Contact"]))
+            contacts.append(
+                schema.Contact(
+                    contact_type="general", email=site["attributes"]["Contact"]
+                )
+            )
         else:
-            contacts.append(schema.Contact(contact_type="general", other=site["attributes"]["Contact"]))
+            contacts.append(
+                schema.Contact(
+                    contact_type="general", other=site["attributes"]["Contact"]
+                )
+            )
 
     url = site["attributes"]["URL"]
     if url:
-        url = url if 'http' in url else "https://" + url
-        URL_RE = re.compile(r"^((https?):\/\/)(www.)?[a-z0-9]+\.[a-z]+(\/?[a-zA-Z0-9#]+\/?)*$")
+        url = url if "http" in url else "https://" + url
+        URL_RE = re.compile(
+            r"^((https?):\/\/)(www.)?[a-z0-9]+\.[a-z]+(\/?[a-zA-Z0-9#]+\/?)*$"
+        )
         valid = URL_RE.match(url)
         if valid:
             contacts.append(schema.Contact(contact_type="general", website=url))

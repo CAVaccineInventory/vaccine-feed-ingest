@@ -52,13 +52,13 @@ def _get_contacts(site: dict) -> Optional[List[schema.Contact]]:
         contacts.append(schema.Contact(contact_type="general", phone=phone))
 
     if site["attributes"]["USER_Contact_Email"]:
-        email = site["attributes"]["USER_Contact_Email"].replace(' ', '')
-        if '.' not in email:
+        email = site["attributes"]["USER_Contact_Email"].replace(" ", "")
+        if "." not in email:
             return
-        if '/' in email:
-            split_email = email.split(' / ')
+        if "/" in email:
+            split_email = email.split(" / ")
             if len(split_email) == 1:
-                split_email = email.split('/')
+                split_email = email.split("/")
             if len(split_email) == 1:
                 return
             email = split_email[0]
@@ -66,7 +66,10 @@ def _get_contacts(site: dict) -> Optional[List[schema.Contact]]:
 
     if site["attributes"]["USER_Contact_Website"]:
         contacts.append(
-            schema.Contact(contact_type="general", website=site["attributes"]["USER_Contact_Website"])
+            schema.Contact(
+                contact_type="general",
+                website=site["attributes"]["USER_Contact_Website"],
+            )
         )
 
     if len(contacts) > 0:
@@ -74,11 +77,12 @@ def _get_contacts(site: dict) -> Optional[List[schema.Contact]]:
 
     return None
 
+
 def _get_address(site: dict) -> schema.Address:
     ZIP_RE = re.compile(r"([0-9]{5})([0-9]{4})")
     zipc = site["attributes"]["USER_Zip_Code"]
 
-    if zipc != None:
+    if zipc is not None:
         if ZIP_RE.match(zipc):
             zipc = ZIP_RE.sub(r"\1-\2", zipc)
         length = len(zipc)
@@ -86,12 +90,13 @@ def _get_address(site: dict) -> schema.Address:
             zipc = None
 
     return schema.Address(
-            street1=site["attributes"]["USER_Address"],
-            street2=site["attributes"]["USER_Address_2"],
-            city=site["attributes"]["USER_City"],
-            state=site["attributes"]["USER_State"],
-            zip=zipc,
-        )
+        street1=site["attributes"]["USER_Address"],
+        street2=site["attributes"]["USER_Address_2"],
+        city=site["attributes"]["USER_City"],
+        state=site["attributes"]["USER_State"],
+        zip=zipc,
+    )
+
 
 def _get_normalized_location(site: dict, timestamp: str) -> schema.NormalizedLocation:
     return schema.NormalizedLocation(
