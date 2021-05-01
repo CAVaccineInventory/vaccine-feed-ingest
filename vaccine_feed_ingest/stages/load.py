@@ -30,26 +30,26 @@ def run_load_to_vial(
     dry_run: bool = False,
 ) -> Optional[List[load.ImportSourceLocation]]:
     """Load source to vial source locations"""
-    normalize_run_dir = outputs.find_latest_run_dir(
-        output_dir, site_dir.parent.name, site_dir.name, PipelineStage.NORMALIZE
+    ennrich_run_dir = outputs.find_latest_run_dir(
+        output_dir, site_dir.parent.name, site_dir.name, PipelineStage.ENRICH
     )
-    if not normalize_run_dir:
+    if not ennrich_run_dir:
         logger.warning(
-            "Skipping load for %s because there is no data from normalize stage",
+            "Skipping load for %s because there is no data from enrich stage",
             site_dir.name,
         )
         return None
 
     if not outputs.data_exists(
-        normalize_run_dir, suffix=STAGE_OUTPUT_SUFFIX[PipelineStage.NORMALIZE]
+        ennrich_run_dir, suffix=STAGE_OUTPUT_SUFFIX[PipelineStage.ENRICH]
     ):
-        logger.warning("No normalize data available to load for %s.", site_dir.name)
+        logger.warning("No enriched data available to load for %s.", site_dir.name)
         return None
 
     num_imported_locations = 0
 
     for filepath in outputs.iter_data_paths(
-        normalize_run_dir, suffix=STAGE_OUTPUT_SUFFIX[PipelineStage.NORMALIZE]
+        ennrich_run_dir, suffix=STAGE_OUTPUT_SUFFIX[PipelineStage.ENRICH]
     ):
         import_locations = []
         with filepath.open() as src_file:
