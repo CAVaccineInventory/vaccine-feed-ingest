@@ -330,8 +330,6 @@ def validate_bounding_boxes(
     location: location.LatLng, bounding_boxes: List[BoundingBox]
 ) -> bool:
     for boundingbox in bounding_boxes:
-        if boundingbox.latitude.contains(
-            location.latitude
-        ) and boundingbox.longitude.contains(location.longitude):
+        if boundingbox.contains(location):
             return True
     return False

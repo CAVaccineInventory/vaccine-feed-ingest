@@ -1,6 +1,7 @@
 """Shared constants for validation"""
 
 from pydantic import BaseModel
+from vaccine_feed_ingest_schema import location
 
 
 class MinMax(BaseModel):
@@ -14,6 +15,11 @@ class MinMax(BaseModel):
 class BoundingBox(BaseModel):
     latitude: MinMax
     longitude: MinMax
+
+    def contains(self, lat_lng: location.LatLng) -> bool:
+        return self.latitude.contains(lat_lng.latitude) and self.longitude.contains(
+            lat_lng.longitude
+        )
 
 
 BOUNDING_BOX = BoundingBox(
