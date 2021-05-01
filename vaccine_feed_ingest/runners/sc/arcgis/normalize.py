@@ -40,24 +40,28 @@ def _get_id(site: dict) -> str:
     arcgis = "bbd8924909264baaa1a5a1564b393063"
     layer = 0
 
-    return f"{runner}_{site_name}:{arcgis}_{layer}:{data_id}"
+    return f"{runner}_{site_name}:{arcgis}_{layer}_{data_id}"
 
 
 # This currently tosses any address if it doesn't have a street address or zip because
 # the schema doesn't allow optionals for those
 def _get_address(site: dict) -> Optional[schema.Address]:
-    if (
-        parsed_site["attributes"]["SiteAddress"] is None
-        or parsed_site["attributes"]["SiteZip"] is None
-    ):
-        return None
+    ZIP_RE = re.compile(r"([0-9]{5})([0-9]{4})")
+    zipc = site["attributes"]["SiteZip"]
+
+    if zipc is not None:
+        if ZIP_RE.match(zipc):
+            zipc = ZIP_RE.sub(r"\1-\2", zipc)
+        length = len(zipc)
+        if length != 5 and length != 10:
+            zipc = None
 
     return schema.Address(
         street1=site["attributes"]["SiteAddress"],
         street2=site["attributes"]["SiteAddressDetail"],
         city=site["attributes"]["SiteCity"],
         state="SC",
-        zip=site["attributes"]["SiteZip"],
+        zip=zipc,
     )
 
 
@@ -79,12 +83,27 @@ def _get_contacts(site: dict) -> Optional[List[schema.Contact]]:
     # other stuff like numbers, hours of operation, etc
     if site["attributes"]["Contact"]:
         if "@" in site["attributes"]["Contact"]:
-            contacts.append(schema.Contact(email=site["attributes"]["Contact"]))
+            contacts.append(
+                schema.Contact(
+                    contact_type="general", email=site["attributes"]["Contact"]
+                )
+            )
         else:
-            contacts.append(schema.Contact(other=site["attributes"]["Contact"]))
+            contacts.append(
+                schema.Contact(
+                    contact_type="general", other=site["attributes"]["Contact"]
+                )
+            )
 
-    if site["attributes"]["URL"]:
-        contacts.append(schema.Contact(website=site["attributes"]["URL"]))
+    url = site["attributes"]["URL"]
+    if url:
+        url = url if "http" in url else "https://" + url
+        URL_RE = re.compile(
+            r"^((https?):\/\/)(www.)?[a-z0-9]+\.[a-z]+(\/?[a-zA-Z0-9#]+\/?)*$"
+        )
+        valid = URL_RE.match(url)
+        if valid:
+            contacts.append(schema.Contact(contact_type="general", website=url))
 
     if len(contacts) > 0:
         return contacts
@@ -109,13 +128,13 @@ def _get_inventory(site: dict) -> Optional[List[schema.Vaccine]]:
         )
 
         potentials = {
-            "pzr": schema.Vaccine(vaccine="pfizer"),
-            "pfr": schema.Vaccine(vaccine="pfizer"),
-            "pfizer": schema.Vaccine(vaccine="pfizer"),
+            "pzr": schema.Vaccine(vaccine="pfizer_biontech"),
+            "pfr": schema.Vaccine(vaccine="pfizer_biontech"),
+            "pfizer": schema.Vaccine(vaccine="pfizer_biontech"),
             "mod": schema.Vaccine(vaccine="moderna"),
             "moderna": schema.Vaccine(vaccine="moderna"),
-            "jj": schema.Vaccine(vaccine="janssen"),
-            "jjj": schema.Vaccine(vaccine="janssen"),
+            "jj": schema.Vaccine(vaccine="johnson_johnson_janssen"),
+            "jjj": schema.Vaccine(vaccine="johnson_johnson_janssen"),
         }
 
         inventory = []

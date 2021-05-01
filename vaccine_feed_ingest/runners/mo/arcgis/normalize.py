@@ -33,24 +33,43 @@ def _get_id(site: dict) -> str:
     arcgis = "46630b2520ce44a68a9f42f8343d3518"
     layer = 0
 
-    return f"{runner}_{site_name}:{arcgis}_{layer}:{data_id}"
+    return f"{runner}_{site_name}:{arcgis}_{layer}_{data_id}"
 
 
 def _get_contacts(site: dict) -> Optional[List[schema.Contact]]:
     contacts = []
     if site["attributes"]["USER_Contact_Phone"]:
-        sourcePhone = re.sub("[^0-9]", "", site["attributes"]["USER_Contact_Phone"])
-        if len(sourcePhone) == 11:
-            sourcePhone = sourcePhone[1:]
-        phone = f"({sourcePhone[0:3]}) {sourcePhone[3:6]}-{sourcePhone[6:]}"
-        contacts.append(schema.Contact(phone=phone))
+        sourcePhone = re.sub("[^0-9x+]", "", site["attributes"]["USER_Contact_Phone"])
+        RE_CHECK = re.compile(r"([0-9]{10})(?:[x+])?([0-9]+)?")
+        match = RE_CHECK.match(sourcePhone)
+        if not match:
+            return
+
+        phone = f"({match.group(1)[0:3]}) {match.group(1)[3:6]}-{match.group(1)[6:]}"
+        if match.group(2):
+            phone = f"({match.group(1)[0:3]}) {match.group(1)[3:6]}-{match.group(1)[6:]} x{match.group(2)}"
+
+        contacts.append(schema.Contact(contact_type="general", phone=phone))
 
     if site["attributes"]["USER_Contact_Email"]:
-        contacts.append(schema.Contact(email=site["attributes"]["USER_Contact_Email"]))
+        email = site["attributes"]["USER_Contact_Email"].replace(" ", "")
+        if "." not in email:
+            return
+        if "/" in email:
+            split_email = email.split(" / ")
+            if len(split_email) == 1:
+                split_email = email.split("/")
+            if len(split_email) == 1:
+                return
+            email = split_email[0]
+        contacts.append(schema.Contact(contact_type="general", email=email))
 
     if site["attributes"]["USER_Contact_Website"]:
         contacts.append(
-            schema.Contact(website=site["attributes"]["USER_Contact_Website"])
+            schema.Contact(
+                contact_type="general",
+                website=site["attributes"]["USER_Contact_Website"],
+            )
         )
 
     if len(contacts) > 0:
@@ -59,17 +78,31 @@ def _get_contacts(site: dict) -> Optional[List[schema.Contact]]:
     return None
 
 
+def _get_address(site: dict) -> schema.Address:
+    ZIP_RE = re.compile(r"([0-9]{5})([0-9]{4})")
+    zipc = site["attributes"]["USER_Zip_Code"]
+
+    if zipc is not None:
+        if ZIP_RE.match(zipc):
+            zipc = ZIP_RE.sub(r"\1-\2", zipc)
+        length = len(zipc)
+        if length != 5 and length != 10:
+            zipc = None
+
+    return schema.Address(
+        street1=site["attributes"]["USER_Address"],
+        street2=site["attributes"]["USER_Address_2"],
+        city=site["attributes"]["USER_City"],
+        state=site["attributes"]["USER_State"],
+        zip=zipc,
+    )
+
+
 def _get_normalized_location(site: dict, timestamp: str) -> schema.NormalizedLocation:
     return schema.NormalizedLocation(
         id=_get_id(site),
         name=site["attributes"]["USER_Provider_Name"],
-        address=schema.Address(
-            street1=site["attributes"]["USER_Address"],
-            street2=site["attributes"]["USER_Address_2"],
-            city=site["attributes"]["USER_City"],
-            state=site["attributes"]["USER_State"],
-            zip=site["attributes"]["USER_Zip_Code"],
-        ),
+        address=_get_address(site),
         location=schema.LatLng(
             latitude=site["geometry"]["y"],
             longitude=site["geometry"]["x"],
