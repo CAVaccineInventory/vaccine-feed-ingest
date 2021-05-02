@@ -49,7 +49,7 @@ def _get_contacts(site: dict):
 
     url = site["Web Address"]
     # Some URLs have multiple schemes.
-    valid_url = re.match(r"(https?:\/\[/)*:(.+)", url)
+    valid_url = re.match(r"(https?:\/\/)?(.+)", url)
     if valid_url is not None:
         if valid_url.group(1) is None:
             url = valid_url.group(2)
