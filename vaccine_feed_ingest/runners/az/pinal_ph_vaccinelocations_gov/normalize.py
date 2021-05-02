@@ -17,7 +17,7 @@ RUNNER_ID = "az_pinal_ph_vaccinelocations_gov"
 
 def _get_id(site: dict) -> str:
     id = f"{_get_name(site)}_{_get_city(site)}".lower()
-    id = id.replace(" ", "_").replace(".", "_").replace(u"\u2019", "_")
+    id = id.replace(" ", "_").replace(".", "_").replace("\u2019", "_")
     id = id.replace("(", "_").replace(")", "_").replace("/", "_")
     return id
 
@@ -29,18 +29,6 @@ def _get_name(site: dict) -> str:
 def _get_city(site: dict) -> str:
     return site["city"].lstrip().rstrip()
 
-
-def _get_address(site: dict) -> schema.Address:
-    if "address" in site and site["address"]:
-        print("^" + site["address"] + "$")
-        return schema.Address(
-            street1=site["address"],
-            street2=None,
-            city=_get_city(site),
-            state=None,
-            zip=None,
-        )
-    return None
 
 # address is loosely structured and inconsistent, so we're going to bash our
 # way through it, mostly parsing from the end of the string
@@ -107,7 +95,7 @@ def _get_contacts(site: dict) -> schema.Contact:
 
     if "website" in site and site["website"]:
         ret.append(schema.Contact(website=site["website"]))
-    
+
     return ret
 
 
@@ -119,7 +107,9 @@ def _get_inventories(site: dict) -> List[schema.Vaccine]:
         if "Pfizer" in site["vaccineType"]:
             ret.append(schema.Vaccine(vaccine=schema.VaccineType.PFIZER_BIONTECH))
         if "Janssen" in site["vaccineType"]:
-            ret.append(schema.Vaccine(vaccine=schema.VaccineType.JOHNSON_JOHNSON_JANSSEN))
+            ret.append(
+                schema.Vaccine(vaccine=schema.VaccineType.JOHNSON_JOHNSON_JANSSEN)
+            )
     return ret
 
 
