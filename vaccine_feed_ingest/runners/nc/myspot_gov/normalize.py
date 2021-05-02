@@ -49,15 +49,26 @@ def _get_contacts(site: dict):
 
     url = site["Web Address"]
     # Some URLs have multiple schemes.
-    valid_url = re.match(r"(https?:\/\/)?(.+)", url)
-    if valid_url is not None:
+    valid_url = re.match(r"(https?:\/\/)*(.+)", url)
+
+    if (
+        url == "http://"
+        or url == "https://"
+        or url == "none"
+        or url == ""
+        or url.startswith("Please email")
+    ):
+        return ret
+    elif valid_url is not None:
         if valid_url.group(1) is None:
             url = valid_url.group(2)
         else:
             url = f"{valid_url.group(1)}{valid_url.group(2)}"
-
         url = normalize_url(url)
         ret.append(schema.Contact(website=url))
+    else:
+        logger.warning(f"Unknown, invalid URL: {url}")
+
     return ret
 
 
