@@ -4,6 +4,8 @@ Various tricks for matching source locations to product locations from VIAL
 import re
 from typing import Optional, Tuple
 
+import url_normalize
+
 
 def provider_id_from_name(name: str) -> Optional[Tuple[str, str]]:
     """Generate provider ids for retail pharmacies (riteaid:123)"""
@@ -52,3 +54,10 @@ def normalize_zip(zipc: Optional[str]) -> Optional[str]:
             zipc = None
 
     return zipc
+
+
+def normalize_url(url: Optional[str]) -> Optional[str]:
+    if url is None:
+        return url
+
+    return url_normalize.url_normalize(url)
