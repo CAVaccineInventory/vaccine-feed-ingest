@@ -79,6 +79,16 @@ def _get_contacts(site: dict) -> Optional[List[schema.Contact]]:
     return None
 
 
+def _get_zip(site: dict) -> Optional[str]:
+    zip = site["attributes"]["ZIP_Code"]
+    if not zip:
+        return None
+    zip = str(zip).strip()
+    if re.match(r"\d{9}", zip):
+        zip = zip[0:5] + "-" + zip[5:9]
+    return zip
+
+
 def _get_normalized_location(site: dict, timestamp: str) -> schema.NormalizedLocation:
     return schema.NormalizedLocation(
         id=_get_id(site),
@@ -88,7 +98,7 @@ def _get_normalized_location(site: dict, timestamp: str) -> schema.NormalizedLoc
             street2=site["attributes"]["Address_2"],
             city=site["attributes"]["City"],
             state="PA",
-            zip=site["attributes"]["ZIP_Code"],
+            zip=_get_zip(site),
         ),
         location=schema.LatLng(
             latitude=site["geometry"]["y"],
