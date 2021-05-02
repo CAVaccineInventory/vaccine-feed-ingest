@@ -13,7 +13,6 @@ VACCINE_PROVIDER_REGEXES = {
         re.compile(r"ACME PHARMACY #(\d+)", re.I),
     ],
     VaccineProvider.ALBERTSONS: [
-        re.compile(r"SAV-?ON PHARMACY #\s?(\d+)", re.I),
         re.compile(r"ALBERTSONS(?: MARKET)? PHARMACY #(\d+)", re.I),
     ],
     VaccineProvider.BIG_Y: [
@@ -66,9 +65,6 @@ VACCINE_PROVIDER_REGEXES = {
     VaccineProvider.GIANT_FOOD: [
         re.compile(r"GIANT FOOD #(\d+)", re.I),
     ],
-    VaccineProvider.HEB: [
-        re.compile(r"H-E-B #(\d+)", re.I),
-    ],
     VaccineProvider.HAGGEN: [
         re.compile(r"HAGGEN PHARMACY #(\d+)", re.I),
     ],
@@ -87,11 +83,17 @@ VACCINE_PROVIDER_REGEXES = {
     VaccineProvider.HARTIG: [
         re.compile(r"HARTIG DRUG CO #?\d+ #(\d+)", re.I),
     ],
+    VaccineProvider.HEB: [
+        re.compile(r"H-E-B #(\d+)", re.I),
+    ],
     VaccineProvider.HOMELAND: [
         re.compile(r"HOMELAND PHARMACY #(\d+)", re.I),
     ],
     VaccineProvider.HY_VEE: [
         re.compile(r"HY-VEE INC. #(\d+)", re.I),
+    ],
+    VaccineProvider.INGLES: [
+        re.compile(r"INGLES PHARMACY #\d+ #(\d+)", re.I),
     ],
     VaccineProvider.KAISER_HEALTH_PLAN: [
         re.compile(r"KAISER HEALTH PLAN \w+(?: \w+)? PHY (\d+)", re.I),
@@ -105,30 +107,87 @@ VACCINE_PROVIDER_REGEXES = {
     VaccineProvider.KROGER: [
         re.compile(r"KROGER PHARMACY #?(\d+)", re.I),
     ],
-    VaccineProvider.INGLES: [
-        re.compile(r"INGLES PHARMACY #\d+ #(\d+)", re.I),
+    VaccineProvider.LITTLE_CLINIC: [
+        re.compile(r"THE LITTLE CLINIC #(\d+)", re.I),
+    ],
+    VaccineProvider.MARIANOS: [
+        re.compile(r"MARIANO\'S PHARMACY #(\d+)", re.I),
+    ],
+    VaccineProvider.OSCO: [
+        re.compile(r"OSCO (?:DRUG|PHARMACY) #(\d+)", re.I),
+    ],
+    VaccineProvider.MARKET_STREET: [
+        re.compile(r"MARKET STREET PHARMACY #(\d+)", re.I),
+    ],
+    VaccineProvider.MEDICAP: [
+        re.compile(r"MEDICAP PHARMACY #\d+ #(\d+)", re.I),
+    ],
+    VaccineProvider.MEIJER: [
+        re.compile(r"MEIJER #(\d+)", re.I),
     ],
     VaccineProvider.PAVILIONS: [
         re.compile(r"PAVILIONS PHARMACY #(\d+)", re.I),
     ],
+    VaccineProvider.PICK_N_SAVE: [
+        re.compile(r"PICK N SAVE PHARMACY #(\d+)", re.I),
+    ],
+    VaccineProvider.PRICE_CHOPPER: [
+        re.compile(r"PRICE CHOPPER PHARMACY #?\d+ #(?:MS)?(\d+)", re.I),
+    ],
+    VaccineProvider.PUBLIX: [
+        re.compile(r"PUBLIX SUPER MARKETS INC\. #(\d+)", re.I),
+    ],
+    VaccineProvider.QFC: [
+        re.compile(r"QFC PHARMACY #(\d+)", re.I),
+    ],
+    VaccineProvider.RALEYS: [
+        re.compile(r"RALEY\'S PHARMACY #(\d+)", re.I),
+    ],
     VaccineProvider.RITE_AID: [
-        re.compile(r"RITE AID PHARMACY (\d+)", re.I),
+        re.compile(r"RITE AID (?:PHARMACY |#RA)(\d+)", re.I),
     ],
     VaccineProvider.SAMS: [
         re.compile(r"SAM'?S PHARMACY (?:10-|#\s*)(\d+)", re.I),
+        re.compile(r"SAMS CLUB (?:#\d+\-)?(\d+)", re.I),
     ],
     VaccineProvider.SAFEWAY: [
         re.compile(r"Safeway (?:PHARMACY )?\s?#?(\d+)", re.I),
+    ],
+    VaccineProvider.SAV_ON: [
+        re.compile(r"SAV-?ON PHARMACY #\s?(\d+)", re.I),
+    ],
+    VaccineProvider.SHOP_RITE: [
+        re.compile(r"SHOPRITE PHARMACY #(\d+)", re.I),
+    ],
+    VaccineProvider.SMITHS: [
+        re.compile(r"SMITH\'S PHARMACY #(\d+)", re.I),
+    ],
+    VaccineProvider.STOP_AND_SHOP: [
+        re.compile(r"STOP \& SHOP #(\d+)", re.I),
+    ],
+    VaccineProvider.TOM_THUMB: [
+        re.compile(r"TOM THUMB PHARMACY #(\d+)", re.I),
+    ],
+    VaccineProvider.THRIFTY: [
+        re.compile(r"THRIFTY DRUG STORES INC #(\d+)", re.I),
     ],
     VaccineProvider.VONS: [
         re.compile(r"VONS PHARMACY #(\d+)", re.I),
     ],
     VaccineProvider.WALGREENS: [
         re.compile(r"Walgreens (?:Specialty )?(?:Pharmacy )?#(\d+)", re.I),
+        re.compile(r"Walgreens Co\. #(\d+)", re.I),
     ],
     VaccineProvider.WALMART: [
+        re.compile(r"WALMART INC #10-(\d+)", re.I),
         re.compile(r"WALMART PHARMACY 10-(\d+)", re.I),
         re.compile(r"WALMART (?:INC,|PHARMACY) #(\d+)", re.I),
+    ],
+    VaccineProvider.WEIS: [
+        re.compile(r"WEIS PHARMACY #\d+ #(\d+)", re.I),
+    ],
+    VaccineProvider.WINN_DIXIE: [
+        re.compile(r"WINN-DIXIE #(\d+)", re.I),
     ],
 }
 
