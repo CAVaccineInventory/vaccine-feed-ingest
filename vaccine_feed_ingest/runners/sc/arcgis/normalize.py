@@ -2,7 +2,6 @@
 
 import datetime
 import json
-import logging
 import os
 import pathlib
 import re
@@ -11,15 +10,10 @@ from typing import List, Optional
 
 from vaccine_feed_ingest_schema import location as schema
 
-# Configure logger
+from vaccine_feed_ingest.utils.log import getLogger
 from vaccine_feed_ingest.utils.normalize import normalize_zip
 
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s %(levelname)s:%(name)s:%(message)s",
-    datefmt="%m/%d/%Y %H:%M:%S",
-)
-logger = logging.getLogger("sc/arcgis/normalize.py")
+logger = getLogger(__file__)
 
 output_dir = pathlib.Path(sys.argv[1])
 input_dir = pathlib.Path(sys.argv[2])

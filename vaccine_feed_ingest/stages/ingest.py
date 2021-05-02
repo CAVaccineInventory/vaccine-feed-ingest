@@ -1,7 +1,6 @@
 """Code for running ingestion stage"""
 
 import json
-import logging
 import pathlib
 import subprocess
 import tempfile
@@ -9,11 +8,13 @@ import tempfile
 import pydantic
 from vaccine_feed_ingest_schema import location
 
+from vaccine_feed_ingest.utils.log import getLogger
+
 from ..utils.validation import VACCINATE_THE_STATES_BOUNDARY
 from . import enrichment, outputs, site
 from .common import STAGE_OUTPUT_SUFFIX, PipelineStage
 
-logger = logging.getLogger("ingest")
+logger = getLogger(__file__)
 
 
 def run_fetch(

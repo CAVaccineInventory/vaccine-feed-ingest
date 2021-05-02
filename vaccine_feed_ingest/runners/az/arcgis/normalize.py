@@ -2,7 +2,7 @@
 # isort: skip_file
 
 import json
-import logging
+from vaccine_feed_ingest.utils.log import getLogger
 import os
 import pathlib
 import re
@@ -14,13 +14,8 @@ from vaccine_feed_ingest_schema import location as schema
 
 from vaccine_feed_ingest.utils.validation import BOUNDING_BOX
 
-# Configure logger
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s %(levelname)s:%(name)s:%(message)s",
-    datefmt="%m/%d/%Y %H:%M:%S",
-)
-logger = logging.getLogger("az/arcgis/normalize.py")
+
+logger = getLogger(__file__)
 
 output_dir = pathlib.Path(sys.argv[1])
 input_dir = pathlib.Path(sys.argv[2])

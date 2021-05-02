@@ -1,14 +1,15 @@
 #!/usr/bin/env python
 
 import json
-import logging
 import pathlib
 import sys
 
 from lxml import etree
 from pykml import parser
 
-logger = logging.getLogger("co/colorado_gov/parse.py")
+from vaccine_feed_ingest.utils.log import getLogger
+
+logger = getLogger(__file__)
 
 
 def parse_point(element):

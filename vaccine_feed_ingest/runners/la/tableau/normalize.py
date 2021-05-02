@@ -2,7 +2,6 @@
 
 import datetime
 import json
-import logging
 import os
 import pathlib
 import re
@@ -11,15 +10,10 @@ from typing import List, Optional
 
 from vaccine_feed_ingest_schema import location as schema
 
+from vaccine_feed_ingest.utils.log import getLogger
 from vaccine_feed_ingest.utils.normalize import provider_id_from_name
 
-# Configure logger
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s %(levelname)s:%(name)s:%(message)s",
-    datefmt="%m/%d/%Y %H:%M:%S",
-)
-logger = logging.getLogger("la/tableau/normalize.py")
+logger = getLogger(__file__)
 
 
 def _get_contacts(site: dict) -> Optional[List[schema.Contact]]:

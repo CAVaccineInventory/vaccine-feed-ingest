@@ -2,13 +2,14 @@
 
 import datetime
 import json
-import logging
 import pathlib
 import sys
 
 from vaccine_feed_ingest_schema import location as schema
 
-logger = logging.getLogger(__name__)
+from vaccine_feed_ingest.utils.log import getLogger
+
+logger = getLogger(__file__)
 
 
 def _get_id(site: dict) -> str:

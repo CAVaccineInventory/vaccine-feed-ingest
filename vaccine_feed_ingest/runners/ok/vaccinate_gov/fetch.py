@@ -7,12 +7,17 @@ import sys
 import requests
 from bs4 import BeautifulSoup
 
+from vaccine_feed_ingest.utils.log import getLogger
+
+logger = getLogger(__file__)
+
 csrf_url = "https://vaccinate.oklahoma.gov/_layout/tokenhtml"
 api_url = "https://vaccinate.oklahoma.gov/EntityList/Map/Search/"
 
 output_dir = sys.argv[1]
 if output_dir is None:
-    print("Must pass an output_dir as first argument")
+    logger.error("Must pass an output_dir as first argument")
+    sys.exit(1)
 
 session = requests.Session()
 

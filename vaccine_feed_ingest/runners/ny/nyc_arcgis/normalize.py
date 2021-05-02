@@ -3,7 +3,7 @@
 
 import datetime
 import json
-import logging
+from vaccine_feed_ingest.utils.log import getLogger
 import os
 import pathlib
 import re
@@ -14,13 +14,8 @@ import pytz
 
 from vaccine_feed_ingest.schema import schema  # noqa: E402
 
-# Configure logger
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s %(levelname)s:%(name)s:%(message)s",
-    datefmt="%m/%d/%Y %H:%M:%S",
-)
-logger = logging.getLogger("ny/nyc_arcgis/normalize.py")
+
+logger = getLogger(__file__)
 
 utc_tz = pytz.timezone("UTC")
 
