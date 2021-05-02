@@ -3,7 +3,7 @@
 
 import datetime
 import json
-import logging
+from vaccine_feed_ingest.utils.log import getLogger
 import pathlib
 import sys
 from typing import Optional
@@ -14,7 +14,7 @@ from vaccine_feed_ingest_schema import location as schema
 from vaccine_feed_ingest.utils.normalize import provider_id_from_name
 from vaccine_feed_ingest.utils.validation import BOUNDING_BOX
 
-logger = logging.getLogger("ct/covidvaccinefinder_gov")
+logger = getLogger(__file__)
 
 
 def _in_bounds(lat_lng: schema.LatLng) -> bool:

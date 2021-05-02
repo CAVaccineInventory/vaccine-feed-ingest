@@ -1,4 +1,3 @@
-import logging
 import pathlib
 from typing import Collection, Dict, Iterable, Iterator, List, Optional
 
@@ -10,12 +9,14 @@ import urllib3
 import us
 from vaccine_feed_ingest_schema import load, location
 
+from vaccine_feed_ingest.utils.log import getLogger
+
 from .. import vial
 from ..utils.match import canonicalize_address, get_full_address
 from . import outputs
 from .common import STAGE_OUTPUT_SUFFIX, PipelineStage
 
-logger = logging.getLogger("load")
+logger = getLogger(__file__)
 
 
 def load_sites_to_vial(

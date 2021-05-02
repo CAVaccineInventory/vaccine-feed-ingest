@@ -4,7 +4,6 @@
 Entry point for running vaccine feed runners
 """
 import datetime
-import logging
 import os
 import pathlib
 from typing import Callable, Collection, Dict, Optional, Sequence
@@ -14,13 +13,6 @@ import dotenv
 import pathy
 
 from .stages import common, ingest, load, site
-
-# Configure logger
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s %(levelname)s:%(name)s:%(message)s",
-    datefmt="%m/%d/%Y %H:%M:%S",
-)
 
 # Collect locations that are within .6 degrees = 66.6 km = 41 mi
 CANDIDATE_DEGREES_DISTANCE = 0.6

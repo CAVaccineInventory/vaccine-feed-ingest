@@ -7,11 +7,16 @@ import sys
 import requests
 from bs4 import BeautifulSoup
 
+from vaccine_feed_ingest.utils.log import getLogger
+
+logger = getLogger(__file__)
+
 jcdh_org_url = "https://www.jcdh.org/"
 
 output_dir = sys.argv[1]
 if output_dir is None:
-    print("Must pass an output_dir as first argument")
+    logger.error("Must pass an output_dir as first argument")
+    sys.exit(1)
 
 session = requests.Session()
 response = session.get(jcdh_org_url)

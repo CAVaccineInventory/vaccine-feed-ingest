@@ -1,22 +1,18 @@
 #!/usr/bin/env python3
 
 import json
-import logging
 from os.path import join
 from typing import Optional, Sequence
 
 import urllib3
 from arcgis import GIS
 
+from vaccine_feed_ingest.utils.log import getLogger
+
 http = urllib3.PoolManager()
 
-# Configure logger
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s %(levelname)s:%(name)s:%(message)s",
-    datefmt="%m/%d/%Y %H:%M:%S",
-)
-logger = logging.getLogger("arcgis")
+
+logger = getLogger(__file__)
 
 
 def fetch_geojson(
@@ -43,7 +39,7 @@ def fetch_geojson(
         results = layer.query(return_all_records=True, out_sr=4326)
         layer_id = layer.properties.id
         file_name = f"{service_item_id}_{layer_id}.json"
-        print(f"Saving {layer.properties.name} layer to {file_name}")
+        logger.info(f"Saving {layer.properties.name} layer to {file_name}")
         results.save(output_dir, file_name)
 
 
@@ -118,7 +114,7 @@ def get_results(
 
     output_file = join(output_dir, f"{offset}.json")
     with open(output_file, "wb") as fh:
-        print(f"Writing {output_file}")
+        logger.info(f"Writing {output_file}")
         fh.write(r.data)
 
 
@@ -128,7 +124,7 @@ def fetch(
     """Fetch ArcGIS features in chunks of batch_size"""
 
     count = get_count(query_url)
-    print(f"Found {count} results")
+    logger.info(f"Found {count} results")
 
     for offset in range(0, count, batch_size):
         get_results(query_url, offset, batch_size, output_dir, format)
