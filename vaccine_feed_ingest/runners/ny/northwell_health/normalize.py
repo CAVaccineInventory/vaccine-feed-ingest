@@ -69,7 +69,7 @@ def _get_contacts(site: dict) -> List[location.Contact]:
     ret = []
     if "program_url" in site and site["program_url"]:
         program_url = str(site["program_url"])
-        ret.append(location.Contact(website=program_url))
+        ret.append(location.Contact(contact_type="booking", website=program_url))
     return ret
 
 
