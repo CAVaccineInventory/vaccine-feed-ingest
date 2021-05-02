@@ -4,6 +4,7 @@ import json
 import pathlib
 import subprocess
 import tempfile
+from subprocess import CalledProcessError
 
 import pydantic
 from vaccine_feed_ingest_schema import location
@@ -22,6 +23,7 @@ def run_fetch(
     output_dir: pathlib.Path,
     timestamp: str,
     dry_run: bool = False,
+    fail_on_runner_error: bool = True,
 ) -> bool:
     fetch_path, yml_path = site.resolve_executable(site_dir, PipelineStage.FETCH)
     if not fetch_path:
@@ -47,14 +49,21 @@ def run_fetch(
             fetch_output_dir,
         )
 
-        subprocess.run(
-            [str(fetch_path), str(fetch_output_dir), str(yml_path)], check=True
-        )
+        try:
+            subprocess.run(
+                [str(fetch_path), str(fetch_output_dir), str(yml_path)], check=True
+            )
+        except CalledProcessError as e:
+            if fail_on_runner_error:
+                raise e
+            logger.error("Subprocess errored, stage will be skipped: %s", e)
+            return False
 
         if not outputs.data_exists(fetch_output_dir):
-            logger.warning(
-                "%s for %s returned no data files.", fetch_path.name, site_dir.name
-            )
+            msg = f"{fetch_path.name} for {site_dir.name} returned no data files."
+            if fail_on_runner_error:
+                raise NotImplementedError(msg)
+            logger.warning(msg)
             return False
 
         if not dry_run:
@@ -79,6 +88,7 @@ def run_parse(
     timestamp: str,
     validate: bool = True,
     dry_run: bool = False,
+    fail_on_runner_error: bool = True,
 ) -> bool:
     parse_path, yml_path = site.resolve_executable(site_dir, PipelineStage.PARSE)
     if not parse_path:
@@ -124,34 +134,37 @@ def run_parse(
             parse_output_dir,
         )
 
-        subprocess.run(
-            [
-                str(parse_path),
-                str(parse_output_dir),
-                str(parse_input_dir),
-                str(yml_path),
-            ],
-            check=True,
-        )
+        try:
+            subprocess.run(
+                [
+                    str(parse_path),
+                    str(parse_output_dir),
+                    str(parse_input_dir),
+                    str(yml_path),
+                ],
+                check=True,
+            )
+        except CalledProcessError as e:
+            if fail_on_runner_error:
+                raise e
+            logger.error("Subprocess errored, stage will be skipped: %s", e)
+            return False
 
         if not outputs.data_exists(
             parse_output_dir, suffix=STAGE_OUTPUT_SUFFIX[PipelineStage.PARSE]
         ):
-            logger.warning(
-                "%s for %s returned no data files with expected extension %s.",
-                parse_path.name,
-                site_dir.name,
-                STAGE_OUTPUT_SUFFIX[PipelineStage.PARSE],
-            )
+            msg = f"{parse_path.name} for {site_dir.name} returned no data files with expected extension {STAGE_OUTPUT_SUFFIX[PipelineStage.PARSE]}."
+            if fail_on_runner_error:
+                raise NotImplementedError(msg)
+            logger.warning(msg)
             return False
 
         if validate:
             if not _validate_parsed(parse_output_dir):
-                logger.warning(
-                    "%s for %s returned invalid ndjson files.",
-                    parse_path.name,
-                    site_dir.name,
-                )
+                msg = f"{parse_path.name} for {site_dir.name} returned invalid ndjson files."
+                if fail_on_runner_error:
+                    raise TypeError(msg)
+                logger.warning(msg)
                 return False
 
         if not dry_run:
@@ -176,6 +189,7 @@ def run_normalize(
     timestamp: str,
     validate: bool = True,
     dry_run: bool = False,
+    fail_on_runner_error: bool = True,
 ) -> bool:
     normalize_path = site.find_executeable(site_dir, PipelineStage.NORMALIZE)
     if not normalize_path:
@@ -222,29 +236,32 @@ def run_normalize(
             normalize_output_dir,
         )
 
-        subprocess.run(
-            [str(normalize_path), normalize_output_dir, normalize_input_dir],
-            check=True,
-        )
+        try:
+            subprocess.run(
+                [str(normalize_path), normalize_output_dir, normalize_input_dir],
+                check=True,
+            )
+        except CalledProcessError as e:
+            if fail_on_runner_error:
+                raise e
+            logger.error("Subprocess errored, stage will be skipped: %s", e)
+            return False
 
         if not outputs.data_exists(
             normalize_output_dir, suffix=STAGE_OUTPUT_SUFFIX[PipelineStage.NORMALIZE]
         ):
-            logger.warning(
-                "%s for %s returned no data files with expected extension %s.",
-                normalize_path.name,
-                site_dir.name,
-                STAGE_OUTPUT_SUFFIX[PipelineStage.NORMALIZE],
-            )
+            msg = f"{normalize_path.name} for {site_dir.name} returned no data files with expected extension {STAGE_OUTPUT_SUFFIX[PipelineStage.NORMALIZE]}."
+            if fail_on_runner_error:
+                raise NotImplementedError(msg)
+            logger.warning(msg)
             return False
 
         if validate:
             if not _validate_normalized(normalize_output_dir):
-                logger.warning(
-                    "%s for %s returned invalid source location ndjson files.",
-                    normalize_path.name,
-                    site_dir.name,
-                )
+                msg = f"{normalize_path.name} for {site_dir.name} returned invalid source location ndjson files."
+                if fail_on_runner_error:
+                    raise TypeError(msg)
+                logger.warning(msg)
                 return False
 
         if not dry_run:
