@@ -38,6 +38,7 @@ TableauScraper = "^0.1.11"
 lxml = "^4.6.3"
 pykml = "^0.2.0"
 html5lib = "^1.1"
+url-normalize = "^1.4.3"
 
 [tool.poetry.dev-dependencies]
 tox = "^3.23.0"
