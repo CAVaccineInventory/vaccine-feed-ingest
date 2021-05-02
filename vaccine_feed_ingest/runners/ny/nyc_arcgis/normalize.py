@@ -11,8 +11,7 @@ import sys
 from typing import List, Optional
 
 import pytz
-
-from vaccine_feed_ingest.schema import schema  # noqa: E402
+from vaccine_feed_ingest_schema import location as schema
 
 
 logger = getLogger(__file__)
@@ -22,6 +21,7 @@ utc_tz = pytz.timezone("UTC")
 
 def _get_contacts(site: dict) -> Optional[List[schema.Contact]]:
     contacts = []
+    website = site["attributes"]["Website"]
 
     if site["attributes"]["Phone"] and re.match(
         r"^\(\d{3}\) \d{3}-\d{4}$", site["attributes"]["Phone"]
@@ -30,12 +30,15 @@ def _get_contacts(site: dict) -> Optional[List[schema.Contact]]:
             schema.Contact(contact_type="general", phone=site["attributes"]["Phone"])
         )
 
-    if site["attributes"]["Website"]:
-        contacts.append(
-            schema.Contact(
-                contact_type="general", website=site["attributes"]["Website"]
+    if website:
+        if "@" in website:
+            contacts.append(schema.Contact(contact_type="general", email=website))
+        else:
+            contacts.append(
+                schema.Contact(
+                    contact_type="general", website=site["attributes"]["Website"]
+                )
             )
-        )
 
     if len(contacts) > 0:
         return contacts
@@ -57,14 +60,33 @@ def _get_opening_hours(site: dict) -> Optional[List[schema.OpenHour]]:
     for day in weekdays:
         open_time = site["attributes"][f"HoursStart_{day}"]
         close_time = site["attributes"][f"ClosingHour_{day}"]
+
         if open_time != -1 and close_time != -1:
-            open_time = f"{open_time:02}"
-            close_time = f"{close_time:02}"
+            if close_time == 2400:
+                close_time = 2359
+            if open_time == 2400:
+                open_time = 0000
+            if close_time < open_time:
+                close_time += 1200
+            # at this point, we'd be guessing. they could be flipped, could be an error, who knows.
+            if close_time < open_time or close_time > 2400 or open_time > 2400:
+                continue
+            open_time = str(open_time)
+            close_time = str(close_time)
+
+            while len(open_time) <= 3:
+                open_time = "0" + open_time
+            while len(close_time) <= 3:
+                close_time = "0" + close_time
+
+            opens = f"{open_time[0:2]}:{open_time[2:4]}"
+            closes = f"{close_time[0:2]}:{close_time[2:4]}"
+
             hours.append(
                 schema.OpenHour(
                     day=day.lower(),
-                    open=f"{open_time[0:2]}:{open_time[2:4]}",
-                    closes=f"{close_time[0:2]}:{close_time[2:4]}",
+                    opens=opens,
+                    closes=closes,
                 )
             )
 
