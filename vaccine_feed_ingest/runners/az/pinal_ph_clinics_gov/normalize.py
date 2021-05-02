@@ -7,19 +7,15 @@
 
 import datetime
 import json
-import logging
 import pathlib
 import sys
 from typing import List, Optional
 
 from vaccine_feed_ingest_schema import location as schema
 
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s %(levelname)s:%(name)s:%(message)s",
-    datefmt="%m/%d/%Y %H:%M:%S",
-)
-logger = logging.getLogger("tn/vaccinate_gov/normalize.py")
+from vaccine_feed_ingest.utils.log import getLogger
+
+logger = getLogger(__file__)
 
 SOURCE_NAME = "az_ph_pinal_clinics_gov"
 
