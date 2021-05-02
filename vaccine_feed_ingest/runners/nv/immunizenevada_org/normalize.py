@@ -41,12 +41,17 @@ def _get_address(address: str) -> schema.Address:
     if len(parts) == 5:
         street2 = parts[1]
 
+    zipc = parts[-1]
+
+    if len(zipc) != 5 and len(zipc) != 10:
+        zipc = None
+
     result = schema.Address(
         street1=parts[0],
         street2=street2,
         city=parts[-3],
-        state=parts[-2],
-        zip=parts[-1],
+        state="NV",
+        zip=zipc,
     )
     return result
 
