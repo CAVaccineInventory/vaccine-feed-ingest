@@ -43,7 +43,7 @@ def _get_id(site: dict) -> str:
     arcgis = "128ead309d754558ad81bccd99188dc9"
     layer = 0
 
-    return f"{runner}_{site_name}:{arcgis}_{layer}:{data_id}"
+    return f"{runner}_{site_name}:{arcgis}_{layer}_{data_id}"
 
 
 def _get_contacts(site: dict) -> Optional[List[schema.Contact]]:
@@ -64,10 +64,17 @@ def _get_contacts(site: dict) -> Optional[List[schema.Contact]]:
 
         for match in matches:
             phone = f"({match.group('area_code')}) {match.group('rest_of_number')}"
-            contacts.append(schema.Contact(phone=phone))
+            contacts.append(schema.Contact(contact_type="general", phone=phone))
 
-    if site["attributes"]["prereg_website"]:
-        contacts.append(schema.Contact(website=site["attributes"]["prereg_website"]))
+    website = site["attributes"]["prereg_website"]
+    if website:
+        # this edge case...
+        website = website.replace("htttp", "http")
+        if "http" not in website:
+            website = "https://" + website
+        website = website.replace(" ", "")
+        print(website)
+        contacts.append(schema.Contact(contact_type="general", website=website))
 
     if len(contacts) > 0:
         return contacts
@@ -146,9 +153,9 @@ def _normalize_hours(
         return []
 
     if processed_hours == "8-4":
-        return [schema.OpenHour(day=day, open="08:00", closes="16:00")]
+        return [schema.OpenHour(day=day, opens="08:00", closes="16:00")]
     if processed_hours == "8:00AM7:00PM":
-        return [schema.OpenHour(day=day, open="08:00", closes="16:00")]
+        return [schema.OpenHour(day=day, opens="08:00", closes="16:00")]
 
     processed_hours = processed_hours.upper().lstrip("BY APPOINTMENT ").strip()
 
@@ -172,7 +179,7 @@ def _normalize_hours(
         return [
             schema.OpenHour(
                 day=day,
-                open=_normalize_time(open_time.strip().upper()),
+                opens=_normalize_time(open_time.strip().upper()),
                 closes=_normalize_time(close_time.strip().upper()),
             )
         ]
