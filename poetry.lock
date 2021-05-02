@@ -1938,7 +1938,7 @@ jellyfish = "0.6.1"
 
 [[package]]
 name = "vaccine-feed-ingest-schema"
-version = "1.2.0"
+version = "1.2.1"
 description = "Normalized data schema for the output of the vaccine-feed-ingest pipeline."
 category = "main"
 optional = false
@@ -2043,7 +2043,7 @@ test = ["pytest", "pytest-runner"]
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.9"
-content-hash = "7b9432f2b49cfa7461c8bee6d55125efea6884e03ebfefba0d6472ac382f9459"
+content-hash = "6c9d2027ab872f5357f697d9600a9f3bc8087a8d8f6ee0344322cd4d861b6f9c"
 
 [metadata.files]
 aiohttp = [
@@ -3342,8 +3342,8 @@ us = [
     {file = "us-2.0.2.tar.gz", hash = "sha256:cb11ad0d43deff3a1c3690c74f0c731cff5b862c73339df2edd91133e1496fbc"},
 ]
 vaccine-feed-ingest-schema = [
-    {file = "vaccine-feed-ingest-schema-1.2.0.tar.gz", hash = "sha256:95f694dec5ca6e163886b6da79d0a852f03442483c7a0ab0ec091053b0bd06bb"},
-    {file = "vaccine_feed_ingest_schema-1.2.0-py3-none-any.whl", hash = "sha256:c4bcd8c54fc74d9e095375386087189399fe3dcf04989b15e36011a4533249b0"},
+    {file = "vaccine-feed-ingest-schema-1.2.1.tar.gz", hash = "sha256:d8540d3c924ec2dd55a3e20eac06b638aa36a66de0fb0eb26b9f82e55c2130d5"},
+    {file = "vaccine_feed_ingest_schema-1.2.1-py3-none-any.whl", hash = "sha256:7becc46f29d957eb33fd43998df9e7ab430316bbc6e582db876f50e2d0f798aa"},
 ]
 virtualenv = [
     {file = "virtualenv-20.4.4-py2.py3-none-any.whl", hash = "sha256:a935126db63128861987a7d5d30e23e8ec045a73840eeccb467c148514e29535"},
