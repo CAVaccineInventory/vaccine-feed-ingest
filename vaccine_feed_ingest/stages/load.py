@@ -1,6 +1,6 @@
 import logging
 import pathlib
-from typing import Iterable, Iterator, List, Optional
+from typing import Collection, Dict, Iterable, Iterator, List, Optional
 
 import jellyfish
 import pydantic
@@ -26,6 +26,8 @@ def load_sites_to_vial(
     vial_apikey: str,
     enable_match: bool,
     enable_create: bool,
+    match_ids: Optional[Dict[str, str]],
+    create_ids: Optional[Collection[str]],
     candidate_distance: float,
 ) -> None:
     """Load list of sites to vial"""
@@ -45,6 +47,8 @@ def load_sites_to_vial(
                 locations=locations,
                 enable_match=enable_match,
                 enable_create=enable_create,
+                match_ids=match_ids,
+                create_ids=create_ids,
                 candidate_distance=candidate_distance,
             )
 
@@ -69,6 +73,8 @@ def run_load_to_vial(
     locations: Optional[rtree.index.Index],
     enable_match: bool = True,
     enable_create: bool = False,
+    match_ids: Optional[Dict[str, str]] = None,
+    create_ids: Optional[Collection[str]] = None,
     candidate_distance: float = 0.6,
 ) -> Optional[List[load.ImportSourceLocation]]:
     """Load source to vial source locations"""
@@ -107,7 +113,16 @@ def run_load_to_vial(
                     continue
 
                 match_action = None
-                if (enable_match or enable_create) and locations is not None:
+                if match_ids and normalized_location.id in match_ids:
+                    match_action = load.ImportMatchAction(
+                        action="existing",
+                        id=match_ids[normalized_location.id],
+                    )
+
+                elif create_ids and normalized_location.id in create_ids:
+                    match_action = load.ImportMatchAction(action="new")
+
+                elif (enable_match or enable_create) and locations is not None:
                     match_action = _match_source_to_existing_locations(
                         normalized_location,
                         locations,
