@@ -61,6 +61,7 @@ def _process_location(
     enriched_location = normalized_location.copy()
 
     _add_provider_from_name(enriched_location)
+    _add_source_link(enriched_location)
 
     return enriched_location
 
@@ -96,3 +97,22 @@ def _add_provider_from_name(loc: location.NormalizedLocation) -> None:
 
     if not loc.parent_organization:
         loc.parent_organization = location.Organization(id=provider_authority)
+
+
+def _add_source_link(loc: location.NormalizedLocation) -> None:
+    """Add source link from source if missing"""
+    if not loc.source:
+        return
+
+    if not loc.source.source or not loc.source.id:
+        return
+
+    existing_links = _generate_link_map(loc)
+
+    if str(loc.source.source) in existing_links:
+        return
+
+    loc.links = [
+        *(loc.links or []),
+        location.Link(authority=loc.source.source, id=loc.source.id),
+    ]
