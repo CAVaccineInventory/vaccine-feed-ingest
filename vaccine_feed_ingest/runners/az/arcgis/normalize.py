@@ -73,7 +73,6 @@ def _get_contacts(site: dict) -> Optional[List[schema.Contact]]:
         if "http" not in website:
             website = "https://" + website
         website = website.replace(" ", "")
-        print(website)
         contacts.append(schema.Contact(contact_type="general", website=website))
 
     if len(contacts) > 0:
