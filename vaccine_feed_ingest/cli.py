@@ -127,14 +127,16 @@ def _match_ids_option() -> Callable:
         "match_ids",
         type=str,
         callback=lambda ctx, param, value: (
-            dict(
-                [
-                    tuple([v.strip() for v in pair.split("=", maxsplit=1)])
+            {
+                key: value
+                for key, value in [
+                    [v.strip() for v in pair.split("=", maxsplit=1)]
                     for pair in [item.strip() for item in value.split(",") if item]
-                    if pair and '=' in pair
+                    if pair and "=" in pair
                 ]
-            )
-            if value else None
+            }
+            if value
+            else None
         ),
     )
 
@@ -145,8 +147,7 @@ def _create_ids_option() -> Callable:
         "create_ids",
         type=str,
         callback=lambda ctx, param, value: (
-            [item.strip() for item in value.split(",")]
-            if value else None
+            [item.strip() for item in value.split(",")] if value else None
         ),
     )
 
