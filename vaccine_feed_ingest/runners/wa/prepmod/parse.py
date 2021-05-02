@@ -2,6 +2,7 @@
 
 import json
 import pathlib
+import re
 import sys
 
 from bs4 import BeautifulSoup
@@ -26,6 +27,9 @@ def find_data_item(parent, label, offset):
         return ""
 
 
+EXTRACT_CLINIC_ID = re.compile(r".*clinic(\d*)\.png")
+
+
 with output_file.open("w") as fout:
     for filename in input_filenames:
         text = open(filename, "r").read()
@@ -43,9 +47,11 @@ with output_file.open("w") as fout:
             hours = find_data_item(parent, "Clinic Hours", -1)
             available_count = find_data_item(parent, "Available Appointments", -1) or 0
             special = find_data_item(parent, "Special Instructions", -1)
-            clinic_id = (
-                parent.find("a")["href"].split("=")[1] if parent.find("a") else None
+
+            find_clinic_id = EXTRACT_CLINIC_ID.match(
+                parent.find_next_sibling("div", "map-image").find("img")["src"]
             )
+            clinic_id = find_clinic_id.group(1)
             data = {
                 "name": name,
                 "date": date,
