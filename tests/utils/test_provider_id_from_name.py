@@ -1,5 +1,6 @@
 from vaccine_feed_ingest.utils.normalize import provider_id_from_name
 
+
 def test_provider_id_from_name():
     # positive cases
     _test_provider("Rite Aid Pharmacy 3897", "rite_aid", "3897")
@@ -28,6 +29,7 @@ def test_provider_id_from_name():
     # negative cases
     assert provider_id_from_name("garbage") is None
     assert provider_id_from_name("Walblue 232555") is None
+
 
 def _test_provider(input_str, expected_provider_name, expected_provider_id):
     actual_provider_name, actual_provider_id = provider_id_from_name(input_str)
