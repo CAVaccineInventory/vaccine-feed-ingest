@@ -311,41 +311,26 @@ def normalize_providers_sites(
                 fout.write("\n")
 
 
-"""
 def normalize_federal_partners_sites(
     in_filepath: pathlib.Path,
     out_filepath: pathlib.Path,
     timestamp: str
 ) -> None:
+
     def _get_normalized_site(site: dict, timestamp: str) -> location.NormalizedLocation:
         return location.NormalizedLocation(
-            id=_get_id(site),
-            name=site["attributes"]["loc_name"],
+            id=_get_id(site["attributes"]["objectId"], "8f23e1c3b5c54198ab60d2f729cb787d"),
+            name=site["attributes"]["f2"],
             address=location.Address(
-                street1=site["attributes"]["addr1"],
-                street2=site["attributes"]["addr2"],
-                city=site["attributes"]["city"],
-                state="AZ",
-                zip=site["attributes"]["zip"],
+                street1=site["attributes"]["f3"],
+                city=site["attributes"]["f4"].title(),
+                state=STATE,
             ),
             location=_get_lat_lng(site),
-            contact=_get_contacts(site),
-            languages=_get_languages(site),
-            opening_dates=_get_opening_dates(site),
-            opening_hours=_get_opening_hours(site),
-            availability=None,
-            inventory=_get_inventory(site),
-            access=None,
-            parent_organization=None,
-            links=None,
-            notes=[site["attributes"]["prereg_comments"]]
-            if site["attributes"]["prereg_comments"]
-            else None,
-            active=None,
             source=location.Source(
-                source="az_arcgis",
-                id=site["attributes"]["globalid"],
-                fetched_from_uri=FETCHED_FROM_URI,  # noqa: E501
+                source=SOURCE_NAME,
+                id=site["attributes"]["objectId"],
+                fetched_from_uri=FETCHED_FROM_URI,
                 fetched_at=timestamp,
                 data=site,
             ),
@@ -364,6 +349,7 @@ def normalize_federal_partners_sites(
                 fout.write("\n")
 
 
+"""
 def normalize_appt_only_2_sites(
     in_filepath: pathlib.Path,
     out_filepath: pathlib.Path,
@@ -488,11 +474,11 @@ def main():
         )
 
         if layer_id == "51d4c310f1fe4d83a63e2b47acb77898":
-            print("check the file above\n\n\n")
             normalize_providers_sites(in_filepath, out_filepath, timestamp)
-        """
         elif layer_id == "8f23e1c3b5c54198ab60d2f729cb787d":
             normalize_federal_partners_sites(in_filepath, out_filepath, timestamp)
+            print("check the file above\n\n\n")
+        """
         elif layer_id == "d1a799c7f98e41fb8c6b4386ca6fe014":
             normalize_appt_only_2_sites(in_filepath, out_filepath, timestamp)
         elif layer_id == "8537322b652841b4a36b7ddb7bc3b204":
