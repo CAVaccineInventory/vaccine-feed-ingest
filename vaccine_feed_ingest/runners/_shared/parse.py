@@ -124,38 +124,38 @@ elif config["parser"] == "prepmod":
         soup = BeautifulSoup(text, "html.parser")
 
         # classes only used on titles for search results
-        for title in soup.select(".text-xl.font-black"):
-            parent = title.parent
-            combined_name = title.get_text().strip()
-            name, date = combined_name.rsplit(" on ", 1)
-            address = title.find_next_sibling("p").get_text().strip()
-            vaccines = _prepmod_find_data_item(parent, "Vaccinations offered", -2)
-            ages = _prepmod_find_data_item(parent, "Age groups served", -1)
-            additional_info = _prepmod_find_data_item(
-                parent, "Additional Information", -1
-            )
-            hours = _prepmod_find_data_item(parent, "Clinic Hours", -1)
-            available_count = (
-                _prepmod_find_data_item(parent, "Available Appointments", -1) or 0
-            )
-            special = _prepmod_find_data_item(parent, "Special Instructions", -1)
-            find_clinic_id = EXTRACT_CLINIC_ID.match(
-                parent.find_next_sibling("div", "map-image").find("img")["src"]
-            )
-            clinic_id = find_clinic_id.group(1)
-            data = {
-                "name": name,
-                "date": date,
-                "address": address,
-                "vaccines": vaccines,
-                "ages": ages,
-                "info": additional_info,
-                "hours": hours,
-                "available": available_count,
-                "special": special,
-                "clinic_id": clinic_id,
-            }
-            with open(out_filepath, "w") as fout:
+        with open(out_filepath, "w") as fout:
+            for title in soup.select(".text-xl.font-black"):
+                parent = title.parent
+                combined_name = title.get_text().strip()
+                name, date = combined_name.rsplit(" on ", 1)
+                address = title.find_next_sibling("p").get_text().strip()
+                vaccines = _prepmod_find_data_item(parent, "Vaccinations offered", -2)
+                ages = _prepmod_find_data_item(parent, "Age groups served", -1)
+                additional_info = _prepmod_find_data_item(
+                    parent, "Additional Information", -1
+                )
+                hours = _prepmod_find_data_item(parent, "Clinic Hours", -1)
+                available_count = (
+                    _prepmod_find_data_item(parent, "Available Appointments", -1) or 0
+                )
+                special = _prepmod_find_data_item(parent, "Special Instructions", -1)
+                find_clinic_id = EXTRACT_CLINIC_ID.match(
+                    parent.find_next_sibling("div", "map-image").find("img")["src"]
+                )
+                clinic_id = find_clinic_id.group(1)
+                data = {
+                    "name": name,
+                    "date": date,
+                    "address": address,
+                    "vaccines": vaccines,
+                    "ages": ages,
+                    "info": additional_info,
+                    "hours": hours,
+                    "available": available_count,
+                    "special": special,
+                    "clinic_id": clinic_id,
+                }
                 json.dump(data, fout)
                 fout.write("\n")
 else:
