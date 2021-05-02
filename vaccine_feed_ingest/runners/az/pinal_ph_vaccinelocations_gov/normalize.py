@@ -37,8 +37,8 @@ def _get_address(site: dict) -> Optional[schema.Address]:
         return None
 
     address = site["address"]
-    address = re.sub("\s+", " ", address)
-    address = re.sub("\s*,+", ",", address)
+    address = re.sub("\\s+", " ", address)
+    address = re.sub("\\s*,+", ",", address)
     address = address.strip()
 
     # pull a zip code off the end
