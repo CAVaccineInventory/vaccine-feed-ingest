@@ -427,18 +427,9 @@ for in_filepath in json_filepaths:
             for site_json in fin:
                 parsed_site = json.loads(site_json)
 
-                try:
-                    normalized_site = _get_normalized_location(
-                        parsed_site, parsed_at_timestamp
-                    )
-                except Exception as e:
-                    import pprint
-
-                    pprint.pprint(parsed_site)
-                    print(e)
-                    import pdb
-
-                    pdb.set_trace()
+                normalized_site = _get_normalized_location(
+                    parsed_site, parsed_at_timestamp
+                )
 
                 json.dump(normalized_site.dict(), fout)
                 fout.write("\n")
