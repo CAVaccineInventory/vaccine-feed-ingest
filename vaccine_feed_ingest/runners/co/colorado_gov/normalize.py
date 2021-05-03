@@ -234,23 +234,16 @@ def _get_notes(site: dict) -> Optional[List[str]]:
     return None
 
 
-def _get_normalized_location(
-    site: dict, timestamp: str
-) -> Optional[schema.NormalizedLocation]:
+def _get_normalized_location(site: dict, timestamp: str) -> schema.NormalizedLocation:
     source = "co_colorado_gov"
     id = _get_id(site)
-
-    contacts = _get_contacts(site)
-    if not contacts:
-        logger.warning("No contacts for %s %s", site["name"], site["address"])
-        return None
 
     return schema.NormalizedLocation(
         id=f"{source}:{id}",
         name=site["name"],
         address=_get_address(site),
         location=_get_location(site),
-        contact=contacts,
+        contact=_get_contacts(site),
         inventory=_get_inventory(site),
         parent_organization=_get_parent_organization(site),
         links=_get_links(site),
@@ -291,6 +284,5 @@ for in_filepath in json_filepaths:
                     parsed_site, parsed_at_timestamp
                 )
 
-                if normalized_site:
-                    json.dump(normalized_site.dict(), fout)
-                    fout.write("\n")
+                json.dump(normalized_site.dict(), fout)
+                fout.write("\n")
