@@ -2,7 +2,6 @@
 
 import datetime
 import json
-import logging
 import os
 import pathlib
 import re
@@ -10,8 +9,9 @@ import sys
 from typing import List, Optional, Tuple
 
 from pydantic import ValidationError
-from vaccine_feed_ingest.utils.log import getLogger
 from vaccine_feed_ingest_schema import location as schema
+
+from vaccine_feed_ingest.utils.log import getLogger
 
 ALL_DAYS = (
     schema.DayOfWeek.SUNDAY,
@@ -368,14 +368,16 @@ def _get_notes(site: dict) -> Optional[List[str]]:
 
     # some locations mention limited number of walk-ups, which we can't capture
     # in the schema, so we bring it through as a note.
-    if re.search("limited (number of )?walk-up",
-                 site["attributes"]["WalkUpHours"] or "",
-                 re.I):
+    if re.search(
+        "limited (number of )?walk-up", site["attributes"]["WalkUpHours"] or "", re.I
+    ):
         notes.append(site["attributes"]["WalkUpHours"])
 
     # some locations have hours that can be read multiple ways in english, so
     # we're not parsing them.  bring them along as a note.
-    if re.search("covid (testing|hotline)", site["attributes"]["operationalhours"] or "", re.I):
+    if re.search(
+        "covid (testing|hotline)", site["attributes"]["operationalhours"] or "", re.I
+    ):
         notes.append(site["attributes"]["operationalhours"])
 
     return notes or None
