@@ -10,16 +10,17 @@ import sys
 from typing import List, Optional, Tuple
 
 from pydantic import ValidationError
+from vaccine_feed_ingest.utils.log import getLogger
 from vaccine_feed_ingest_schema import location as schema
 
 ALL_DAYS = (
-    "sunday",
-    "monday",
-    "tuesday",
-    "wednesday",
-    "thursday",
-    "friday",
-    "saturday",
+    schema.DayOfWeek.SUNDAY,
+    schema.DayOfWeek.MONDAY,
+    schema.DayOfWeek.TUESDAY,
+    schema.DayOfWeek.WEDNESDAY,
+    schema.DayOfWeek.THURSDAY,
+    schema.DayOfWeek.FRIDAY,
+    schema.DayOfWeek.SATURDAY,
 )
 DAY_OF_WEEK = r"(sun|mon|tues|wed|thurs|fri|sat)\.?"
 AM_PM = r"(a|p)\.?m\.?"
@@ -27,12 +28,7 @@ TIME = r"\d{1,2}(:\d{1,2})?\s*" + AM_PM
 TIME_RANGE = TIME + r"\s*(-|to)\s*" + TIME
 
 # Configure logger
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s %(levelname)s:%(name)s:%(message)s",
-    datefmt="%m/%d/%Y %H:%M:%S",
-)
-logger = logging.getLogger("md/arcgis/normalize.py")
+logger = getLogger(__file__)
 
 
 def _get_access(site: dict) -> Optional[schema.Access]:
@@ -84,7 +80,7 @@ def _get_address(site: dict) -> schema.Address:
     return schema.Address(
         street1=match.group("street"),
         city=match.group("city"),
-        state="MD",
+        state=schema.State.MARYLAND,
         zip=match.group("zip"),
     )
 
@@ -253,14 +249,14 @@ def _normalize_hours(raw: str) -> Tuple[str, str]:
 
 def _normalize_days(raw: str) -> List[str]:
     potentials = {
-        "sun": "sunday",
-        "mon": "monday",
-        "tues": "tuesday",
-        "wed": "wednesday",
-        "thur": "thursday",
-        "thurs": "thursday",
-        "fri": "friday",
-        "sat": "saturday",
+        "sun": schema.DayOfWeek.SUNDAY,
+        "mon": schema.DayOfWeek.MONDAY,
+        "tues": schema.DayOfWeek.TUESDAY,
+        "wed": schema.DayOfWeek.WEDNESDAY,
+        "thur": schema.DayOfWeek.THURSDAY,
+        "thurs": schema.DayOfWeek.THURSDAY,
+        "fri": schema.DayOfWeek.FRIDAY,
+        "sat": schema.DayOfWeek.SATURDAY,
     }
     processed = raw.strip().strip(".:,")
     processed = processed.replace(" through ", " - ")
@@ -369,6 +365,18 @@ def _get_notes(site: dict) -> Optional[List[str]]:
     for attr in ("cost_notes", "other_notes"):
         if site["attributes"][attr]:
             notes.append(site["attributes"][attr])
+
+    # some locations mention limited number of walk-ups, which we can't capture
+    # in the schema, so we bring it through as a note.
+    if re.search("limited (number of )?walk-up",
+                 site["attributes"]["WalkUpHours"] or "",
+                 re.I):
+        notes.append(site["attributes"]["WalkUpHours"])
+
+    # some locations have hours that can be read multiple ways in english, so
+    # we're not parsing them.  bring them along as a note.
+    if re.search("covid (testing|hotline)", site["attributes"]["operationalhours"] or "", re.I):
+        notes.append(site["attributes"]["operationalhours"])
 
     return notes or None
 
