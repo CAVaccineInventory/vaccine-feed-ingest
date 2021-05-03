@@ -9,8 +9,8 @@ import re
 import sys
 from typing import List, Optional, Tuple
 
-from vaccine_feed_ingest.schema import schema  # noqa: E402
-
+from pydantic import ValidationError
+from vaccine_feed_ingest_schema import location as schema
 
 ALL_DAYS = (
     "sunday",
@@ -101,13 +101,13 @@ def _get_id(site: dict) -> str:
     # Could parse these from directory traversal, but do not for now to avoid
     # accidental mutation.
     runner = "md"
-    website = "arcgis"
+    site_name = "arcgis"
 
-    arcgis = site["attributes"]["service_item_id"]
+    service_item = site["attributes"]["service_item_id"]
     layer = site["attributes"]["layer_id"]
     data_id = site["attributes"]["OBJECTID"]
 
-    return f"{runner}:{website}:{arcgis}_{layer}:{data_id}"
+    return f"{runner}_{site_name}:{service_item}_{layer}_{data_id}"
 
 
 def _get_contacts(site: dict) -> Optional[List[schema.Contact]]:
@@ -121,7 +121,12 @@ def _get_contacts(site: dict) -> Optional[List[schema.Contact]]:
     ]
     for attr, field in potentials:
         if site["attributes"][attr]:
-            contacts.append(schema.Contact(**{field: site["attributes"][attr]}))
+            try:
+                contacts.append(schema.Contact(**{field: site["attributes"][attr]}))
+            except ValidationError:
+                logger.exception(
+                    f"Validation error adding Contact '{attr}' = '{site['attributes'][attr]}', skipping"
+                )
     return contacts or None
 
 
@@ -240,7 +245,7 @@ def _normalize_hours(raw: str) -> Tuple[str, str]:
         r"(?P<hour>\d\d?)(:(?P<minute>\d\d))?\s*(?P<am_pm>(a|p)\.?m\.?)", raw
     )
     hour = int(match.group("hour"))
-    if (1 < hour < 11) and (match.group("am_pm").startswith("p")):
+    if (1 <= hour <= 11) and (match.group("am_pm").startswith("p")):
         hour += 12
     minute = int(match.group("minute") or "0")
     return datetime.time(hour, minute).isoformat("minutes")
@@ -343,7 +348,7 @@ def _get_opening_hours(site: dict) -> Optional[List[schema.OpenHour]]:
         if processed == "24 hours":
             all_hours.extend(
                 [
-                    schema.OpenHour(day=d, open="00:00", closes="23:59")
+                    schema.OpenHour(day=d, opens="00:00", closes="23:59")
                     for d in ALL_DAYS
                 ]
             )
@@ -352,7 +357,7 @@ def _get_opening_hours(site: dict) -> Optional[List[schema.OpenHour]]:
         for piece in _pieces(_strip_flavor_text(processed)):
             days, hours = _parse_days_and_hours(piece)
             all_hours.extend(
-                [schema.OpenHour(day=d, open=hours[0], closes=hours[1]) for d in days]
+                [schema.OpenHour(day=d, opens=hours[0], closes=hours[1]) for d in days]
             )
 
     return all_hours or None
@@ -386,10 +391,10 @@ def _get_normalized_location(site: dict, timestamp: str) -> schema.NormalizedLoc
         source=schema.Source(
             data=site,
             fetched_at=timestamp,
-            fetched_from_uri="https://adhsgis.maps.arcgis.com/apps/opsdashboard/index.html#/d677f143334648a1a40b84d94df8e134",  # noqa: E501
-            id=id_,
+            fetched_from_uri=f"https://adhsgis.maps.arcgis.com/apps/opsdashboard/index.html#/{site['attributes']['service_item_id']}",  # noqa: E501
+            id=id_.split(":")[-1],
             published_at=_get_published_at(site),
-            source="arcgis",
+            source="md_arcgis",
         ),
     )
 
@@ -422,9 +427,18 @@ for in_filepath in json_filepaths:
             for site_json in fin:
                 parsed_site = json.loads(site_json)
 
-                normalized_site = _get_normalized_location(
-                    parsed_site, parsed_at_timestamp
-                )
+                try:
+                    normalized_site = _get_normalized_location(
+                        parsed_site, parsed_at_timestamp
+                    )
+                except Exception as e:
+                    import pprint
+
+                    pprint.pprint(parsed_site)
+                    print(e)
+                    import pdb
+
+                    pdb.set_trace()
 
                 json.dump(normalized_site.dict(), fout)
                 fout.write("\n")
