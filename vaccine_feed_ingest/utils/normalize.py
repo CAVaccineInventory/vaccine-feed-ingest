@@ -25,7 +25,7 @@ def provider_id_from_name(
     m = re.search(r"VONS PHARMACY #(\d+)", name, re.I)
     if m:
         return VaccineProvider.VONS, str(int(m.group(1)))
-    m = re.search(r"SAMS PHARMACY 10-(\d+)", name, re.I)
+    m = re.search(r"SAM'?S PHARMACY (?:10-|#\s*)(\d+)", name, re.I)
     if m:
         return VaccineProvider.SAMS, str(int(m.group(1)))
     m = re.search(r"SAV-?ON PHARMACY #\s?(\d+)", name, re.I)
@@ -38,7 +38,7 @@ def provider_id_from_name(
     m = re.search(r"WALMART PHARMACY 10-(\d+)", name, re.I)
     if m:
         return VaccineProvider.WALMART, str(int(m.group(1)))
-    m = re.search(r"WALMART INC, #(\d+)", name, re.I)
+    m = re.search(r"WALMART (?:INC,|PHARMACY) #(\d+)", name, re.I)
     if m:
         return VaccineProvider.WALMART, str(int(m.group(1)))
     m = re.search(r"CVS\s(?:STORE)?(?:PHARMACY)?(?:, INC.?)?\s?#?(\d+)", name, re.I)
@@ -56,7 +56,7 @@ def provider_id_from_name(
     m = re.search(r"BROOKSHIRE PHARMACY #\d+ #(\d+)", name, re.I)
     if m:
         return VaccineProvider.BROOKSHIRE, str(int(m.group(1)))
-    m = re.search(r"COSTCO(?: MARKET)? PHARMACY #(\d+)", name, re.I)
+    m = re.search(r"COSTCO(?: MARKET)? PHARMACY #\s*(\d+)", name, re.I)
     if m:
         return VaccineProvider.COSTCO, str(int(m.group(1)))
     m = re.search(r"COSTCO WHOLESALE CORPORATION #(\d+)", name, re.I)
@@ -134,7 +134,7 @@ def provider_id_from_name(
     m = re.search(r"KAISER PERMANENTE PHARMACY #(\d+)", name, re.I)
     if m:
         return VaccineProvider.KAISER_PERMANENTE, str(int(m.group(1)))
-    m = re.search(r"KING SOOPERS PHARMACY #(\d+)", name, re.I)
+    m = re.search(r"KING SOOPERS PHARMACY #?(\d+)", name, re.I)
     if m:
         return VaccineProvider.KING_SOOPERS, str(int(m.group(1)))
     m = re.search(r"KROGER PHARMACY #?(\d+)", name, re.I)

@@ -19,6 +19,7 @@ def test_provider_id_from_name():
     _test_provider("COSTCO PHARMACY #122", VaccineProvider.COSTCO, "122")
     _test_provider("COSTCO MARKET PHARMACY #122", VaccineProvider.COSTCO, "122")
     _test_provider("Costco Wholesale Corporation #1062", VaccineProvider.COSTCO, "1062")
+    _test_provider("Costco Pharmacy # 1014", VaccineProvider.COSTCO, "1014")
 
     _test_provider("Cvs 104", VaccineProvider.CVS, "104")
     _test_provider("Cvs Store 104", VaccineProvider.CVS, "104")
@@ -85,6 +86,7 @@ def test_provider_id_from_name():
     _test_provider("KAISER PERMANENTE PHARMACY #054", VaccineProvider.KAISER_PERMANENTE, "54")
 
     _test_provider("King Soopers Pharmacy #62000121", VaccineProvider.KING_SOOPERS, "62000121")
+    _test_provider("King Soopers Pharmacy 62000001", VaccineProvider.KING_SOOPERS, "62000001")
 
     _test_provider("Kroger Pharmacy #01100330", VaccineProvider.KROGER, "1100330")
     _test_provider("Kroger Pharmacy 743", VaccineProvider.KROGER, "743")
@@ -98,6 +100,8 @@ def test_provider_id_from_name():
     _test_provider("Safeway #85", VaccineProvider.SAFEWAY, "85")
     _test_provider("Safeway PHARMACY #85", VaccineProvider.SAFEWAY, "85")
 
+    _test_provider("Sam's Pharmacy #6549", VaccineProvider.SAMS, "6549")
+
     _test_provider("Vons Pharmacy #675", VaccineProvider.VONS, "675")
 
     _test_provider("Walgreens #24295", VaccineProvider.WALGREENS, "24295")
@@ -107,6 +111,7 @@ def test_provider_id_from_name():
 
     _test_provider("Walmart Inc, #2509", VaccineProvider.WALMART, "2509")
     _test_provider("Walmart PHARMACY 10-585", VaccineProvider.WALMART, "585")
+    _test_provider("Walmart Pharmacy #1001", VaccineProvider.WALMART, "1001")
 
     # negative cases
     assert provider_id_from_name("garbage") is None
