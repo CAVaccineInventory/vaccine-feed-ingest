@@ -1,11 +1,13 @@
 """Method for enriching location records after that are normalized"""
 import pathlib
+from typing import Dict, Optional
 
 import pydantic
 from vaccine_feed_ingest_schema import location
 
 from vaccine_feed_ingest.utils.log import getLogger
 
+from ..utils import normalize
 from . import outputs
 from .common import STAGE_OUTPUT_SUFFIX, PipelineStage
 
@@ -52,6 +54,45 @@ def enrich_locations(input_dir: pathlib.Path, output_dir: pathlib.Path) -> bool:
     return True
 
 
-def _process_location(loc: location.NormalizedLocation) -> location.NormalizedLocation:
-    """Run throuch all of the methods to enrich the location"""
-    return loc
+def _process_location(
+    normalized_location: location.NormalizedLocation,
+) -> Optional[location.NormalizedLocation]:
+    """Run through all of the methods to enrich the location"""
+    enriched_location = normalized_location.copy()
+
+    _add_provider_from_name(enriched_location)
+
+    return enriched_location
+
+
+def _generate_link_map(loc: location.NormalizedLocation) -> Dict[str, str]:
+    """Return a map of authority to id value"""
+    return {
+        str(link.authority): link.id
+        for link in loc.links or []
+        if link.authority and link.id
+    }
+
+
+def _add_provider_from_name(loc: location.NormalizedLocation) -> None:
+    """Add provider link from name if missing"""
+    if not loc.name:
+        return
+
+    provider_tuple = normalize.provider_id_from_name(loc.name)
+
+    if not provider_tuple:
+        return
+
+    provider_authority, provider_id = provider_tuple
+
+    existing_links = _generate_link_map(loc)
+
+    if str(provider_authority) not in existing_links:
+        loc.links = [
+            *(loc.links or []),
+            location.Link(authority=provider_authority, id=provider_id),
+        ]
+
+    if not loc.parent_organization:
+        loc.parent_organization = location.Organization(id=provider_authority)
