@@ -244,7 +244,12 @@ def run_normalize(
                     RUNNERS_DIR.joinpath("_shared"), PipelineStage.NORMALIZE
                 )
                 subprocess.run(
-                    [str(normalize_path), normalize_output_dir, normalize_input_dir, str(yml_path)],
+                    [
+                        str(normalize_path),
+                        normalize_output_dir,
+                        normalize_input_dir,
+                        str(yml_path),
+                    ],
                     check=True,
                 )
             else:
