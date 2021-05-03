@@ -1,48 +1,5 @@
 #!/usr/bin/env python3
 # isort: skip_file
-"""
-Notes to reviewers:
-    - There a four different input file structures. site_attribute_lookup is
-      is a dictionary to map the attributes within these different file stuctures
-      to something more unified.
-{
-  "id": "45748",
-  "name": "Rite Aid #05952",
-  "address": {
-    "street1": "1991 Mountain Boulevard",
-    "city": "Oakland",
-    "state": "CA",
-    "zip": "94611",
-  },
-  "location": {
-    "latitude": 37.8273167,
-    "longitude": -122.2105179,
-  },
-  "contact": [
-    {
-      "contact_type": "booking",
-      "website": "https://www.riteaid.com/pharmacy/covid-qualifier",
-    },
-    {
-      "contact_type": "general",
-      "phone": "(510) 339-2215",
-      "website": "https://www.riteaid.com/locations/ca/oakland/1991-mountain-boulevard.html",
-    },
-  ],
-  "availability": {
-    "appointments": true,
-    "drop_in": false,
-  },
-}
-
-    - Source layer with corresponding IDs
-        layer: Providers, id: 51d4c310f1fe4d83a63e2b47acb77898
-        layer: FederalPartners, id: 8f23e1c3b5c54198ab60d2f729cb787d
-        layer: ApptOnly2, id: d1a799c7f98e41fb8c6b4386ca6fe014
-        layer: DriveThruWalkIn, id: 8537322b652841b4a36b7ddb7bc3b204
-"""
-
-
 import json
 import logging
 import os
@@ -68,7 +25,10 @@ SOURCE_NAME = "al_arcgis"
 FETCHED_FROM_URI = "https://alpublichealth.maps.arcgis.com/apps/opsdashboard/index.html#/2b4627aa70c5450791a7cf439ed047ec"
 
 
-def _get_id(data_id: str, layer_id: str,) -> str:
+def _get_id(
+    data_id: str,
+    layer_id: str,
+) -> str:
     return f"al_arcgis:{layer_id}_0_{data_id}"
 
 
@@ -86,14 +46,13 @@ def _get_lat_lng(site: dict) -> Optional[location.LatLng]:
 
 
 def normalize_providers_sites(
-    in_filepath: pathlib.Path,
-    out_filepath: pathlib.Path,
-    timestamp: str
+    in_filepath: pathlib.Path, out_filepath: pathlib.Path, timestamp: str
 ) -> None:
-
     def _get_normalized_site(site: dict, timestamp: str) -> location.NormalizedLocation:
         return location.NormalizedLocation(
-            id=_get_id(site["attributes"]["OBJECTID"], "51d4c310f1fe4d83a63e2b47acb77898"),
+            id=_get_id(
+                site["attributes"]["OBJECTID"], "51d4c310f1fe4d83a63e2b47acb77898"
+            ),
             name=site["attributes"]["SITE_NAME"].title(),
             address=location.Address(
                 street1=site["attributes"]["Match_addr"],
@@ -117,23 +76,20 @@ def normalize_providers_sites(
             for entry in fin:
                 site = json.loads(entry)
 
-                normalized_site = _get_normalized_site(
-                    site, timestamp
-                )
+                normalized_site = _get_normalized_site(site, timestamp)
 
                 json.dump(normalized_site.dict(), fout)
                 fout.write("\n")
 
 
 def normalize_federal_partners_sites(
-    in_filepath: pathlib.Path,
-    out_filepath: pathlib.Path,
-    timestamp: str
+    in_filepath: pathlib.Path, out_filepath: pathlib.Path, timestamp: str
 ) -> None:
-
     def _get_normalized_site(site: dict, timestamp: str) -> location.NormalizedLocation:
         return location.NormalizedLocation(
-            id=_get_id(site["attributes"]["objectId"], "8f23e1c3b5c54198ab60d2f729cb787d"),
+            id=_get_id(
+                site["attributes"]["objectId"], "8f23e1c3b5c54198ab60d2f729cb787d"
+            ),
             name=site["attributes"]["f2"],
             address=location.Address(
                 street1=site["attributes"]["f3"],
@@ -156,36 +112,29 @@ def normalize_federal_partners_sites(
             for entry in fin:
                 site = json.loads(entry)
 
-                normalized_site = _get_normalized_site(
-                    site, timestamp
-                )
+                normalized_site = _get_normalized_site(site, timestamp)
 
                 json.dump(normalized_site.dict(), fout)
                 fout.write("\n")
 
 
 def normalize_appt_only_2_sites(
-    in_filepath: pathlib.Path,
-    out_filepath: pathlib.Path,
-    timestamp: str
+    in_filepath: pathlib.Path, out_filepath: pathlib.Path, timestamp: str
 ) -> None:
     def _get_contact(site: dict) -> Optional[List[location.Contact]]:
         click_here_field = site["attributes"]["f6"]
-        regex = re.search("(?P<url>https?://[^\s'\"]+)", click_here_field)
+        regex = re.search(r"(?P<url>https?://[^\s'\"]+)", click_here_field)
         if regex:
             url = regex.group("url")
-            return [
-                location.Contact(
-                    contact_type="booking",
-                    website=url
-                )
-            ]
+            return [location.Contact(contact_type="booking", website=url)]
         else:
             return None
 
     def _get_normalized_site(site: dict, timestamp: str) -> location.NormalizedLocation:
         return location.NormalizedLocation(
-            id=_get_id(site["attributes"]["objectId"], "d1a799c7f98e41fb8c6b4386ca6fe014"),
+            id=_get_id(
+                site["attributes"]["objectId"], "d1a799c7f98e41fb8c6b4386ca6fe014"
+            ),
             name=site["attributes"]["f3"],
             address=None,
             location=_get_lat_lng(site),
@@ -194,6 +143,7 @@ def normalize_appt_only_2_sites(
                 drop_in=False,
                 appointments=True,
             ),
+            notes=[site["attributes"]["f5"]],
             source=location.Source(
                 source=SOURCE_NAME,
                 id=site["attributes"]["objectId"],
@@ -208,49 +158,27 @@ def normalize_appt_only_2_sites(
             for entry in fin:
                 site = json.loads(entry)
 
-                normalized_site = _get_normalized_site(
-                    site, timestamp
-                )
+                normalized_site = _get_normalized_site(site, timestamp)
 
                 json.dump(normalized_site.dict(), fout)
                 fout.write("\n")
 
 
-"""
 def normalize_drive_thru_walk_in_sites(
-    in_filepath: pathlib.Path,
-    out_filepath: pathlib.Path,
-    timestamp: str
+    in_filepath: pathlib.Path, out_filepath: pathlib.Path, timestamp: str
 ) -> None:
     def _get_normalized_site(site: dict, timestamp: str) -> location.NormalizedLocation:
         return location.NormalizedLocation(
-            id=_get_id(site),
-            name=site["attributes"]["loc_name"],
-            address=location.Address(
-                street1=site["attributes"]["addr1"],
-                street2=site["attributes"]["addr2"],
-                city=site["attributes"]["city"],
-                state="AZ",
-                zip=site["attributes"]["zip"],
+            id=_get_id(
+                site["attributes"]["objectId"], "8537322b652841b4a36b7ddb7bc3b204"
             ),
+            name=site["attributes"]["f3"],
             location=_get_lat_lng(site),
-            contact=_get_contacts(site),
-            languages=_get_languages(site),
-            opening_dates=_get_opening_dates(site),
-            opening_hours=_get_opening_hours(site),
-            availability=None,
-            inventory=_get_inventory(site),
-            access=None,
-            parent_organization=None,
-            links=None,
-            notes=[site["attributes"]["prereg_comments"]]
-            if site["attributes"]["prereg_comments"]
-            else None,
-            active=None,
+            notes=[site["attributes"]["f9"]],
             source=location.Source(
-                source="az_arcgis",
-                id=site["attributes"]["globalid"],
-                fetched_from_uri="https://adhsgis.maps.arcgis.com/apps/opsdashboard/index.html#/5d636af4d5134a819833b1a3b906e1b6",  # noqa: E501
+                source=SOURCE_NAME,
+                id=site["attributes"]["objectId"],
+                fetched_from_uri=FETCHED_FROM_URI,
                 fetched_at=timestamp,
                 data=site,
             ),
@@ -261,13 +189,10 @@ def normalize_drive_thru_walk_in_sites(
             for entry in fin:
                 site = json.loads(entry)
 
-                normalized_site = _get_normalized_site(
-                    site, timestamp
-                )
+                normalized_site = _get_normalized_site(site, timestamp)
 
                 json.dump(normalized_site.dict(), fout)
                 fout.write("\n")
-"""
 
 
 def main():
@@ -295,12 +220,10 @@ def main():
 
         elif layer_id == "d1a799c7f98e41fb8c6b4386ca6fe014":
             normalize_appt_only_2_sites(in_filepath, out_filepath, timestamp)
-        """
         elif layer_id == "8537322b652841b4a36b7ddb7bc3b204":
             normalize_drive_thru_walk_in_sites(in_filepath, out_filepath, timestamp)
         else:
             logger.warning("Unable to process layer with id: %s", layer_id)
-        """
 
 
 if __name__ == "__main__":
