@@ -109,14 +109,16 @@ def _get_inventories(site: dict) -> List[schema.Vaccine]:
 
 
 def _get_organization(site: dict) -> Optional[schema.Organization]:
-    if "CVS" in _get_name(site):
-        return schema.Organization(id=schema.VaccineProvider.CVS)
-    if "Safeway" in _get_name(site):
+    if "Kroger" in site["providerName"]:
+        return schema.Organization(id=schema.VaccineProvider.KROGER)
+    if "Safeway" in site["providerName"]:
         return schema.Organization(id=schema.VaccineProvider.SAFEWAY)
-    if "Walgreens" in _get_name(site):
+    if "Walgreen" in site["providerName"]:
         return schema.Organization(id=schema.VaccineProvider.WALGREENS)
-    if "Walmart" in _get_name(site):
+    if "Walmart" in site["providerName"]:
         return schema.Organization(id=schema.VaccineProvider.WALMART)
+    if "CVS" in site["providerName"]:
+        return schema.Organization(id=schema.VaccineProvider.CVS)
     return None
 
 
