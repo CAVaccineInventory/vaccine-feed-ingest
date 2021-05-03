@@ -1,26 +1,20 @@
 #!/usr/bin/env python3
-# isort: skip_file
 import json
-import logging
 import os
 import pathlib
 import re
 import sys
 from datetime import datetime
-from typing import Optional, List
+from typing import List, Optional
 
-from vaccine_feed_ingest_schema import location
+from vaccine_feed_ingest_schema import location as schema
 
+from vaccine_feed_ingest.utils.log import getLogger
 from vaccine_feed_ingest.utils.validation import BOUNDING_BOX
 
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s %(levelname)s:%(name)s:%(message)s",
-    datefmt="%m/%d/%Y %H:%M:%S",
-)
-logger = logging.getLogger("al/arcgis/normalize.py")
+logger = getLogger(__file__)
 
-STATE = "AL"
+STATE = schema.State.ALABAMA
 SOURCE_NAME = "al_arcgis"
 FETCHED_FROM_URI = "https://alpublichealth.maps.arcgis.com/apps/opsdashboard/index.html#/2b4627aa70c5450791a7cf439ed047ec"
 
@@ -32,8 +26,8 @@ def _get_id(
     return f"al_arcgis:{layer_id}_0_{data_id}"
 
 
-def _get_lat_lng(site: dict) -> Optional[location.LatLng]:
-    lat_lng = location.LatLng(
+def _get_lat_lng(site: dict) -> Optional[schema.LatLng]:
+    lat_lng = schema.LatLng(
         latitude=site["geometry"]["y"], longitude=site["geometry"]["x"]
     )
 
@@ -48,13 +42,13 @@ def _get_lat_lng(site: dict) -> Optional[location.LatLng]:
 def normalize_providers_sites(
     in_filepath: pathlib.Path, out_filepath: pathlib.Path, timestamp: str
 ) -> None:
-    def _get_normalized_site(site: dict, timestamp: str) -> location.NormalizedLocation:
-        return location.NormalizedLocation(
+    def _get_normalized_site(site: dict, timestamp: str) -> schema.NormalizedLocation:
+        return schema.NormalizedLocation(
             id=_get_id(
                 site["attributes"]["OBJECTID"], "51d4c310f1fe4d83a63e2b47acb77898"
             ),
             name=site["attributes"]["SITE_NAME"].title(),
-            address=location.Address(
+            address=schema.Address(
                 street1=site["attributes"]["Match_addr"],
                 street2=None,
                 city=site["attributes"]["CITY"].title(),
@@ -62,7 +56,7 @@ def normalize_providers_sites(
                 zip=str(site["attributes"]["ID_ZIPCODE"]),
             ),
             location=_get_lat_lng(site),
-            source=location.Source(
+            source=schema.Source(
                 source=SOURCE_NAME,
                 id=site["attributes"]["OBJECTID"],
                 fetched_from_uri=FETCHED_FROM_URI,
@@ -85,20 +79,20 @@ def normalize_providers_sites(
 def normalize_federal_partners_sites(
     in_filepath: pathlib.Path, out_filepath: pathlib.Path, timestamp: str
 ) -> None:
-    def _get_normalized_site(site: dict, timestamp: str) -> location.NormalizedLocation:
-        return location.NormalizedLocation(
+    def _get_normalized_site(site: dict, timestamp: str) -> schema.NormalizedLocation:
+        return schema.NormalizedLocation(
             id=_get_id(
                 site["attributes"]["objectId"], "8f23e1c3b5c54198ab60d2f729cb787d"
             ),
             name=site["attributes"]["f2"],
-            address=location.Address(
+            address=schema.Address(
                 street1=site["attributes"]["f3"],
                 street2=None,
                 city=site["attributes"]["f4"].title(),
                 state=STATE,
             ),
             location=_get_lat_lng(site),
-            source=location.Source(
+            source=schema.Source(
                 source=SOURCE_NAME,
                 id=site["attributes"]["objectId"],
                 fetched_from_uri=FETCHED_FROM_URI,
@@ -121,17 +115,17 @@ def normalize_federal_partners_sites(
 def normalize_appt_only_2_sites(
     in_filepath: pathlib.Path, out_filepath: pathlib.Path, timestamp: str
 ) -> None:
-    def _get_contact(site: dict) -> Optional[List[location.Contact]]:
+    def _get_contact(site: dict) -> Optional[List[schema.Contact]]:
         click_here_field = site["attributes"]["f6"]
         regex = re.search(r"(?P<url>https?://[^\s'\"]+)", click_here_field)
         if regex:
             url = regex.group("url")
-            return [location.Contact(contact_type="booking", website=url)]
+            return [schema.Contact(contact_type="booking", website=url)]
         else:
             return None
 
-    def _get_normalized_site(site: dict, timestamp: str) -> location.NormalizedLocation:
-        return location.NormalizedLocation(
+    def _get_normalized_site(site: dict, timestamp: str) -> schema.NormalizedLocation:
+        return schema.NormalizedLocation(
             id=_get_id(
                 site["attributes"]["objectId"], "d1a799c7f98e41fb8c6b4386ca6fe014"
             ),
@@ -139,12 +133,12 @@ def normalize_appt_only_2_sites(
             address=None,
             location=_get_lat_lng(site),
             contact=_get_contact(site),
-            availability=location.Availability(
+            availability=schema.Availability(
                 drop_in=False,
                 appointments=True,
             ),
             notes=[site["attributes"]["f5"]],
-            source=location.Source(
+            source=schema.Source(
                 source=SOURCE_NAME,
                 id=site["attributes"]["objectId"],
                 fetched_from_uri=FETCHED_FROM_URI,
@@ -167,15 +161,15 @@ def normalize_appt_only_2_sites(
 def normalize_drive_thru_walk_in_sites(
     in_filepath: pathlib.Path, out_filepath: pathlib.Path, timestamp: str
 ) -> None:
-    def _get_normalized_site(site: dict, timestamp: str) -> location.NormalizedLocation:
-        return location.NormalizedLocation(
+    def _get_normalized_site(site: dict, timestamp: str) -> schema.NormalizedLocation:
+        return schema.NormalizedLocation(
             id=_get_id(
                 site["attributes"]["objectId"], "8537322b652841b4a36b7ddb7bc3b204"
             ),
             name=site["attributes"]["f3"],
             location=_get_lat_lng(site),
             notes=[site["attributes"]["f9"]],
-            source=location.Source(
+            source=schema.Source(
                 source=SOURCE_NAME,
                 id=site["attributes"]["objectId"],
                 fetched_from_uri=FETCHED_FROM_URI,
