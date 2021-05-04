@@ -2,7 +2,6 @@
 
 import datetime
 import json
-import logging
 import os
 import pathlib
 import re
@@ -11,13 +10,9 @@ from typing import List, Optional
 
 from vaccine_feed_ingest_schema import location as schema
 
-# Configure logger
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s %(levelname)s:%(name)s:%(message)s",
-    datefmt="%m/%d/%Y %H:%M:%S",
-)
-logger = logging.getLogger("ak/arcgis/normalize.py")
+from vaccine_feed_ingest.utils.log import getLogger
+
+logger = getLogger(__file__)
 
 
 def _get_availability(site: dict) -> schema.Availability:
@@ -49,7 +44,7 @@ def _get_id(site: dict) -> str:
     arcgis = "d92cbd6ff2524d7e92bef109f30cb366"
     layer = 0
 
-    return f"{runner}:{site_name}:{arcgis}_{layer}:{data_id}"
+    return f"{runner}_{site_name}:{arcgis}_{layer}_{data_id}"
 
 
 def _get_inventory(site: dict) -> Optional[List[schema.Vaccine]]:
@@ -140,7 +135,7 @@ def _get_normalized_location(site: dict, timestamp: str) -> schema.NormalizedLoc
         notes=_get_notes(site),
         active=None,
         source=schema.Source(
-            source="ak:arcgis",
+            source="ak_arcgis",
             id=site["attributes"]["globalid"],
             fetched_from_uri="https://services1.arcgis.com/WzFsmainVTuD5KML/ArcGIS/rest/services/COVID19_Vaccine_Site_Survey_API/FeatureServer/0",  # noqa: E501
             fetched_at=timestamp,

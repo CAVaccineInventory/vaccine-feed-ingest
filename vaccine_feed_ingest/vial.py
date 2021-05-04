@@ -2,7 +2,6 @@
 
 import contextlib
 import json
-import logging
 import urllib.parse
 from typing import Any, Iterable, Iterator, Tuple
 
@@ -12,9 +11,11 @@ import shapely.geometry
 import urllib3
 from vaccine_feed_ingest_schema import load
 
+from vaccine_feed_ingest.utils.log import getLogger
+
 from .utils import misc
 
-logger = logging.getLogger("vial")
+logger = getLogger(__file__)
 
 
 @contextlib.contextmanager

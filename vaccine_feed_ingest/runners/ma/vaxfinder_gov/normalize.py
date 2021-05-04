@@ -8,6 +8,10 @@ from hashlib import md5
 
 from vaccine_feed_ingest_schema import location as schema
 
+from vaccine_feed_ingest.utils.normalize import normalize_zip
+
+SOURCE_NAME = "vaxfinder_gov"
+
 
 def _generate_id(unique_str: str) -> str:
     return md5(unique_str.encode("utf-8")).hexdigest()
@@ -25,7 +29,7 @@ def normalize(site: dict, timestamp: str) -> schema.NormalizedLocation:
     address_parts.pop()
     state_zip_parts = [p.strip() for p in state_zip.split(" ")]
 
-    zipcode = state_zip_parts[1]
+    zipcode = normalize_zip(state_zip_parts[1])
     city_or_state = state_zip_parts[0]
 
     # Sometimes, MA is not included in the address, so the first part of this is actually the city
@@ -47,7 +51,7 @@ def normalize(site: dict, timestamp: str) -> schema.NormalizedLocation:
     location_id = _generate_id(name_without_city + address)
 
     return schema.NormalizedLocation(
-        id=location_id,
+        id=f"{SOURCE_NAME}:{location_id}",
         name=name_without_city,
         address=schema.Address(
             street1=street1,
@@ -71,7 +75,7 @@ def normalize(site: dict, timestamp: str) -> schema.NormalizedLocation:
         notes=None,
         active=None,
         source=schema.Source(
-            source="vaxfinder",
+            source=SOURCE_NAME,
             id=location_id,
             fetched_from_uri="https://www.mass.gov/doc/covid-19-vaccine-locations-for-currently-eligible-recipients-csv/download",  # noqa: E501
             fetched_at=timestamp,

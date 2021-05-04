@@ -2,7 +2,6 @@
 
 import datetime
 import json
-import logging
 import os
 import pathlib
 import re
@@ -11,13 +10,9 @@ from typing import List, Optional
 
 from vaccine_feed_ingest_schema import location as schema
 
-# Configure logger
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s %(levelname)s:%(name)s:%(message)s",
-    datefmt="%m/%d/%Y %H:%M:%S",
-)
-logger = logging.getLogger("in/arcgis/normalize.py")
+from vaccine_feed_ingest.utils.log import getLogger
+
+logger = getLogger(__file__)
 
 
 def _get_id(site: dict) -> str:
@@ -33,7 +28,7 @@ def _get_id(site: dict) -> str:
     arcgis = "46630b2520ce44a68a9f42f8343d3518"
     layer = 0
 
-    return f"{runner}:{site_name}:{arcgis}_{layer}:{data_id}"
+    return f"{runner}_{site_name}:{arcgis}_{layer}_{data_id}"
 
 
 def _get_inventory(site: dict) -> Optional[List[schema.Vaccine]]:
@@ -106,20 +101,79 @@ def _get_notes(site: dict) -> Optional[List[str]]:
     return None
 
 
+# address is loosely structured and inconsistent, so we're going to bash our
+# way through it, mostly parsing from the end of the string
 def _get_address(site: dict) -> schema.Address:
     address = site["attributes"]["Site_Address"]
-    address_split = address.split(",")
+    address = address.replace("  ", " ")
+    address = address.replace("  ", " ")
+    address = address.replace(" ,", ",")
+    address = address.replace(",,", ",")
+    address = address.lstrip()
+    address = address.rstrip()
 
-    # TODO: improve address parsing to minimize unknown addresses
-    if len(address_split) != 3:
-        logger.warning(f"Unparseable address: {address}")
-        return None
+    # pull an address note off the end
+    address_note = ""
+    if match := re.search(" [(](.*)[)]$", address):
+        address_note = f" ({match.group(1)})"
+        address = address.rstrip(f" ({address_note})")
+    else:
+        address_note = None
+
+    # pull a zip code off the end
+    zip = None
+    if match := re.search(" (\\d\\d\\d\\d\\d-\\d\\d\\d\\d)$", address):
+        zip = match.group(1)
+        address = address.rstrip(f" {zip}")
+    if match := re.search(" (\\d\\d\\d\\d\\d)$", address):
+        zip = match.group(1)
+        address = address.rstrip(f" {zip}")
+
+    state = "IN"
+    address = address.rstrip()
+    address = address.rstrip(",")
+    address = address.rstrip(".")
+    address = address.rstrip(f" {state}")
+    address = address.rstrip()
+    address = address.rstrip(",")
+
+    # here are some patterns that might be remaining at this point:
+    # street1
+    # street1 city
+    # street1, city
+    # street1, street2
+    # street1, street2 city
+    # street1, street2, city
+    #
+    # so let's:
+    # a) use the first ,-separated token as street1
+    # b) if exactly 1 ,-separated token, use the last word as city
+    # c) if exactly 2 ,-separated tokens, use the second as street2 *and* city
+    # d) if >2 ,-separated tokens, use last as city and [1:-1] as street2
+    #
+    # some of these are going to be malformed, but hopefully the few that are
+    # will be relatively easy for humans to recover. Case (c) is relatively
+    # common, but setting street2:=city is relatively benign.
+
+    address_split = address.split(",")
+    street1 = address_split[0]
+    street2 = ""
+    city = ""
+    if len(address_split) == 1:
+        city = address_split[0].split()[-1]
+    if len(address_split) == 2:
+        street2 = address_split[1].lstrip().rstrip()
+        city = address_split[1].lstrip().rstrip()
+    if len(address_split) > 2:
+        street2 = ",".join(address_split[1:-1]).lstrip().rstrip()
+        city = address_split[-1].lstrip().rstrip()
 
     return schema.Address(
-        street1=address_split[0].strip(),
-        city=address_split[-2].strip(),
-        state="IN",
-        zip=address_split[-1].replace("IN", "").strip(),
+        street1=street1,
+        street2=f"{street2}{address_note}",
+        city=city,
+        state=state,
+        zip=zip,
     )
 
 
@@ -144,7 +198,7 @@ def _get_normalized_location(site: dict, timestamp: str) -> schema.NormalizedLoc
         notes=_get_notes(site),
         active=None,
         source=schema.Source(
-            source="in:arcgis",
+            source="in_arcgis",
             id=site["attributes"]["GlobalID"],
             fetched_from_uri="https://experience.arcgis.com/experience/24159814f1dd4f69b6c22e7e87bca65b",  # noqa: E501
             fetched_at=timestamp,

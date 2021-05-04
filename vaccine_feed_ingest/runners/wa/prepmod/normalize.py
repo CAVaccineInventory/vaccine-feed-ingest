@@ -14,7 +14,7 @@ from vaccine_feed_ingest_schema import location as schema
 def _get_source(site: dict, timestamp: str) -> schema.Source:
     return schema.Source(
         source="wa_prepmod",
-        id=site["name"],
+        id=site["clinic_id"],
         fetched_from_uri="https://prepmod.doh.wa.gov/clinic/search",
         fetched_at=timestamp,
         data=site,
@@ -89,8 +89,8 @@ def _get_opening_hours(site: dict) -> List[schema.OpenHour]:
 
     return [
         schema.OpenHour(
-            day=calendar.day_name[date_dt.weekday()],
-            open=time_start.strftime("%H:%M"),
+            day=calendar.day_name[date_dt.weekday()].lower(),
+            opens=time_start.strftime("%H:%M"),
             closes=time_end.strftime("%H:%M"),
         )
     ]

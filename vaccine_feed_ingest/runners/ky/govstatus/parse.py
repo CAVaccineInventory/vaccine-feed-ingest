@@ -1,14 +1,15 @@
 #!/usr/bin/env python
 
 import json
-import logging
 import pathlib
 import re
 import sys
 
 from bs4 import BeautifulSoup
 
-logger = logging.getLogger("ky/govstatus/parse.py")
+from vaccine_feed_ingest.utils.log import getLogger
+
+logger = getLogger(__file__)
 
 
 def parse_address(address_el):

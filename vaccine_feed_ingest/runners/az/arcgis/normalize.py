@@ -2,7 +2,7 @@
 # isort: skip_file
 
 import json
-import logging
+from vaccine_feed_ingest.utils.log import getLogger
 import os
 import pathlib
 import re
@@ -14,13 +14,8 @@ from vaccine_feed_ingest_schema import location as schema
 
 from vaccine_feed_ingest.utils.validation import BOUNDING_BOX
 
-# Configure logger
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s %(levelname)s:%(name)s:%(message)s",
-    datefmt="%m/%d/%Y %H:%M:%S",
-)
-logger = logging.getLogger("az/arcgis/normalize.py")
+
+logger = getLogger(__file__)
 
 output_dir = pathlib.Path(sys.argv[1])
 input_dir = pathlib.Path(sys.argv[2])
@@ -43,7 +38,7 @@ def _get_id(site: dict) -> str:
     arcgis = "128ead309d754558ad81bccd99188dc9"
     layer = 0
 
-    return f"{runner}:{site_name}:{arcgis}_{layer}:{data_id}"
+    return f"{runner}_{site_name}:{arcgis}_{layer}_{data_id}"
 
 
 def _get_contacts(site: dict) -> Optional[List[schema.Contact]]:
@@ -64,10 +59,16 @@ def _get_contacts(site: dict) -> Optional[List[schema.Contact]]:
 
         for match in matches:
             phone = f"({match.group('area_code')}) {match.group('rest_of_number')}"
-            contacts.append(schema.Contact(phone=phone))
+            contacts.append(schema.Contact(contact_type="general", phone=phone))
 
-    if site["attributes"]["prereg_website"]:
-        contacts.append(schema.Contact(website=site["attributes"]["prereg_website"]))
+    website = site["attributes"]["prereg_website"]
+    if website:
+        # this edge case...
+        website = website.replace("htttp", "http")
+        if "http" not in website:
+            website = "https://" + website
+        website = website.replace(" ", "")
+        contacts.append(schema.Contact(contact_type="general", website=website))
 
     if len(contacts) > 0:
         return contacts
@@ -146,9 +147,9 @@ def _normalize_hours(
         return []
 
     if processed_hours == "8-4":
-        return [schema.OpenHour(day=day, open="08:00", closes="16:00")]
+        return [schema.OpenHour(day=day, opens="08:00", closes="16:00")]
     if processed_hours == "8:00AM7:00PM":
-        return [schema.OpenHour(day=day, open="08:00", closes="16:00")]
+        return [schema.OpenHour(day=day, opens="08:00", closes="16:00")]
 
     processed_hours = processed_hours.upper().lstrip("BY APPOINTMENT ").strip()
 
@@ -172,7 +173,7 @@ def _normalize_hours(
         return [
             schema.OpenHour(
                 day=day,
-                open=_normalize_time(open_time.strip().upper()),
+                opens=_normalize_time(open_time.strip().upper()),
                 closes=_normalize_time(close_time.strip().upper()),
             )
         ]
@@ -249,7 +250,7 @@ def _get_normalized_location(site: dict, timestamp: str) -> schema.NormalizedLoc
             street1=site["attributes"]["addr1"],
             street2=site["attributes"]["addr2"],
             city=site["attributes"]["city"],
-            state=site["attributes"]["state"] or "AZ",
+            state="AZ",
             zip=site["attributes"]["zip"],
         ),
         location=_get_lat_lng(site),
@@ -267,7 +268,7 @@ def _get_normalized_location(site: dict, timestamp: str) -> schema.NormalizedLoc
         else None,
         active=None,
         source=schema.Source(
-            source="az:arcgis",
+            source="az_arcgis",
             id=site["attributes"]["globalid"],
             fetched_from_uri="https://adhsgis.maps.arcgis.com/apps/opsdashboard/index.html#/5d636af4d5134a819833b1a3b906e1b6",  # noqa: E501
             fetched_at=timestamp,

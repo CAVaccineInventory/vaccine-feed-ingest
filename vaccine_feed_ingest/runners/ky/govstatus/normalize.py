@@ -2,22 +2,17 @@
 
 import datetime
 import json
-import logging
 import pathlib
 import sys
 from typing import Optional
 
 from vaccine_feed_ingest_schema import location as schema
 
-# Configure logger
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s %(levelname)s:%(name)s:%(message)s",
-    datefmt="%m/%d/%Y %H:%M:%S",
-)
-logger = logging.getLogger("ky/govstatus/normalize.py")
+from vaccine_feed_ingest.utils.log import getLogger
 
-SOURCE_NAME = "ky:govstatus"
+logger = getLogger(__file__)
+
+SOURCE_NAME = "ky_govstatus"
 
 
 def _get_id(site: dict) -> str:
@@ -82,16 +77,7 @@ def _get_contacts(site: dict):
             phone_notes = phone_notes.lstrip(";")
             phone_notes = phone_notes.lstrip(" ")
 
-            if phone_notes:
-                ret.append(
-                    schema.Contact(
-                        phone=phone,
-                        other=f"phone_notes:{phone_notes}",
-                        contact_type="booking",
-                    )
-                )
-            else:
-                ret.append(schema.Contact(phone=phone, contact_type="booking"))
+            ret.append(schema.Contact(phone=phone, contact_type="booking"))
 
     if "register_online_url" in site:
         website = site["register_online_url"]

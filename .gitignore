@@ -59,3 +59,9 @@ venv.bak/
 .mypy_cache/
 .dmypy.json
 dmypy.json
+
+# emacs backup files
+*~
+
+# MacOS
+.DS_Store

@@ -4,24 +4,15 @@
 Entry point for running vaccine feed runners
 """
 import datetime
-import logging
 import os
 import pathlib
-from typing import Callable, Optional, Sequence
+from typing import Callable, Collection, Dict, Optional, Sequence
 
 import click
 import dotenv
 import pathy
 
-from . import vial
 from .stages import common, ingest, load, site
-
-# Configure logger
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s %(levelname)s:%(name)s:%(message)s",
-    datefmt="%m/%d/%Y %H:%M:%S",
-)
 
 # Collect locations that are within .6 degrees = 66.6 km = 41 mi
 CANDIDATE_DEGREES_DISTANCE = 0.6
@@ -73,6 +64,104 @@ def _sites_argument() -> Callable:
     return click.argument("sites", nargs=-1, type=str)
 
 
+def _stages_option() -> Callable:
+    return click.option(
+        "--stages",
+        type=str,
+        default="fetch,parse,normalize",
+        callback=lambda ctx, param, value: [
+            common.PipelineStage(item.strip().lower()) for item in value.split(",")
+        ],
+    )
+
+
+def _fail_on_error_option() -> Callable:
+    return click.option(
+        "--fail-on-runner-error/--no-fail-on-runner-error",
+        type=bool,
+        default=True,
+        help="When set (default), errors in runners will raise",
+    )
+
+
+def _vial_server_option() -> Callable:
+    return click.option(
+        "--vial-server",
+        "vial_server",
+        type=str,
+        default=lambda: os.environ.get(
+            "VIAL_SERVER", "https://vial-staging.calltheshots.us"
+        ),
+    )
+
+
+def _vial_apikey_option() -> Callable:
+    return click.option(
+        "--vial-apikey",
+        "vial_apikey",
+        type=str,
+        default=lambda: os.environ.get("VIAL_APIKEY", ""),
+    )
+
+
+def _match_option() -> Callable:
+    return click.option(
+        "--match/--no-match",
+        "enable_match",
+        type=bool,
+        default=lambda: os.environ.get("ENABLE_MATCH", "true").lower() == "true",
+    )
+
+
+def _create_option() -> Callable:
+    return click.option(
+        "--create/--no-create",
+        "enable_create",
+        type=bool,
+        default=lambda: os.environ.get("ENABLE_CREATE", "false").lower() == "true",
+    )
+
+
+def _match_ids_option() -> Callable:
+    return click.option(
+        "--match-ids",
+        "match_ids",
+        type=str,
+        callback=lambda ctx, param, value: (
+            {
+                key: value
+                for key, value in [
+                    [v.strip() for v in pair.split("=", maxsplit=1)]
+                    for pair in [item.strip() for item in value.split(",") if item]
+                    if pair and "=" in pair
+                ]
+            }
+            if value
+            else None
+        ),
+    )
+
+
+def _create_ids_option() -> Callable:
+    return click.option(
+        "--create-ids",
+        "create_ids",
+        type=str,
+        callback=lambda ctx, param, value: (
+            [item.strip() for item in value.split(",")] if value else None
+        ),
+    )
+
+
+def _candidate_distance_option() -> Callable:
+    return click.option(
+        "--candidate-distance",
+        "candidate_distance",
+        type=float,
+        default=CANDIDATE_DEGREES_DISTANCE,
+    )
+
+
 @click.group()
 def cli():
     """Run vaccine-feed-ingest commands"""
@@ -100,199 +189,295 @@ def available_sites(state: Optional[str]) -> None:
 
 
 def _compute_has_fetch(site_dir: pathlib.Path) -> bool:
-    if site.find_executeable(site_dir, common.PipelineStage.FETCH):
-        return True
-    if not site.find_yml(site_dir, common.PipelineStage.FETCH):
-        return False
-    return bool(
-        site.find_executeable(
-            common.RUNNERS_DIR.joinpath("_shared"), common.PipelineStage.FETCH
-        )
-    )
+    exec_path, _ = site.resolve_executable(site_dir, common.PipelineStage.FETCH)
+    return bool(exec_path)
 
 
 def _compute_has_parse(site_dir: pathlib.Path) -> bool:
-    if site.find_executeable(site_dir, common.PipelineStage.PARSE):
-        return True
-    if not site.find_yml(site_dir, common.PipelineStage.PARSE):
-        return False
-    return bool(
-        site.find_executeable(
-            common.RUNNERS_DIR.joinpath("_shared"), common.PipelineStage.PARSE
-        )
-    )
+    exec_path, _ = site.resolve_executable(site_dir, common.PipelineStage.PARSE)
+    return bool(exec_path)
 
 
 @cli.command()
+@_sites_argument()
 @_state_option()
 @_output_dir_option()
 @_dry_run_option()
-@_sites_argument()
+@_fail_on_error_option()
 def fetch(
+    sites: Optional[Sequence[str]],
     state: Optional[str],
     output_dir: pathlib.Path,
     dry_run: bool,
-    sites: Optional[Sequence[str]],
+    fail_on_runner_error: bool,
 ) -> None:
     """Run fetch process for specified sites."""
     timestamp = _generate_run_timestamp()
     site_dirs = site.get_site_dirs(state, sites)
 
     for site_dir in site_dirs:
-        ingest.run_fetch(site_dir, output_dir, timestamp, dry_run)
+        ingest.run_fetch(
+            site_dir,
+            output_dir,
+            timestamp,
+            dry_run,
+            fail_on_runner_error=fail_on_runner_error,
+        )
 
 
 @cli.command()
+@_sites_argument()
 @_state_option()
 @_output_dir_option()
-@_validate_option()
 @_dry_run_option()
-@_sites_argument()
+@_validate_option()
+@_fail_on_error_option()
 def parse(
+    sites: Optional[Sequence[str]],
     state: Optional[str],
     output_dir: pathlib.Path,
-    validate: bool,
     dry_run: bool,
-    sites: Optional[Sequence[str]],
+    validate: bool,
+    fail_on_runner_error: bool,
 ) -> None:
     """Run parse process for specified sites."""
     timestamp = _generate_run_timestamp()
     site_dirs = site.get_site_dirs(state, sites)
 
     for site_dir in site_dirs:
-        ingest.run_parse(site_dir, output_dir, timestamp, validate, dry_run)
+        ingest.run_parse(
+            site_dir,
+            output_dir,
+            timestamp,
+            validate,
+            dry_run,
+            fail_on_runner_error=fail_on_runner_error,
+        )
 
 
 @cli.command()
+@_sites_argument()
 @_state_option()
 @_output_dir_option()
-@_validate_option()
 @_dry_run_option()
-@_sites_argument()
+@_validate_option()
+@_fail_on_error_option()
 def normalize(
+    sites: Optional[Sequence[str]],
     state: Optional[str],
     output_dir: pathlib.Path,
-    validate: bool,
     dry_run: bool,
-    sites: Optional[Sequence[str]],
+    validate: bool,
+    fail_on_runner_error: bool,
 ) -> None:
     """Run normalize process for specified sites."""
     timestamp = _generate_run_timestamp()
     site_dirs = site.get_site_dirs(state, sites)
 
     for site_dir in site_dirs:
-        ingest.run_normalize(site_dir, output_dir, timestamp, validate, dry_run)
+        ingest.run_normalize(
+            site_dir,
+            output_dir,
+            timestamp,
+            validate,
+            dry_run,
+            fail_on_runner_error=fail_on_runner_error,
+        )
 
 
 @cli.command()
-@_state_option()
-@_validate_option()
-@_output_dir_option()
 @_sites_argument()
+@_state_option()
+@_output_dir_option()
+@_fail_on_error_option()
 def all_stages(
-    state: Optional[str],
-    validate: bool,
-    output_dir: pathlib.Path,
     sites: Optional[Sequence[str]],
+    state: Optional[str],
+    output_dir: pathlib.Path,
+    fail_on_runner_error: bool,
 ) -> None:
     """Run all stages in succession for specified sites."""
     timestamp = _generate_run_timestamp()
     site_dirs = site.get_site_dirs(state, sites)
 
     for site_dir in site_dirs:
-        fetch_success = ingest.run_fetch(site_dir, output_dir, timestamp)
+        fetch_success = ingest.run_fetch(
+            site_dir, output_dir, timestamp, fail_on_runner_error=fail_on_runner_error
+        )
 
         if not fetch_success:
             continue
 
-        parse_success = ingest.run_parse(site_dir, output_dir, timestamp, validate)
+        parse_success = ingest.run_parse(
+            site_dir, output_dir, timestamp, fail_on_runner_error=fail_on_runner_error
+        )
 
         if not parse_success:
             continue
 
-        ingest.run_normalize(site_dir, output_dir, timestamp, validate)
+        ingest.run_normalize(
+            site_dir, output_dir, timestamp, fail_on_runner_error=fail_on_runner_error
+        )
 
 
 @cli.command()
-@click.option(
-    "--vial-server",
-    "vial_server",
-    type=str,
-    default=lambda: os.environ.get(
-        "VIAL_SERVER", "https://vial-staging.calltheshots.us"
-    ),
-)
-@click.option(
-    "--vial-apikey",
-    "vial_apikey",
-    type=str,
-    default=lambda: os.environ.get("VIAL_APIKEY", ""),
-)
+@_sites_argument()
 @_state_option()
 @_output_dir_option()
 @_dry_run_option()
-@_sites_argument()
-@click.option(
-    "--match/--no-match",
-    "enable_match",
-    type=bool,
-    default=lambda: os.environ.get("ENABLE_MATCH", "true").lower() == "true",
-)
-@click.option(
-    "--create/--no-create",
-    "enable_create",
-    type=bool,
-    default=lambda: os.environ.get("ENABLE_CREATE", "false").lower() == "true",
-)
-@click.option(
-    "--candidate-distance",
-    "candidate_distance",
-    type=float,
-    default=CANDIDATE_DEGREES_DISTANCE,
-)
-def load_to_vial(
-    vial_server: str,
-    vial_apikey: str,
+def enrich(
+    sites: Optional[Sequence[str]],
     state: Optional[str],
     output_dir: pathlib.Path,
     dry_run: bool,
+) -> None:
+    """Run enrich process for specified sites."""
+    timestamp = _generate_run_timestamp()
+    site_dirs = site.get_site_dirs(state, sites)
+
+    for site_dir in site_dirs:
+        ingest.run_enrich(site_dir, output_dir, timestamp, dry_run)
+
+
+@cli.command()
+@_sites_argument()
+@_state_option()
+@_output_dir_option()
+@_dry_run_option()
+@_vial_server_option()
+@_vial_apikey_option()
+@_match_option()
+@_create_option()
+@_match_ids_option()
+@_create_ids_option()
+@_candidate_distance_option()
+def load_to_vial(
     sites: Optional[Sequence[str]],
+    state: Optional[str],
+    output_dir: pathlib.Path,
+    dry_run: bool,
+    vial_server: str,
+    vial_apikey: str,
     enable_match: bool,
     enable_create: bool,
+    match_ids: Optional[Dict[str, str]],
+    create_ids: Optional[Collection[str]],
     candidate_distance: float,
 ) -> None:
     """Load specified sites to vial server."""
     site_dirs = site.get_site_dirs(state, sites)
 
-    with vial.vial_client(vial_server, vial_apikey) as vial_http:
-        import_run_id = vial.start_import_run(vial_http)
-
-        if enable_match or enable_create:
-            locations = vial.retrieve_existing_locations_as_index(vial_http)
-
-        for site_dir in site_dirs:
-            imported_locations = load.run_load_to_vial(
-                vial_http,
-                site_dir,
-                output_dir,
-                import_run_id,
-                locations,
-                enable_match=enable_match,
-                enable_create=enable_create,
-                candidate_distance=candidate_distance,
-                dry_run=dry_run,
+    if match_ids and create_ids:
+        conflicting_ids = set(match_ids.keys()) & set(create_ids)
+        if conflicting_ids:
+            raise Exception(
+                f"Conflicting match and create action for source ids: {conflicting_ids}"
             )
 
-            # If data was loaded then refresh existing locations
-            if locations is not None and imported_locations:
-                source_ids = [
-                    loc.source_uid
-                    for loc in imported_locations
-                    if loc.match and loc.match.action == "new"
-                ]
+    load.load_sites_to_vial(
+        site_dirs,
+        output_dir,
+        dry_run=dry_run,
+        vial_server=vial_server,
+        vial_apikey=vial_apikey,
+        enable_match=enable_match,
+        enable_create=enable_create,
+        match_ids=match_ids,
+        create_ids=create_ids,
+        candidate_distance=candidate_distance,
+    )
 
-                if source_ids:
-                    vial.update_existing_locations(vial_http, locations, source_ids)
+
+@cli.command()
+@_sites_argument()
+@_state_option()
+@_output_dir_option()
+@_dry_run_option()
+@_stages_option()
+@_vial_server_option()
+@_vial_apikey_option()
+@_match_option()
+@_create_option()
+@_match_ids_option()
+@_create_ids_option()
+@_candidate_distance_option()
+@_fail_on_error_option()
+def pipeline(
+    sites: Optional[Sequence[str]],
+    state: Optional[str],
+    output_dir: pathlib.Path,
+    dry_run: bool,
+    stages: Collection[common.PipelineStage],
+    vial_server: str,
+    vial_apikey: str,
+    enable_match: bool,
+    enable_create: bool,
+    match_ids: Optional[Dict[str, str]],
+    create_ids: Optional[Collection[str]],
+    candidate_distance: float,
+    fail_on_runner_error: bool,
+) -> None:
+    """Run all stages in succession for specified sites."""
+    timestamp = _generate_run_timestamp()
+    site_dirs = site.get_site_dirs(state, sites)
+
+    sites_to_load = []
+
+    for site_dir in site_dirs:
+        if common.PipelineStage.FETCH in stages:
+            fetch_success = ingest.run_fetch(
+                site_dir,
+                output_dir,
+                timestamp,
+                fail_on_runner_error=fail_on_runner_error,
+            )
+
+            if not fetch_success:
+                continue
+
+        if common.PipelineStage.PARSE in stages:
+            parse_success = ingest.run_parse(
+                site_dir,
+                output_dir,
+                timestamp,
+                fail_on_runner_error=fail_on_runner_error,
+            )
+
+            if not parse_success:
+                continue
+
+        if common.PipelineStage.NORMALIZE in stages:
+            normalize_success = ingest.run_normalize(
+                site_dir,
+                output_dir,
+                timestamp,
+                fail_on_runner_error=fail_on_runner_error,
+            )
+
+            if not normalize_success:
+                continue
+
+        if common.PipelineStage.ENRICH in stages:
+            enrich_success = ingest.run_enrich(site_dir, output_dir, timestamp)
+
+            if not enrich_success:
+                continue
+
+        sites_to_load.append(site_dir)
+
+    if common.PipelineStage.LOAD_TO_VIAL in stages and sites_to_load:
+        load.load_sites_to_vial(
+            sites_to_load,
+            output_dir,
+            dry_run=dry_run,
+            vial_server=vial_server,
+            vial_apikey=vial_apikey,
+            enable_match=enable_match,
+            enable_create=enable_create,
+            match_ids=match_ids,
+            create_ids=create_ids,
+            candidate_distance=candidate_distance,
+        )
 
 
 @cli.command()
