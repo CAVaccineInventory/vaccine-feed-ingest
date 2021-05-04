@@ -5,13 +5,69 @@ import json
 import logging
 import pathlib
 import sys
+import re
+from typing import List, Optional
 
+import pydantic
 from vaccine_feed_ingest_schema import location as schema
 
-from vaccine_feed_ingest.utils.normalize import organization_from_name
+from vaccine_feed_ingest.utils.log import getLogger
+from vaccine_feed_ingest.utils.normalize import provider_id_from_name
 
-logger = logging.getLogger("il/sfsites")
+logger = getLogger(__file__)
 
+URL_RE = re.compile(r"(https?:\/\/(?:www\.|(?!www))[a-zA-Z0-9][a-zA-Z0-9-]+[a-zA-Z0-9]\.[^\s]{2,}|www\.[a-zA-Z0-9][a-zA-Z0-9-]+[a-zA-Z0-9]\.[^\s]{2,}|https?:\/\/(?:www\.|(?!www))[a-zA-Z0-9]+\.[^\s]{2,}|www\.[a-zA-Z0-9]+\.[^\s]{2,})")
+
+def _get_address(site: dict) -> schema.Address:
+    street1 = site["Street__c"]
+    city = site["City__c"]
+    zipc = site["Postal_Code__c"]
+
+    if not schema.ZIPCODE_RE.match(zipc):
+        zipc = None
+
+    return schema.Address(
+            street1=street1,
+            street2=None,
+            city=city,
+            state="IL",
+            zip=zipc,
+        )
+
+def _get_contact(site: dict) -> List[schema.Contact]:
+    contacts = []
+    url = site["Website__c"]
+    formatted_url = url
+
+    if ' ' in url:
+        match = URL_RE.search(url)
+
+        if match and match.group(1):
+            formatted_url = match.group(1)
+
+    if not formatted_url.startswith('http'):
+        formatted_url = 'http://' + url
+
+    try:
+        contacts.append(schema.Contact(website=formatted_url, contact_type=schema.ContactType.BOOKING))
+    except pydantic.ValidationError as e:
+        logger.warning("Invalid website for id: %s, value: %s, error: %s. Returning empty Contact", site["Id"], url, str(e))
+
+    return contacts
+
+def _get_parent_organization(name: str) -> Optional[schema.Organization]:
+    if "Costco" in name:
+        return schema.Organization(id=schema.VaccineProvider.COSTCO)
+    if "Sam's Pharmacy" in name:
+        return schema.Organization(id=schema.VaccineProvider.SAMS)
+    if "Walgreen" in name:
+        return schema.Organization(id=schema.VaccineProvider.WALGREENS)
+    if "Walmart" in name:
+        return schema.Organization(id=schema.VaccineProvider.WALMART)
+    if "CVS" in name:
+        return schema.Organization(id=schema.VaccineProvider.CVS)
+
+    return None
 
 def normalize(site: dict, timestamp: str) -> dict:
     location_id = site["Id"]
@@ -21,36 +77,22 @@ def normalize(site: dict, timestamp: str) -> dict:
     if "Location_Type__c" in site:
         notes.append(site["Location_Type__c"])
 
-    parent_organization = None
-
-    org = organization_from_name(name)
-    if org is not None:
-        parent_organization = schema.Organization(id=org[0], name=org[1])
-
     return schema.NormalizedLocation(
         id=f"sfsites:{location_id}",
         name=name,
-        address=schema.Address(
-            street1=site["Street__c"],
-            street2=None,
-            city=site["City__c"],
-            state="IL",
-            zip=site["Postal_Code__c"],
-        ),
+        address=_get_address(site),
         location=schema.LatLng(
             latitude=site["Geolocation__Latitude__s"],
             longitude=site["Geolocation__Longitude__s"],
         ),
-        contact=[
-            schema.Contact(website=site["Website__c"], contact_type="booking"),
-        ],
+        contact=_get_contact(site),
         languages=None,
         opening_dates=None,
         opening_hours=None,
         availability=schema.Availability(appointments=True),
         inventory=None,
         access=None,
-        parent_organization=parent_organization,
+        parent_organization=_get_parent_organization(name),
         links=None,
         notes=notes,
         active=None,
