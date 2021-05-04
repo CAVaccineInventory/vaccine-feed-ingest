@@ -69,8 +69,11 @@ def _get_contacts(site: dict) -> Optional[List[schema.Contact]]:
         sourcePhone = re.sub("[^0-9]", "", site["attributes"]["phone"])
         if len(sourcePhone) == 11:
             sourcePhone = sourcePhone[1:]
-        phone = f"({sourcePhone[0:3]}) {sourcePhone[3:6]}-{sourcePhone[6:]}"
-        contacts.append(schema.Contact(phone=phone))
+
+        #TODO: handle 3-digit phone numbers like 211, 411 .etc
+        if len(sourcePhone) == 10:
+            phone = f"({sourcePhone[0:3]}) {sourcePhone[3:6]}-{sourcePhone[6:]}"
+            contacts.append(schema.Contact(phone=phone))
 
     # if site["attributes"]["publicEmail"]:
     #     contacts.append(schema.Contact(email=site["attributes"]["publicEmail"]))
