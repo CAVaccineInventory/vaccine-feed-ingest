@@ -163,11 +163,11 @@ def _normalize_hours(
     opens = _normalize_time(open_time)
     closes = _normalize_time(close_time)
 
-    if (opens > closes):
+    if opens > closes:
         if not re.search(r"P\.?M\.?$", close_time):
             # handle the "9-5" case, where the PM for 5 is implied
             closes = closes.replace(hour=closes.hour + 12)
-        elif len(re.findall(r'P\.?M\.?', processed_hours)) == 2:
+        elif len(re.findall(r"P\.?M\.?", processed_hours)) == 2:
             # handle the "10PM - 5PM" typo cases
             opens = opens.replace(hour=opens.hour - 12)
 
