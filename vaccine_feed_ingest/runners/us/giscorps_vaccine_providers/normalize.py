@@ -15,6 +15,9 @@ from vaccine_feed_ingest.utils.log import getLogger
 logger = getLogger(__file__)
 
 
+SOURCE_NAME = "us_giscorps_vaccine_providers"
+
+
 def _get_availability(site: dict) -> schema.Availability:
     appt_only = site["attributes"]["appt_only"]
     if appt_only == "Yes":
@@ -28,17 +31,12 @@ def _get_availability(site: dict) -> schema.Availability:
 def _get_id(site: dict) -> str:
     data_id = site["attributes"]["GlobalID"]
 
-    # Could parse these from directory traversal, but do not for now to avoid
-    # accidental mutation.
-    site = "giscorps_vaccine_providers"
-    runner = "us"
-
     # Could parse these from the input file name, but do not for now to avoid
     # accidental mutation.
     arcgis = "c50a1a352e944a66aed98e61952051ef"
     layer = 0
 
-    return f"{runner}:{site}:{arcgis}_{layer}:{data_id}"
+    return f"{arcgis}_{layer}_{data_id}"
 
 
 def _get_inventory(site: dict) -> Optional[List[schema.Vaccine]]:
@@ -176,7 +174,7 @@ def _get_normalized_location(site: dict, timestamp: str) -> schema.NormalizedLoc
     city_state_zip = addrsplit[1].split(" ") if try_get_list(addrsplit, 1) else None
 
     return schema.NormalizedLocation(
-        id=_get_id(site),
+        id=f"{SOURCE_NAME}:{_get_id(site)}",
         name=site["attributes"]["name"],
         address=schema.Address(
             street1=addrsplit[0],
@@ -205,7 +203,7 @@ def _get_normalized_location(site: dict, timestamp: str) -> schema.NormalizedLoc
         notes=_get_notes(site),
         active=_get_active(site),
         source=schema.Source(
-            source="arcgis",
+            source=SOURCE_NAME,
             id=site["attributes"]["GlobalID"],
             fetched_from_uri="https://services1.arcgis.com/WzFsmainVTuD5KML/ArcGIS/rest/services/COVID19_Vaccine_Site_Survey_API/FeatureServer/0",  # noqa: E501
             fetched_at=timestamp,
