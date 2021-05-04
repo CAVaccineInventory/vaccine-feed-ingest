@@ -137,9 +137,7 @@ def _normalize_hours(
         return []
     processed_hours = processed_hours.upper()
 
-    if processed_hours == "8-4":
-        return [schema.OpenHour(day=day, opens="08:00", closes="16:00")]
-    elif processed_hours == "8:00AM7:00PM":
+    if processed_hours == "8:00AM7:00PM":
         return [schema.OpenHour(day=day, opens="08:00", closes="19:00")]
 
     processed_hours = re.sub("^BY APPOINTMENT", "", processed_hours).strip()
@@ -164,8 +162,8 @@ def _normalize_hours(
     closes = _normalize_time(close_time)
 
     if opens > closes:
-        if not re.search(r"P\.?M\.?$", close_time):
-            # handle the "9-5" case, where the PM for 5 is implied
+        if not re.search(r"[AP]\.?M\.?$", close_time):
+            # handle the "9-5" case, where the AM/PM is implied
             closes = closes.replace(hour=closes.hour + 12)
         elif len(re.findall(r"P\.?M\.?", processed_hours)) == 2:
             # handle the "10PM - 5PM" typo cases
@@ -180,7 +178,7 @@ def _normalize_hours(
             )
         ]
     except ValueError:
-        logger.exception("unparseable hours: '%s'", human_readable_hours)
+        logger.warning("unparseable hours: '%s'", human_readable_hours)
         return []
 
 
