@@ -12,6 +12,6 @@ fi
 
 cd "$output_dir"
 curl --no-progress-meter \
-    --ciphers DHE-RSA-AES256-GCM-SHA384 \
+    --ciphers 'DEFAULT:!DH' \
     'https://dhhr.wv.gov/News/2021/Pages/COVID-19-Vaccination-Clinics-March-2-7,-2021.aspx' \
     -o 'dhhr.html'
