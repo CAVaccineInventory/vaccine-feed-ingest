@@ -171,6 +171,9 @@ def _get_normalized_location(site: dict, timestamp: str) -> schema.NormalizedLoc
 
     addrsplit = site["attributes"]["fulladdr"].split(", ")
 
+    zip = site["attributes"]["fulladdr"][-5:]
+    zip = zip if zip.isnumeric() else None
+
     city_state_zip = addrsplit[1].split(" ") if try_get_list(addrsplit, 1) else None
 
     return schema.NormalizedLocation(
@@ -183,7 +186,7 @@ def _get_normalized_location(site: dict, timestamp: str) -> schema.NormalizedLoc
             or try_get_list(city_state_zip, -3, default=""),
             state=site["attributes"]["State"]
             or try_get_list(city_state_zip, -2, default=""),
-            zip=try_get_list(city_state_zip, -1, default=""),
+            zip=zip,
         ),
         location=schema.LatLng(
             latitude=site["geometry"]["y"] if site.get("geometry") else None,
