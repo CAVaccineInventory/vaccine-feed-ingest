@@ -2,21 +2,22 @@
 
 import datetime
 import json
-import logging
 import pathlib
-import sys
 import re
+import sys
 from typing import List, Optional
 
 import pydantic
 from vaccine_feed_ingest_schema import location as schema
 
 from vaccine_feed_ingest.utils.log import getLogger
-from vaccine_feed_ingest.utils.normalize import provider_id_from_name
 
 logger = getLogger(__file__)
 
-URL_RE = re.compile(r"(https?:\/\/(?:www\.|(?!www))[a-zA-Z0-9][a-zA-Z0-9-]+[a-zA-Z0-9]\.[^\s]{2,}|www\.[a-zA-Z0-9][a-zA-Z0-9-]+[a-zA-Z0-9]\.[^\s]{2,}|https?:\/\/(?:www\.|(?!www))[a-zA-Z0-9]+\.[^\s]{2,}|www\.[a-zA-Z0-9]+\.[^\s]{2,})")
+URL_RE = re.compile(
+    r"(https?:\/\/(?:www\.|(?!www))[a-zA-Z0-9][a-zA-Z0-9-]+[a-zA-Z0-9]\.[^\s]{2,}|www\.[a-zA-Z0-9][a-zA-Z0-9-]+[a-zA-Z0-9]\.[^\s]{2,}|https?:\/\/(?:www\.|(?!www))[a-zA-Z0-9]+\.[^\s]{2,}|www\.[a-zA-Z0-9]+\.[^\s]{2,})"
+)
+
 
 def _get_address(site: dict) -> schema.Address:
     street1 = site["Street__c"]
@@ -27,33 +28,44 @@ def _get_address(site: dict) -> schema.Address:
         zipc = None
 
     return schema.Address(
-            street1=street1,
-            street2=None,
-            city=city,
-            state="IL",
-            zip=zipc,
-        )
+        street1=street1,
+        street2=None,
+        city=city,
+        state="IL",
+        zip=zipc,
+    )
+
 
 def _get_contact(site: dict) -> List[schema.Contact]:
     contacts = []
     url = site["Website__c"]
     formatted_url = url
 
-    if ' ' in url:
+    if " " in url:
         match = URL_RE.search(url)
 
         if match and match.group(1):
             formatted_url = match.group(1)
 
-    if not formatted_url.startswith('http'):
-        formatted_url = 'http://' + url
+    if not formatted_url.startswith("http"):
+        formatted_url = "http://" + url
 
     try:
-        contacts.append(schema.Contact(website=formatted_url, contact_type=schema.ContactType.BOOKING))
+        contacts.append(
+            schema.Contact(
+                website=formatted_url, contact_type=schema.ContactType.BOOKING
+            )
+        )
     except pydantic.ValidationError as e:
-        logger.warning("Invalid website for id: %s, value: %s, error: %s. Returning empty Contact", site["Id"], url, str(e))
+        logger.warning(
+            "Invalid website for id: %s, value: %s, error: %s. Returning empty Contact",
+            site["Id"],
+            url,
+            str(e),
+        )
 
     return contacts
+
 
 def _get_parent_organization(name: str) -> Optional[schema.Organization]:
     if "Costco" in name:
@@ -68,6 +80,7 @@ def _get_parent_organization(name: str) -> Optional[schema.Organization]:
         return schema.Organization(id=schema.VaccineProvider.CVS)
 
     return None
+
 
 def normalize(site: dict, timestamp: str) -> dict:
     location_id = site["Id"]
