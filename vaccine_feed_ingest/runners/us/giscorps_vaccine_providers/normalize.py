@@ -195,10 +195,6 @@ def _get_normalized_location(site: dict, timestamp: str) -> schema.NormalizedLoc
     state = site["attributes"]["State"] or None
     state = state.strip() if state is not None else None
 
-    if state not in ['AL', 'AK', 'AS', 'AZ', 'AR', 'CA', 'CO', 'CT', 'DE', 'DC', 'FL', 'GA', 'GU', 'HI', 'ID', 'IL', 'IN', 'IA', 'KS', 'KY', 'LA', 'ME', 'MD', 'MA', 'MI', 'MN', 'MS', 'MO', 'MT', 'NE', 'NV', 'NH', 'NJ', 'NM', 'NY', 'NC', 'ND', 'MP', 'OH', 'OK', 'OR', 'PA', 'PR', 'RI', 'SC', 'SD', 'TN', 'TX', 'UT', 'VT', 'VA', 'VI', 'WA', 'WV', 'WI', 'WY']:
-        print(type(state) or "None")
-        print("\"" + state + "\"" if state is not None else "None")
-
     return schema.NormalizedLocation(
         id=f"{SOURCE_NAME}:{_get_id(site)}",
         name=site["attributes"]["name"],
