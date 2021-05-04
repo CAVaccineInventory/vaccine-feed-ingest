@@ -141,7 +141,7 @@ def _normalize_hours(
         return [schema.OpenHour(day=day, opens="08:00", closes="16:00")]
     elif processed_hours == "8:00AM7:00PM":
         return [schema.OpenHour(day=day, opens="08:00", closes="19:00")]
-    elif processed_hours.count("PM") == 2:
+    elif processed_hours.startswith("10:00PM") and processed_hours.count("PM") == 2:
         # "sat_hrs" for multiple Safeway locations are PM to PM, and
         # "sun_hrs" is the same hours, but AM to PM.  just fix the typo.
         processed_hours = processed_hours.replace("PM", "AM", 1)
