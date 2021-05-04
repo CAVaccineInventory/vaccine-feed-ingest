@@ -56,7 +56,7 @@ def _get_contact(site: dict) -> List[schema.Contact]:
                 website=formatted_url, contact_type=schema.ContactType.BOOKING
             )
         )
-    except pydantic.ValidationError as e:
+    except pydantic.ValidationError:
         logger.warning(
             "Invalid website for id: %s, value: %s. Returning empty Contact",
             site["Id"],
