@@ -191,6 +191,13 @@ def _get_normalized_location(site: dict, timestamp: str) -> schema.NormalizedLoc
 
     city_state_zip = addrsplit[1].split(" ") if try_get_list(addrsplit, 1) else None
 
+    state = site["attributes"]["State"] or None
+    state = state.strip() if state is not None else None
+
+    if state not in ['AL', 'AK', 'AS', 'AZ', 'AR', 'CA', 'CO', 'CT', 'DE', 'DC', 'FL', 'GA', 'GU', 'HI', 'ID', 'IL', 'IN', 'IA', 'KS', 'KY', 'LA', 'ME', 'MD', 'MA', 'MI', 'MN', 'MS', 'MO', 'MT', 'NE', 'NV', 'NH', 'NJ', 'NM', 'NY', 'NC', 'ND', 'MP', 'OH', 'OK', 'OR', 'PA', 'PR', 'RI', 'SC', 'SD', 'TN', 'TX', 'UT', 'VT', 'VA', 'VI', 'WA', 'WV', 'WI', 'WY']:
+        print(type(state) or "None")
+        print("\"" + state + "\"" if state is not None else "None")
+
     return schema.NormalizedLocation(
         id=f"{SOURCE_NAME}:{_get_id(site)}",
         name=site["attributes"]["name"],
@@ -199,8 +206,7 @@ def _get_normalized_location(site: dict, timestamp: str) -> schema.NormalizedLoc
             street2=None,
             city=site["attributes"]["municipality"]
             or try_get_list(city_state_zip, -3, default=""),
-            state=site["attributes"]["State"]
-            or try_get_list(city_state_zip, -2, default=""),
+            state=state,
             zip=zip,
         ),
         location=schema.LatLng(
