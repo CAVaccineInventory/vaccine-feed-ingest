@@ -31,7 +31,7 @@ def _get_address(site: dict) -> schema.Address:
         street1=street1,
         street2=None,
         city=city,
-        state="IL",
+        state=schema.State.ILLINOIS,
         zip=zipc,
     )
 
@@ -58,10 +58,9 @@ def _get_contact(site: dict) -> List[schema.Contact]:
         )
     except pydantic.ValidationError as e:
         logger.warning(
-            "Invalid website for id: %s, value: %s, error: %s. Returning empty Contact",
+            "Invalid website for id: %s, value: %s. Returning empty Contact",
             site["Id"],
             url,
-            str(e),
         )
 
     return contacts
@@ -83,6 +82,7 @@ def _get_parent_organization(name: str) -> Optional[schema.Organization]:
 
 
 def normalize(site: dict, timestamp: str) -> dict:
+    source_id = "il_sfsites"
     location_id = site["Id"]
     name = site["Testing_Center__c"]
     notes = []
@@ -91,7 +91,7 @@ def normalize(site: dict, timestamp: str) -> dict:
         notes.append(site["Location_Type__c"])
 
     return schema.NormalizedLocation(
-        id=f"sfsites:{location_id}",
+        id=f"{source_id}:{location_id}",
         name=name,
         address=_get_address(site),
         location=schema.LatLng(
@@ -110,7 +110,7 @@ def normalize(site: dict, timestamp: str) -> dict:
         notes=notes,
         active=None,
         source=schema.Source(
-            source="sfsites",
+            source=source_id,
             id=location_id,
             fetched_from_uri="https://coronavirus.illinois.gov/s/vaccination-location",  # noqa: E501
             fetched_at=timestamp,
