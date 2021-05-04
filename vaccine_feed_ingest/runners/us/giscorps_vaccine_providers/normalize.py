@@ -80,11 +80,23 @@ def _get_contacts(site: dict) -> Optional[List[schema.Contact]]:
 
     # there are multiple urls, vaccine, agency, health dept. etc
     if site["attributes"]["vaccine_url"]:
-        contacts.append(schema.Contact(website=site["attributes"]["vaccine_url"]))
+        url = site["attributes"]["vaccine_url"]
+        url = sanitize_url(url)
+        if url:
+            contacts.append(schema.Contact(website=url))
 
     if len(contacts) > 0:
         return contacts
 
+    return None
+
+
+def sanitize_url(url):
+    url = url.strip()
+    url = url.replace("#", "")
+    url = url if url.startswith("http") else "https://" + url
+    if len(url.split(" ")) == 1:
+        return url
     return None
 
 
