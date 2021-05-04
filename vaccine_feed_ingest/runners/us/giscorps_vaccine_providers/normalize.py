@@ -70,7 +70,7 @@ def _get_contacts(site: dict) -> Optional[List[schema.Contact]]:
         if len(sourcePhone) == 11:
             sourcePhone = sourcePhone[1:]
 
-        #TODO: handle 3-digit phone numbers like 211, 411 .etc
+        # TODO: handle 3-digit phone numbers like 211, 411 .etc
         if len(sourcePhone) == 10:
             phone = f"({sourcePhone[0:3]}) {sourcePhone[3:6]}-{sourcePhone[6:]}"
             contacts.append(schema.Contact(phone=phone))
@@ -94,7 +94,7 @@ def _get_contacts(site: dict) -> Optional[List[schema.Contact]]:
 def sanitize_url(url):
     url = url.strip()
     url = url.replace("#", "")
-    url = url.replace("\\", "/")#thanks windows
+    url = url.replace("\\", "/")  # thanks windows
     url = url if url.startswith("http") else "https://" + url
     if len(url.split(" ")) == 1:
         return url
