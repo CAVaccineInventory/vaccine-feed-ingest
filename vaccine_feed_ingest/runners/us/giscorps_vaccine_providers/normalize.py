@@ -2,7 +2,6 @@
 
 import datetime
 import json
-import logging
 import os
 import pathlib
 import re
@@ -18,13 +17,9 @@ sys.path.append(str(root_dir))
 
 from schema import schema  # noqa: E402
 
-# Configure logger
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s %(levelname)s:%(name)s:%(message)s",
-    datefmt="%m/%d/%Y %H:%M:%S",
-)
-logger = logging.getLogger("us/giscorps_vaccine_providers/normalize.py")
+from vaccine_feed_ingest.utils.log import getLogger  # noqa: E402
+
+logger = getLogger(__file__)
 
 
 def _get_availability(site: dict) -> schema.Availability:
