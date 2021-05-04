@@ -124,9 +124,9 @@ def _parse_time(human_readable_time: str) -> Tuple[int, int]:
     raise ValueError(human_readable_time)
 
 
-def _normalize_time(human_readable_time: str) -> str:
+def _normalize_time(human_readable_time: str) -> datetime.time:
     hour, minute = _parse_time(human_readable_time)
-    return datetime.time(hour % 24, minute).isoformat("minutes")
+    return datetime.time(hour % 24, minute)
 
 
 def _normalize_hours(
@@ -141,10 +141,6 @@ def _normalize_hours(
         return [schema.OpenHour(day=day, opens="08:00", closes="16:00")]
     elif processed_hours == "8:00AM7:00PM":
         return [schema.OpenHour(day=day, opens="08:00", closes="19:00")]
-    elif processed_hours.startswith("10:00PM") and processed_hours.count("PM") == 2:
-        # "sat_hrs" for multiple Safeway locations are PM to PM, and
-        # "sun_hrs" is the same hours, but AM to PM.  just fix the typo.
-        processed_hours = processed_hours.replace("PM", "AM", 1)
 
     processed_hours = re.sub("^BY APPOINTMENT", "", processed_hours).strip()
 
@@ -167,17 +163,20 @@ def _normalize_hours(
     opens = _normalize_time(open_time)
     closes = _normalize_time(close_time)
 
-    # handle the "9-5" case, where the PM for 5 is implied
-    if (opens > closes) and not re.search(r"P\.?M\.?$", close_time):
-        original_closes = datetime.time.fromisoformat(closes)
-        closes = original_closes.replace(hour=original_closes.hour + 12).isoformat()
+    if (opens > closes):
+        if not re.search(r"P\.?M\.?$", close_time):
+            # handle the "9-5" case, where the PM for 5 is implied
+            closes = closes.replace(hour=closes.hour + 12)
+        elif len(re.findall(r'P\.?M\.?', processed_hours)) == 2:
+            # handle the "10PM - 5PM" typo cases
+            opens = opens.replace(hour=opens.hour - 12)
 
     try:
         return [
             schema.OpenHour(
                 day=day,
-                opens=opens,
-                closes=closes,
+                opens=opens.isoformat("minutes"),
+                closes=closes.isoformat("minutes"),
             )
         ]
     except ValueError:
