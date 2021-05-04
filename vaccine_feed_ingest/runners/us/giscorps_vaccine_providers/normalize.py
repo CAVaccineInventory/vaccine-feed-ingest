@@ -94,6 +94,7 @@ def _get_contacts(site: dict) -> Optional[List[schema.Contact]]:
 def sanitize_url(url):
     url = url.strip()
     url = url.replace("#", "")
+    url = url.replace("\\", "/")#thanks windows
     url = url if url.startswith("http") else "https://" + url
     if len(url.split(" ")) == 1:
         return url
