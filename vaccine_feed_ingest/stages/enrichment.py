@@ -63,6 +63,12 @@ def _process_location(
     _add_provider_from_name(enriched_location)
     _add_source_link(enriched_location)
 
+    if not _valid_address(enriched_location):
+        return None
+
+    if not enriched_location.location:
+        return None
+
     return enriched_location
 
 
@@ -116,3 +122,23 @@ def _add_source_link(loc: location.NormalizedLocation) -> None:
         *(loc.links or []),
         location.Link(authority=loc.source.source, id=loc.source.id),
     ]
+
+
+def _valid_address(loc: location.NormalizedLocation) -> bool:
+    """Verify that address has all of the required components"""
+    if not loc.address:
+        return False
+
+    if not loc.address.street1:
+        return False
+
+    if not loc.address.city:
+        return False
+
+    if not loc.address.state:
+        return False
+
+    if not loc.address.zip:
+        return False
+
+    return True
