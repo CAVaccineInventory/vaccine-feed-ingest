@@ -50,9 +50,10 @@ def _get_access(site: dict) -> Optional[schema.Access]:
 SPECIAL_CASE_ADDRESSES = {
     # missing zipcode
     "12101 Winchester Road Sw Cumberland Allegany MD": "12101 Winchester Rd SW, Cumberland, MD 21502",
+    "12154 Brittingham Lane, Princess Anne MD": "12154 Brittingham Ln, Princess Anne, MD 21853",
+    "1290 East West Highway, Silver Spring, MD ": "1290 E W Hwy, Silver Spring, MD 20910",
     "1729 Dual Highway Hagerstown Washington MD": "1729 Dual Hwy, Hagerstown, MD 21740",
     "18726 N. Pointe Drive Hagerstown Washington MD": "18726 N Pointe Dr, Hagerstown, MD 21742",
-    "12154 Brittingham Lane, Princess Anne MD": "12154 Brittingham Ln, Princess Anne, MD 21853",
     "3935 Erdman Ave #37 Baltimore MD": "3935 Erdman Ave #37, Baltimore, MD 21213",
     # missing state, and according to walgreens' site, it's the wrong zip
     "9621 Belair Rd Perry Hall 21128": "9621 Belair Rd Baltimore, MD 21236",
@@ -65,7 +66,7 @@ ADDRESS_RE = re.compile(
 )
 
 
-def _get_address(site: dict) -> schema.Address:
+def _get_address(site: dict) -> Optional[schema.Address]:
     raw = site["attributes"]["fulladdr"]
     processed = SPECIAL_CASE_ADDRESSES.get(raw, raw).strip()
     if (
@@ -76,7 +77,8 @@ def _get_address(site: dict) -> schema.Address:
         processed = "873 Long Dr, Aberdeen, MD 21001"
     match = ADDRESS_RE.search(processed)
     if not match:
-        raise RuntimeError(f"Unable to parse address string '{raw}'")
+        logger.info(f"Unable to parse address string '{raw}'")
+        return None
     return schema.Address(
         street1=match.group("street"),
         city=match.group("city"),
@@ -120,7 +122,7 @@ def _get_contacts(site: dict) -> Optional[List[schema.Contact]]:
             try:
                 contacts.append(schema.Contact(**{field: site["attributes"][attr]}))
             except ValidationError:
-                logger.exception(
+                logger.debug(
                     f"Validation error adding Contact '{attr}' = '{site['attributes'][attr]}', skipping"
                 )
     return contacts or None
@@ -285,15 +287,17 @@ def _normalize_days(raw: str) -> List[str]:
         end_idx = double_all_days.index(finish, start_idx)
         return list(double_all_days[start_idx : end_idx + 1])
 
-    raise RuntimeError(f"Unable to normalize days string '{raw}'")
+    logger.info(f"Unable to normalize days string '{raw}'")
+    return []
 
 
-def _parse_days_and_hours(raw: str) -> Tuple[List[str], Tuple[str, str]]:
+def _parse_days_and_hours(raw: str) -> Optional[Tuple[List[str], Tuple[str, str]]]:
     time_match = re.search(f"(?P<time>{TIME_RANGE})", raw)
     if not (time_match):
         if "noon" in raw:
             return _parse_days_and_hours(raw.replace("noon", "12pm"))
-        raise RuntimeError(f"Unable to parse time string '{raw}'")
+        logger.info(f"Unable to parse time string '{raw}'")
+        return None
     hours = tuple(
         _normalize_hours(h) for h in re.split("-|to", time_match.group("time"))
     )
@@ -351,10 +355,15 @@ def _get_opening_hours(site: dict) -> Optional[List[schema.OpenHour]]:
             continue
 
         for piece in _pieces(_strip_flavor_text(processed)):
-            days, hours = _parse_days_and_hours(piece)
-            all_hours.extend(
-                [schema.OpenHour(day=d, opens=hours[0], closes=hours[1]) for d in days]
-            )
+            result = _parse_days_and_hours(piece)
+            if result:
+                days, hours = result
+                all_hours.extend(
+                    [
+                        schema.OpenHour(day=d, opens=hours[0], closes=hours[1])
+                        for d in days
+                    ]
+                )
 
     return all_hours or None
 
