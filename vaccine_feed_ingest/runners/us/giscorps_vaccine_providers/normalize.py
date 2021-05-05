@@ -20,10 +20,17 @@ SOURCE_NAME = "us_giscorps_vaccine_providers"
 
 def _get_availability(site: dict) -> schema.Availability:
     appt_only = site["attributes"]["appt_only"]
-    if appt_only == "Yes":
-        return schema.Availability(appointments=True)
-    elif appt_only is not None:
-        return schema.Availability(drop_in=True)
+
+    appt_options = {
+        "Yes": True,
+        "No": False
+    }
+
+    avail = try_lookup(appt_options, appt_only, None, name="availability lookup")
+
+    if avail is not None:
+        return schema.Availability(appointments=avail)
+    # there seems to be no walk-in data unless you want to parse "drive_in" = yes and "vehiche_required" = no into a "walk-in = yes"
 
     return None
 
