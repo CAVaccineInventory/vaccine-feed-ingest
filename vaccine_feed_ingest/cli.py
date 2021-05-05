@@ -75,6 +75,15 @@ def _stages_option() -> Callable:
     )
 
 
+def _fail_on_error_option() -> Callable:
+    return click.option(
+        "--fail-on-runner-error/--no-fail-on-runner-error",
+        type=bool,
+        default=True,
+        help="When set (default), errors in runners will raise",
+    )
+
+
 def _vial_server_option() -> Callable:
     return click.option(
         "--vial-server",
@@ -194,18 +203,26 @@ def _compute_has_parse(site_dir: pathlib.Path) -> bool:
 @_state_option()
 @_output_dir_option()
 @_dry_run_option()
+@_fail_on_error_option()
 def fetch(
     sites: Optional[Sequence[str]],
     state: Optional[str],
     output_dir: pathlib.Path,
     dry_run: bool,
+    fail_on_runner_error: bool,
 ) -> None:
     """Run fetch process for specified sites."""
     timestamp = _generate_run_timestamp()
     site_dirs = site.get_site_dirs(state, sites)
 
     for site_dir in site_dirs:
-        ingest.run_fetch(site_dir, output_dir, timestamp, dry_run)
+        ingest.run_fetch(
+            site_dir,
+            output_dir,
+            timestamp,
+            dry_run,
+            fail_on_runner_error=fail_on_runner_error,
+        )
 
 
 @cli.command()
@@ -214,19 +231,28 @@ def fetch(
 @_output_dir_option()
 @_dry_run_option()
 @_validate_option()
+@_fail_on_error_option()
 def parse(
     sites: Optional[Sequence[str]],
     state: Optional[str],
     output_dir: pathlib.Path,
     dry_run: bool,
     validate: bool,
+    fail_on_runner_error: bool,
 ) -> None:
     """Run parse process for specified sites."""
     timestamp = _generate_run_timestamp()
     site_dirs = site.get_site_dirs(state, sites)
 
     for site_dir in site_dirs:
-        ingest.run_parse(site_dir, output_dir, timestamp, validate, dry_run)
+        ingest.run_parse(
+            site_dir,
+            output_dir,
+            timestamp,
+            validate,
+            dry_run,
+            fail_on_runner_error=fail_on_runner_error,
+        )
 
 
 @cli.command()
@@ -235,46 +261,63 @@ def parse(
 @_output_dir_option()
 @_dry_run_option()
 @_validate_option()
+@_fail_on_error_option()
 def normalize(
     sites: Optional[Sequence[str]],
     state: Optional[str],
     output_dir: pathlib.Path,
     dry_run: bool,
     validate: bool,
+    fail_on_runner_error: bool,
 ) -> None:
     """Run normalize process for specified sites."""
     timestamp = _generate_run_timestamp()
     site_dirs = site.get_site_dirs(state, sites)
 
     for site_dir in site_dirs:
-        ingest.run_normalize(site_dir, output_dir, timestamp, validate, dry_run)
+        ingest.run_normalize(
+            site_dir,
+            output_dir,
+            timestamp,
+            validate,
+            dry_run,
+            fail_on_runner_error=fail_on_runner_error,
+        )
 
 
 @cli.command()
 @_sites_argument()
 @_state_option()
 @_output_dir_option()
+@_fail_on_error_option()
 def all_stages(
     sites: Optional[Sequence[str]],
     state: Optional[str],
     output_dir: pathlib.Path,
+    fail_on_runner_error: bool,
 ) -> None:
     """Run all stages in succession for specified sites."""
     timestamp = _generate_run_timestamp()
     site_dirs = site.get_site_dirs(state, sites)
 
     for site_dir in site_dirs:
-        fetch_success = ingest.run_fetch(site_dir, output_dir, timestamp)
+        fetch_success = ingest.run_fetch(
+            site_dir, output_dir, timestamp, fail_on_runner_error=fail_on_runner_error
+        )
 
         if not fetch_success:
             continue
 
-        parse_success = ingest.run_parse(site_dir, output_dir, timestamp)
+        parse_success = ingest.run_parse(
+            site_dir, output_dir, timestamp, fail_on_runner_error=fail_on_runner_error
+        )
 
         if not parse_success:
             continue
 
-        ingest.run_normalize(site_dir, output_dir, timestamp)
+        ingest.run_normalize(
+            site_dir, output_dir, timestamp, fail_on_runner_error=fail_on_runner_error
+        )
 
 
 @cli.command()
@@ -358,6 +401,7 @@ def load_to_vial(
 @_match_ids_option()
 @_create_ids_option()
 @_candidate_distance_option()
+@_fail_on_error_option()
 def pipeline(
     sites: Optional[Sequence[str]],
     state: Optional[str],
@@ -371,6 +415,7 @@ def pipeline(
     match_ids: Optional[Dict[str, str]],
     create_ids: Optional[Collection[str]],
     candidate_distance: float,
+    fail_on_runner_error: bool,
 ) -> None:
     """Run all stages in succession for specified sites."""
     timestamp = _generate_run_timestamp()
@@ -380,19 +425,34 @@ def pipeline(
 
     for site_dir in site_dirs:
         if common.PipelineStage.FETCH in stages:
-            fetch_success = ingest.run_fetch(site_dir, output_dir, timestamp)
+            fetch_success = ingest.run_fetch(
+                site_dir,
+                output_dir,
+                timestamp,
+                fail_on_runner_error=fail_on_runner_error,
+            )
 
             if not fetch_success:
                 continue
 
         if common.PipelineStage.PARSE in stages:
-            parse_success = ingest.run_parse(site_dir, output_dir, timestamp)
+            parse_success = ingest.run_parse(
+                site_dir,
+                output_dir,
+                timestamp,
+                fail_on_runner_error=fail_on_runner_error,
+            )
 
             if not parse_success:
                 continue
 
         if common.PipelineStage.NORMALIZE in stages:
-            normalize_success = ingest.run_normalize(site_dir, output_dir, timestamp)
+            normalize_success = ingest.run_normalize(
+                site_dir,
+                output_dir,
+                timestamp,
+                fail_on_runner_error=fail_on_runner_error,
+            )
 
             if not normalize_success:
                 continue

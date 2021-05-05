@@ -3,11 +3,13 @@
 import datetime
 import json
 import pathlib
+import re
 import sys
 
 from vaccine_feed_ingest_schema import location as schema
 
 from vaccine_feed_ingest.utils.log import getLogger
+from vaccine_feed_ingest.utils.normalize import normalize_url
 
 logger = getLogger(__file__)
 
@@ -43,27 +45,53 @@ def _get_location(site: dict):
 def _get_contacts(site: dict):
     ret = []
     if site["Appointment Phone"] != "":
-        raw_phone = str(site["Appointment Phone"]).lstrip("1")
-        if raw_phone[3] == "-" or raw_phone[7] == "-":
-            phone = "(" + raw_phone[0:3] + ") " + raw_phone[4:7] + "-" + raw_phone[8:12]
-            phone_notes = raw_phone[12:]
-        elif len(raw_phone) == 10:
-            phone = "(" + raw_phone[0:3] + ") " + raw_phone[3:6] + "-" + raw_phone[6:10]
-            phone_notes = ""
-        else:
-            phone = raw_phone[0:14]
-            phone_notes = raw_phone[14:]
+        ret.extend(_parse_phone_numbers(site["Appointment Phone"]))
 
-        if phone_notes == "":
-            ret.append(schema.Contact(phone=phone))
-        else:
-            phone_notes = phone_notes.lstrip(",")
-            phone_notes = phone_notes.lstrip(";")
-            phone_notes = phone_notes.lstrip(" ")
-            ret.append(schema.Contact(phone=phone, other=f"phone_notes:{phone_notes}"))
+    url = site["Web Address"]
+    # Some URLs have multiple schemes.
+    valid_url = re.match(r"(https?:\/\/)*(.+)", url)
 
-    if site["Web Address"] != "":
-        ret.append(schema.Contact(website=site["Web Address"]))
+    if (
+        url == "http://"
+        or url == "https://"
+        or url == "none"
+        or url == ""
+        or url.startswith("Please email")
+    ):
+        return ret
+    elif valid_url is not None:
+        if valid_url.group(1) is None:
+            url = valid_url.group(2)
+        else:
+            url = f"{valid_url.group(1)}{valid_url.group(2)}"
+        url = normalize_url(url)
+        ret.append(schema.Contact(website=url))
+    else:
+        logger.warning(f"Unknown, invalid URL: {url}")
+
+    return ret
+
+
+phone_number_parser = re.compile(
+    r"^(?:(?:\+?1\s*(?:[.-]\s*)?)?(?:\(?([0-9]{3})\)?)\s*(?:[.-]\s*)?)?([0-9]{3})\s*(?:[.-]\s*)?([0-9]{4})\s*(?:\([A-Z]{4}\))?,?(?:\s*(?:\#|x\.?|ext\.?|extension|OPTION|Option|option|Ext)\s*(\d+))?"  # noqa: E501
+)
+
+
+def _parse_phone_numbers(raw_phone: str) -> list[schema.Contact]:
+    if type(raw_phone) == float:
+        raw_phone = f"{raw_phone:.0f}"
+    else:
+        raw_phone = str(raw_phone)
+    raw_phone = raw_phone.strip()
+
+    matches = phone_number_parser.findall(raw_phone)
+    ret = []
+    for match in matches:
+        if match[3] != "":
+            phone = f"({match[0]}) {match[1]}-{match[2]} ext. {match[3]}"
+        else:
+            phone = f"({match[0]}) {match[1]}-{match[2]}"
+        ret.append(schema.Contact(phone=phone))
     return ret
 
 
