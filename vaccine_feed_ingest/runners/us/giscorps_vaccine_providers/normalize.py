@@ -23,7 +23,9 @@ def _get_availability(site: dict) -> schema.Availability:
 
     appt_options = {
         "Yes": True,
-        "No": False
+        "No": False,
+        "Vax only": True,
+        "Test only": False,
     }
 
     avail = try_lookup(appt_options, appt_only, None, name="availability lookup")
