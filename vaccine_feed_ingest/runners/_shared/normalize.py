@@ -124,7 +124,7 @@ def _get_contact(config: dict, site: dict) -> List[schema.Contact]:
     return [
         schema.Contact(
             contact_type="booking",
-            website=f"{config['url']}/client/registration?clinic_id={site['clinic_id']}",
+            website=f"{config['url']}/appointment/en/client/registration?clinic_id={site['clinic_id']}",
         )
     ]
 

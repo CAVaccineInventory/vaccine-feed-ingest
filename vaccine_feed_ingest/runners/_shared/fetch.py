@@ -61,7 +61,7 @@ if "parser" not in config or config["parser"] == "arcgis":
         raise e
 elif config["parser"] == "prepmod":
     try:
-        base_url = "%s/clinic/search" % config["url"]
+        base_url = "%s/appointment/en/clinic/search" % config["url"]
         page = 1
         while True:
             url = "{}?page={}".format(base_url, page)
