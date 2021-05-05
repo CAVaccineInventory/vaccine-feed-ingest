@@ -38,6 +38,13 @@ def fetch_geojson(
 
         results = layer.query(return_all_records=True, out_sr=4326)
         layer_id = layer.properties.id
+        for feature in results:
+            feature.attributes.update(
+                {
+                    "layer_id": layer_id,
+                    "service_item_id": service_item_id,
+                }
+            )
         file_name = f"{service_item_id}_{layer_id}.json"
         logger.info(f"Saving {layer.properties.name} layer to {file_name}")
         results.save(output_dir, file_name)
