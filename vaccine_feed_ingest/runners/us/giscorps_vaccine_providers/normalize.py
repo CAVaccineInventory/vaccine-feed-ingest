@@ -139,7 +139,7 @@ def try_lookup(mapping, value, default, name=None):
         return mapping[value]
     except KeyError as e:
         name = " for " + name or ""
-        logger.error("value not present in lookup table%s: %s", name, e)
+        logger.warn("value not present in lookup table%s: %s", name, e)
 
         return default
 
