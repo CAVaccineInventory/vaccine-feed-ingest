@@ -9,6 +9,9 @@ from bs4 import BeautifulSoup
 
 from vaccine_feed_ingest.utils.log import getLogger
 
+# dhhr.wv.gov has too small of a DH KEY for seclevel 2. Drop to seclevel 1.
+requests.packages.urllib3.util.ssl_.DEFAULT_CIPHERS = "ALL:@SECLEVEL=1"
+
 logger = getLogger(__file__)
 
 index_url = "https://dhhr.wv.gov/News/2021/Pages/default.aspx"
