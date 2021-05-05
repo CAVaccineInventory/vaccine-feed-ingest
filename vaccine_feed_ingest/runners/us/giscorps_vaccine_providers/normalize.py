@@ -166,6 +166,19 @@ def try_get_list(lis, index, default=None):
         return default
 
 
+def try_get_lat_long(site):
+    location = None
+    try:
+        location = schema.LatLng(
+            latitude=site["geometry"]["y"],
+            longitude=site["geometry"]["x"],
+        )
+    except KeyError:
+        pass
+    
+    return location
+
+
 def _get_normalized_location(site: dict, timestamp: str) -> schema.NormalizedLocation:
 
     addrsplit = site["attributes"]["fulladdr"].split(", ")
@@ -189,12 +202,7 @@ def _get_normalized_location(site: dict, timestamp: str) -> schema.NormalizedLoc
             state=state,
             zip=zip,
         ),
-        location=schema.LatLng(
-            latitude=site["geometry"]["y"] if site.get("geometry") else None,
-            longitude=site["geometry"]["x"] if site.get("geometry") else None,
-        )
-        if site.get("geometry")
-        else None,  # this is convuluted. ask Adrian (the author) if theres questions
+        location=try_get_lat_long(site),
         contact=_get_contacts(site),
         languages=None,
         opening_dates=None,
