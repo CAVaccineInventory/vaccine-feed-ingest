@@ -91,7 +91,6 @@ def _get_inventory(site: dict) -> List[schema.Vaccine]:
 def normalize(site: dict, timestamp: str) -> dict:
     links = [
         schema.Link(authority="ct_gov", id=site["_id"]),
-        schema.Link(authority="ct_gov_network_id", id=site["networkId"]),
     ]
 
     parent_organization = schema.Organization(name=site["networks"][0]["name"])
