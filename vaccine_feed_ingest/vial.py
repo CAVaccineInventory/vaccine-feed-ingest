@@ -69,9 +69,10 @@ def import_source_locations(
     vial_http: urllib3.connectionpool.ConnectionPool,
     import_run_id: str,
     import_locations: Iterable[load.ImportSourceLocation],
+    import_batch_size: int = 500,
 ) -> urllib3.response.HTTPResponse:
     """Import source locations"""
-    for import_locations_batch in misc.batch(import_locations, 1_000):
+    for import_locations_batch in misc.batch(import_locations, import_batch_size):
         encoded_ndjson = "\n".join(
             [loc.json(exclude_none=True) for loc in import_locations_batch]
         )

@@ -30,6 +30,7 @@ def load_sites_to_vial(
     match_ids: Optional[Dict[str, str]],
     create_ids: Optional[Collection[str]],
     candidate_distance: float,
+    import_batch_size: int,
 ) -> None:
     """Load list of sites to vial"""
     with vial.vial_client(vial_server, vial_apikey) as vial_http:
@@ -51,6 +52,7 @@ def load_sites_to_vial(
                 match_ids=match_ids,
                 create_ids=create_ids,
                 candidate_distance=candidate_distance,
+                import_batch_size=import_batch_size,
             )
 
             # If data was loaded then refresh existing locations
@@ -77,6 +79,7 @@ def run_load_to_vial(
     match_ids: Optional[Dict[str, str]] = None,
     create_ids: Optional[Collection[str]] = None,
     candidate_distance: float = 0.6,
+    import_batch_size: int = 500,
 ) -> Optional[List[load.ImportSourceLocation]]:
     """Load source to vial source locations"""
     ennrich_run_dir = outputs.find_latest_run_dir(
@@ -148,7 +151,10 @@ def run_load_to_vial(
 
         if not dry_run:
             import_resp = vial.import_source_locations(
-                vial_http, import_run_id, import_locations
+                vial_http,
+                import_run_id,
+                import_locations,
+                import_batch_size=import_batch_size,
             )
 
             if import_resp.status != 200:
