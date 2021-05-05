@@ -39,30 +39,6 @@ def _get_id(site: dict) -> str:
     return f"{arcgis}_{layer}_{data_id}"
 
 
-def _get_inventory(site: dict) -> Optional[List[schema.Vaccine]]:
-    # vaccines_field = site["attributes"]["flu_vaccinations"].lower().split(",")
-
-    # potentials = {
-    #     "pfizer": schema.Vaccine(vaccine="pfizer"),
-    #     "moderna": schema.Vaccine(vaccine="moderna"),
-    #     "janssen": schema.Vaccine(vaccine="janssen"),
-    #     "jjj": schema.Vaccine(vaccine="janssen"),
-    # }
-
-    # inventory = []
-
-    # for vf in vaccines_field:
-    #     try:
-    #         inventory.append(potentials[vf])
-    #     except KeyError as e:
-    #         logger.error("Unexpected vaccine type: %s", e)
-
-    # if len(inventory) > 0:
-    #     return inventory
-
-    return None
-
-
 def _get_contacts(site: dict) -> Optional[List[schema.Contact]]:
     contacts = []
     if site["attributes"]["phone"]:
@@ -217,7 +193,7 @@ def _get_normalized_location(site: dict, timestamp: str) -> schema.NormalizedLoc
         opening_dates=None,
         opening_hours=None,  # TODO: the format for this probably needs some mega-parsing as it looks like this -> "operhours": "Monday - Friday 8:00 am - 2:00 pm Saturdays 9:00 am - 12:00 pm",
         availability=_get_availability(site),
-        inventory=_get_inventory(site),
+        inventory=None,
         access=_get_access(site),
         parent_organization=None,
         links=None,  # TODO
