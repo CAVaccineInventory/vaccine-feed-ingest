@@ -177,7 +177,7 @@ def try_get_lat_long(site):
         )
     except KeyError:
         pass
-    
+
     return location
 
 
