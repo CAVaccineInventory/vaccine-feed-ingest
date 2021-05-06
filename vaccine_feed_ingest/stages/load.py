@@ -247,6 +247,11 @@ def _is_match(source: location.NormalizedLocation, candidate: dict) -> bool:
         # Shared concordances, mark as match
         return True
 
+    # Don't match locations with different providers
+    provider_matches = is_provider_similar(source, candidate)
+    if provider_matches is not None and provider_matches is False:
+        return False
+
     address_matches = is_address_similar(source, candidate)
     if address_matches is not None and address_matches is True:
         return True

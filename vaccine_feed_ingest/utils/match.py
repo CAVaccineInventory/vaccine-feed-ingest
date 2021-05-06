@@ -6,7 +6,7 @@ import us
 from vaccine_feed_ingest_schema import location
 
 from .log import getLogger
-from .normalize import normalize_address
+from .normalize import normalize_address, provider_id_from_name
 from .parse import parse_address
 
 logger = getLogger(__file__)
@@ -97,6 +97,42 @@ def is_address_similar(
 
     # If it made it though the gauntlet then it is similar eough to be a match
     return True
+
+
+def is_provider_similar(
+    source: location.NormalizedLocation,
+    candidate: dict,
+    threshold: float = 0.9,
+) -> Optional[float]:
+    """Calculate a similarity score between providers.
+
+    - True if similarity is above threashold
+    - False if similarity is below threashold
+    - None if couldn't compare providers
+    """
+    if not source.parent_organization:
+        return None
+
+    src_org = source.parent_organization.name or source.parent_organization.id
+
+    if not src_org:
+        return None
+
+    src_org = src_org.lower().replace("_", " ")
+
+    candidate_props = candidate.get("properties", {})
+
+    cand_org = None
+    candidate_provider_record = candidate_props.get("provider")
+    if candidate_provider_record and candidate_provider_record.get("name"):
+        cand_org = candidate_provider_record["name"].lower()
+
+    elif candidate_props.get("name"):
+        provider_parts = provider_id_from_name(candidate_props["name"])
+        if provider_parts:
+            cand_org = provider_parts[0].lower().replace("_", " ")
+
+    return jellyfish.jaro_winkler(src_org, cand_org) >= threshold
 
 
 def get_full_address(address: Optional[location.Address]) -> str:
