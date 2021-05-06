@@ -4,8 +4,14 @@ Various tricks for matching source locations to product locations from VIAL
 import re
 from typing import Optional, Tuple
 
+import scourgify
 import url_normalize
-from vaccine_feed_ingest_schema.location import VaccineProvider
+from vaccine_feed_ingest_schema.location import Address, VaccineProvider
+
+from .log import getLogger
+
+logger = getLogger(__file__)
+
 
 # Add to this list in alphabetical order
 VACCINE_PROVIDER_REGEXES = {
@@ -225,3 +231,41 @@ def normalize_url(url: Optional[str]) -> Optional[str]:
         return url
 
     return url_normalize.url_normalize(url)
+
+
+def normalize_address(address: Address) -> Optional[Address]:
+    """Normalize the address components so addresses are similar"""
+    if not address:
+        return None
+
+    # Copy address so we aren't modifying the original
+    address = address.copy()
+
+    # Must have all components to normalize with scourgify
+    if address.city and address.state and address.zip:
+        try:
+            address_record = scourgify.normalize_address_record(
+                {
+                    "address_line_1": address.street1,
+                    "address_line_2": address.street2,
+                    "city": address.city,
+                    "state": address.state,
+                    "postal_code": address.zip,
+                }
+            )
+
+            address.street1 = address_record.get("address_line_1")
+            address.street2 = address_record.get("address_line_2")
+            address.city = address_record.get("city")
+
+        except scourgify.exceptions.AddressNormalizationError:
+            logger.error("Could not normalize address with scourgify: %s", str(address))
+
+    # Convert fields to same case
+    titlecase_fields = ["street1", "street2", "city"]
+    for field in titlecase_fields:
+        value = getattr(address, field)
+        if value:
+            setattr(address, field, value.title())
+
+    return address

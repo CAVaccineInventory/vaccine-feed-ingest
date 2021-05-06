@@ -1,7 +1,102 @@
 import re
 from typing import Optional
 
+import jellyfish
+import us
 from vaccine_feed_ingest_schema import location
+
+from .log import getLogger
+from .normalize import normalize_address
+from .parse import parse_address
+
+logger = getLogger(__file__)
+
+
+def is_address_similar(
+    source: location.NormalizedLocation,
+    candidate: dict,
+    threshold: float = 0.95,
+) -> Optional[bool]:
+    """Compare address for similarity
+
+    - True if similarity is above threashold
+    - False if similarity is below threashold
+    - None if couldn't compare addresses
+    """
+    source_address = normalize_address(source.address)
+    if not source_address:
+        return None
+
+    if not candidate["properties"].get("full_address"):
+        return None
+
+    candidate_address = parse_address(candidate["properties"]["full_address"])
+    if not candidate_address:
+        return None
+
+    # Fill in missing parts of the candidate address from the address parts
+    if not candidate_address.city:
+        candidate_address.city = candidate["properties"].get("city")
+
+    if not candidate_address.state:
+        candidate_address.state = candidate["properties"].get("state")
+
+    if not candidate_address.zip:
+        candidate_address.zip = candidate["properties"].get("zip_code")
+
+    candidate_address = normalize_address(candidate_address)
+    if not candidate_address:
+        return None
+
+    # States must exist to compare
+    if not source_address.state or not candidate_address.state:
+        return None
+
+    # Cities must exist to compare
+    if not source_address.city or not candidate_address.city:
+        return None
+
+    # Streets must exist to compare
+    if not source_address.street1 or not candidate_address.street1:
+        return None
+
+    # States must exactly match
+    src_state = us.states.lookup(source_address.state)
+    cand_state = us.states.lookup(candidate_address.state)
+
+    if src_state != cand_state:
+        return False
+
+    # Cities must have similar names within threashold
+    src_city = source_address.city.lower()
+    cand_city = candidate_address.city.lower()
+    if jellyfish.jaro_winkler(src_city, cand_city) < threshold:
+        return False
+
+    # If zip code exists then zip codes must match the first 5 digits
+    if source_address.zip and candidate_address.zip:
+        src_zip = source_address.zip[:5]
+        cand_zip = candidate_address.zip[:5]
+
+        if src_zip != cand_zip:
+            return False
+
+    # Street address be similar within threashold
+    src_street_parts = [source_address.street1]
+    if source_address.street2:
+        src_street_parts.append(source_address.street2)
+    src_street = " ".join(src_street_parts)
+
+    cand_street_parts = [candidate_address.street1]
+    if candidate_address.street2:
+        cand_street_parts.append(candidate_address.street2)
+    cand_street = " ".join(cand_street_parts)
+
+    if jellyfish.jaro_winkler(src_street, cand_street) < threshold:
+        return False
+
+    # If it made it though the gauntlet then it is similar eough to be a match
+    return True
 
 
 def get_full_address(address: Optional[location.Address]) -> str:

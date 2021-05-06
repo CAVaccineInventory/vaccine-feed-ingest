@@ -12,7 +12,9 @@ from vaccine_feed_ingest_schema import load, location
 from vaccine_feed_ingest.utils.log import getLogger
 
 from .. import vial
-from ..utils.match import canonicalize_address, get_full_address
+from ..utils.match import (
+    is_address_similar,
+)
 from . import outputs
 from .common import STAGE_OUTPUT_SUFFIX, PipelineStage
 
@@ -232,9 +234,12 @@ def _is_match(source: location.NormalizedLocation, candidate: dict) -> bool:
         else set()
     )
 
-    candidate = candidate["properties"]
+    candidate_props = candidate["properties"]
+
     candidate_links = (
-        set(candidate["concordances"]) if "concordances" in candidate else set()
+        set(candidate_props["concordances"])
+        if "concordances" in candidate_props
+        else set()
     )
     shared_links = source_links.intersection(candidate_links)
 
@@ -242,12 +247,9 @@ def _is_match(source: location.NormalizedLocation, candidate: dict) -> bool:
         # Shared concordances, mark as match
         return True
 
-    if candidate["full_address"] is not None and source.address is not None:
-        if canonicalize_address(
-            get_full_address(source.address)
-        ) == canonicalize_address(candidate["full_address"]):
-            # Canonicalized address matches, mark as match
-            return True
+    address_matches = is_address_similar(source, candidate)
+    if address_matches is not None and address_matches is True:
+        return True
 
     return False
 
