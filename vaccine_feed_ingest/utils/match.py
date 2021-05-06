@@ -1,7 +1,55 @@
 import re
 from typing import Optional
 
+import jellyfish
+import us
 from vaccine_feed_ingest_schema import location
+
+from .log import getLogger
+from .normalize import provider_id_from_name
+
+logger = getLogger(__file__)
+
+
+def is_address_similar(
+    source: location.NormalizedLocation,
+    candidate: dict,
+) -> Optional[bool]:
+    """Compare address for similarity
+
+    - True if address matches exactly after canonicalization
+    - False if anything those match
+    - None if couldn't compare addresses
+    """
+    if not source.address:
+        return None
+
+    if not candidate["properties"].get("full_address"):
+        return None
+
+    # States must exist to compare
+    if not source.address.state or not candidate["properties"].get("state"):
+        return None
+
+    # City must exist to compare
+    if not source.address.city:
+        return None
+
+    # Street must exist to compare
+    if not source.address.street1:
+        return None
+
+    # States must exactly match
+    src_state = us.states.lookup(source.address.state)
+    cand_state = us.states.lookup(candidate["properties"]["state"])
+
+    if src_state != cand_state:
+        return False
+
+    src_addr = canonicalize_address(get_full_address(source.address))
+    cand_addr = canonicalize_address(candidate["properties"]["full_address"])
+
+    return src_addr == cand_addr
 
 
 def get_full_address(address: Optional[location.Address]) -> str:

@@ -7,6 +7,11 @@ from typing import Optional, Tuple
 import url_normalize
 from vaccine_feed_ingest_schema.location import VaccineProvider
 
+from .log import getLogger
+
+logger = getLogger(__file__)
+
+
 # Add to this list in alphabetical order
 VACCINE_PROVIDER_REGEXES = {
     VaccineProvider.ACME: [
