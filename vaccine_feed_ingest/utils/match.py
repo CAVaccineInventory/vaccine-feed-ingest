@@ -2,6 +2,7 @@ import re
 from typing import Optional
 
 import jellyfish
+import phonenumbers
 import us
 from vaccine_feed_ingest_schema import location
 
@@ -89,6 +90,48 @@ def is_provider_similar(
         return None
 
     return jellyfish.jaro_winkler(src_org, cand_org) >= threshold
+
+
+def has_matching_phone_number(
+    source: location.NormalizedLocation,
+    candidate: dict,
+) -> Optional[bool]:
+    """Compares phone numbers
+
+    - True if has at least one matching phone number
+    - False is only mismatching phone numbers
+    - None if no valid phone numbers to compare
+    """
+    candidate_props = candidate.get("properties", {})
+
+    if not candidate_props.get("phone_number"):
+        return None
+
+    try:
+        cand_phone = phonenumbers.parse(candidate_props["phone_number"], "US")
+    except phonenumbers.NumberParseException:
+        logger.warning("Invalid phone number: %s", candidate_props["phone_number"])
+        return None
+
+    src_phones = []
+    for contact in source.contact:
+        if not contact.phone:
+            continue
+
+        try:
+            src_phones.append(phonenumbers.parse(contact.phone, "US"))
+        except phonenumbers.NumberParseException:
+            logger.warning("Invalid phone number: %s", contact.phone)
+            continue
+
+    if not src_phones:
+        return None
+
+    for src_phone in src_phones:
+        if src_phone == cand_phone:
+            return True
+
+    return False
 
 
 def get_full_address(address: Optional[location.Address]) -> str:

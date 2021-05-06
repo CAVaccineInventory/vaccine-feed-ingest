@@ -14,7 +14,9 @@ from vaccine_feed_ingest.utils.log import getLogger
 
 from .. import vial
 from ..utils.match import (
+    has_matching_phone_number,
     is_address_similar,
+    is_provider_similar,
 )
 from . import outputs
 from .common import STAGE_OUTPUT_SUFFIX, PipelineStage
@@ -262,6 +264,11 @@ def _is_match(source: location.NormalizedLocation, candidate: dict) -> bool:
     # Don't match locations with different providers
     provider_matches = is_provider_similar(source, candidate, threshold=0.7)
     if provider_matches is not None and provider_matches is False:
+        return False
+
+    # If there are phone numbers and the phone numbers don't match then fail to match
+    phone_matches = has_matching_phone_number(source, candidate)
+    if phone_matches is not None and phone_matches is False:
         return False
 
     address_matches = is_address_similar(source, candidate)
