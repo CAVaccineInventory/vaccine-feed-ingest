@@ -41,7 +41,7 @@ html5lib = "^1.1"
 url-normalize = "^1.4.3"
 
 [tool.poetry.dev-dependencies]
-tox = "^3.23.0"
+tox = "^3.23.1"
 
 [tool.poetry.extras]
 lint = ["flake8", "black", "mypy", "isort"]
