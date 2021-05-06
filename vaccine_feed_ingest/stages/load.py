@@ -7,6 +7,7 @@ import rtree
 import shapely.geometry
 import urllib3
 import us
+from requests.exceptions import HTTPError
 from vaccine_feed_ingest_schema import load, location
 
 from vaccine_feed_ingest.utils.log import getLogger
@@ -150,21 +151,22 @@ def run_load_to_vial(
             continue
 
         if not dry_run:
-            import_resp = vial.import_source_locations(
-                vial_http,
-                import_run_id,
-                import_locations,
-                import_batch_size=import_batch_size,
-            )
-
-            if import_resp.status != 200:
+            try:
+                vial.import_source_locations(
+                    vial_http,
+                    import_run_id,
+                    import_locations,
+                    import_batch_size=import_batch_size,
+                )
+            except HTTPError as e:
                 logger.warning(
-                    "Failed to import source locations for %s in %s: %s",
+                    "Failed to import some source locations for %s in %s. Because this is action spans multiple remote calls, some locations may have been imported: %s",
                     filepath.name,
                     site_dir.name,
-                    import_resp.data[:100],
+                    e,
                 )
-                continue
+
+            continue
 
         num_imported_locations += len(import_locations)
 

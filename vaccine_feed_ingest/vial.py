@@ -70,19 +70,21 @@ def import_source_locations(
     import_run_id: str,
     import_locations: Iterable[load.ImportSourceLocation],
     import_batch_size: int = 500,
-) -> urllib3.response.HTTPResponse:
+) -> None:
     """Import source locations"""
     for import_locations_batch in misc.batch(import_locations, import_batch_size):
         encoded_ndjson = "\n".join(
             [loc.json(exclude_none=True) for loc in import_locations_batch]
         )
 
-        return vial_http.request(
+        rsp = vial_http.request(
             "POST",
             f"/api/importSourceLocations?import_run_id={import_run_id}",
             headers={**vial_http.headers, "Content-Type": "application/x-ndjson"},
             body=encoded_ndjson.encode("utf-8"),
         )
+
+        rsp.raise_for_status()
 
 
 def search_locations(
