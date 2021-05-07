@@ -16,6 +16,7 @@ from .. import vial
 from ..utils.match import (
     has_matching_phone_number,
     is_address_similar,
+    is_concordance_similar,
     is_provider_similar,
 )
 from . import outputs
@@ -242,24 +243,10 @@ def _is_different(source: location.NormalizedLocation, candidate: dict) -> bool:
 
 def _is_match(source: location.NormalizedLocation, candidate: dict) -> bool:
     """Return True if candidate is so similar it must be a match"""
-    source_links = (
-        set("{}:{}".format(link.authority, link.id) for link in source.links)
-        if source.links
-        else set()
-    )
-
-    candidate_props = candidate["properties"]
-
-    candidate_links = (
-        set(candidate_props["concordances"])
-        if "concordances" in candidate_props
-        else set()
-    )
-    shared_links = source_links.intersection(candidate_links)
-
-    if len(shared_links) > 0:
-        # Shared concordances, mark as match
-        return True
+    # If concordance matches or doesn't match then trust that first.
+    concordance_matches = is_concordance_similar(source, candidate)
+    if concordance_matches is not None:
+        return concordance_matches
 
     # Don't match locations with different providers
     provider_matches = is_provider_similar(source, candidate, threshold=0.7)
