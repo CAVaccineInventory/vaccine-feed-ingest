@@ -1,5 +1,6 @@
 import re
-from typing import Optional
+from collections import defaultdict
+from typing import Dict, Optional, Set
 
 import jellyfish
 import phonenumbers
@@ -10,6 +11,86 @@ from .log import getLogger
 from .normalize import provider_id_from_name
 
 logger = getLogger(__file__)
+
+
+def is_concordance_similar(
+    source: location.NormalizedLocation,
+    candidate: dict,
+) -> Optional[bool]:
+    """Compare concordances for similarity
+
+    Counts as similar even if there are multiple concordance entries
+    from the same authority on the candidate, but will count as disimilar if
+    the entry on the source differs from the candidate.
+
+    Examples:
+    - "A:1" matches "A:1", "B:2"
+    - "A:1" does not match "A:2", "B:2"
+    - "A:1" matches "A:1", "A:2"
+    - "A:1", "A:2" matches "A:1", "A:2"
+    - "A:1", "A:2" matches "A:1", "A:2", "A:3"
+    - "A:1", "B:2" matches "A:2", "B:2"
+
+    - True if a concordance entry matches
+    - False if a concordance entry conflicts
+    - None if couldn't compare concordances
+    """
+    if not source.links:
+        return None
+
+    candidate_props = candidate.get("properties")
+
+    if not candidate_props or not candidate_props.get("concordances"):
+        return None
+
+    source_concordance: Dict[str, Set[str]] = defaultdict(lambda: set())
+    for link in source.links:
+        # Skip entries that are prefixed with _ since they are used as tags
+        # and should not be used for matching.
+        if link.authority.startswith("_"):
+            continue
+
+        source_concordance[link.authority].add(link.id)
+
+    candidate_concordance: Dict[str, Set[str]] = defaultdict(lambda: set())
+    for entry in candidate_props["concordances"]:
+        # Skip entries that are prefixed with _ since they are used as tags
+        # and should not be used for matching.
+        if entry.startswith("_"):
+            continue
+
+        # Skip concordances with a colon
+        if ":" not in entry:
+            continue
+
+        authority, value = entry.split(":", maxsplit=1)
+
+        candidate_concordance[authority].add(value)
+
+    # Similar if at least one concordance entry matches,
+    # even if there are conflicting entries
+    for authority, src_values in source_concordance.items():
+        if authority not in candidate_concordance:
+            continue
+
+        cand_values = candidate_concordance[authority]
+
+        if src_values.intersection(cand_values):
+            return True
+
+    # Dissimilar if concordance entries conflict,
+    # and none of them had previously matched
+    for authority, src_values in source_concordance.items():
+        if authority not in candidate_concordance:
+            continue
+
+        cand_values = candidate_concordance[authority]
+
+        if not src_values.issubset(cand_values):
+            return False
+
+    # No entries matched or conflicted, so we don't know similarity
+    return None
 
 
 def is_address_similar(

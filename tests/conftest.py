@@ -75,7 +75,7 @@ def full_location():
         links=[
             location.Link(
                 authority=location.LocationAuthority.GOOGLE_PLACES,
-                id="abc123",
+                id="ChIJA0MOOYWHj4ARW8M-vrC9yGA",
             ),
         ],
         notes=["long note goes here"],
