@@ -118,7 +118,7 @@ def has_matching_phone_number(
         return None
 
     src_phones = []
-    for contact in source.contact:
+    for contact in source.contact or []:
         if not contact.phone:
             continue
 
