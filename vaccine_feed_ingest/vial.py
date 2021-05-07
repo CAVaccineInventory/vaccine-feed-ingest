@@ -4,6 +4,7 @@ import contextlib
 import json
 import urllib.parse
 from typing import Any, Iterable, Iterator, Tuple
+from urllib.error import HTTPError
 
 import geojson
 import rtree
@@ -84,7 +85,14 @@ def import_source_locations(
             body=encoded_ndjson.encode("utf-8"),
         )
 
-        rsp.raise_for_status()
+        if rsp.status != 200:
+            raise HTTPError(
+                f"/api/importSourceLocations?import_run_id={import_run_id}",
+                rsp.status,
+                rsp.data[:100],
+                dict(rsp.headers),
+                None,
+            )
 
 
 def search_locations(

@@ -1,5 +1,6 @@
 import pathlib
 from typing import Collection, Dict, Iterable, Iterator, List, Optional
+from urllib.error import HTTPError
 
 import jellyfish
 import pydantic
@@ -7,7 +8,6 @@ import rtree
 import shapely.geometry
 import urllib3
 import us
-from requests.exceptions import HTTPError
 from vaccine_feed_ingest_schema import load, location
 
 from vaccine_feed_ingest.utils.log import getLogger
