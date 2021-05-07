@@ -15,6 +15,9 @@ from .common import STAGE_OUTPUT_SUFFIX, PipelineStage
 logger = getLogger(__file__)
 
 
+PROVIDER_TAG = "_tag_provider"
+
+
 def enrich_locations(input_dir: pathlib.Path, output_dir: pathlib.Path) -> bool:
     """Enrich locations in normalized input_dir and write them to output_dir"""
     enriched_locations = []
@@ -63,6 +66,7 @@ def _process_location(
 
     _add_provider_from_name(enriched_location)
     _add_source_link(enriched_location)
+    _add_provider_tag(enriched_location)
 
     _normalize_phone_format(enriched_location)
 
@@ -151,6 +155,27 @@ def _normalize_phone_format(loc: location.NormalizedLocation) -> None:
         )
 
         contact.phone = formatted_phone
+
+
+def _add_provider_tag(loc: location.NormalizedLocation) -> None:
+    """Add provider tag to concordances to use for matching"""
+    if not loc.parent_organization:
+        return
+
+    if not loc.parent_organization.id:
+        return
+
+    existing_links = _generate_link_map(loc)
+
+    if PROVIDER_TAG in existing_links:
+        return
+
+    provider_id = str(loc.parent_organization.id)
+
+    loc.links = [
+        *(loc.links or []),
+        location.Link(authority=PROVIDER_TAG, id=provider_id),
+    ]
 
 
 def _valid_address(loc: location.NormalizedLocation) -> bool:
