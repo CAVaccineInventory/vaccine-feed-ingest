@@ -208,16 +208,26 @@ def run_load_to_vial(
         - num_already_matched_locations
     )
 
-    logger.info(
-        "Imported %d source locations for %s "
-        "(%d new, %d matched, %d unknown, %d already matched)",
-        num_imported_locations,
-        site_dir.name,
-        num_new_locations,
-        num_match_locations,
-        num_unknown_locations,
-        num_already_matched_locations,
-    )
+    if enable_rematch:
+        logger.info(
+            "Imported %d source locations for %s (%d new, %d matched, %d unknown)",
+            num_imported_locations,
+            site_dir.name,
+            num_new_locations,
+            num_match_locations,
+            num_unknown_locations,
+        )
+    else:
+        logger.info(
+            "Imported %d source locations for %s "
+            "(%d new, %d matched, %d unknown, %d had existing match)",
+            num_imported_locations,
+            site_dir.name,
+            num_new_locations,
+            num_match_locations,
+            num_unknown_locations,
+            num_already_matched_locations,
+        )
 
     return import_locations
 
