@@ -238,6 +238,19 @@ def _get_inventory(site: dict) -> Optional[List[schema.Vaccine]]:
     return inventory or None
 
 
+def _get_notes(site: dict) -> Optional[List[str]]:
+    notes = []
+
+    # our data model doesn't handle "days of month with times", so we record
+    # the days of the month as `opening_dates`, and stick the original in as
+    # a note.
+    days_hours = site["Normal Days / Hours"]
+    if re.search(MONTHS_PATTERN, days_hours.lower()):
+        notes.append(days_hours)
+
+    return notes or None
+
+
 def _normalize_days(raw_days: str) -> List[str]:
     potentials = {
         "mon": schema.DayOfWeek.MONDAY,
@@ -278,6 +291,7 @@ def normalize(site: dict, timestamp: str) -> schema.NormalizedLocation:
         opening_hours=_get_opening_hours(site),
         availability=schema.Availability(appointments=False, drop_in=True),
         inventory=_get_inventory(site),
+        notes=_get_notes(site),
         source=schema.Source(
             source="dc_district",
             id=id_.split(":")[-1],
