@@ -1,0 +1,4 @@
+---
+state: sd
+site: sd_arcgis
+parser: arcgis_features
