@@ -32,6 +32,7 @@ def load_sites_to_vial(
     vial_apikey: str,
     enable_match: bool,
     enable_create: bool,
+    enable_rematch: bool,
     match_ids: Optional[Dict[str, str]],
     create_ids: Optional[Collection[str]],
     candidate_distance: float,
@@ -42,7 +43,13 @@ def load_sites_to_vial(
         import_run_id = vial.start_import_run(vial_http)
 
         if enable_match or enable_create:
+            logger.info("Loading existing location from VIAL")
             locations = vial.retrieve_existing_locations_as_index(vial_http)
+
+            # Skip loading already matched if re-matching
+            if not enable_rematch:
+                logger.info("Loading already matched source locations from VIAL")
+                matched_ids = vial.retrieve_matched_source_location_ids(vial_http)
 
         for site_dir in site_dirs:
             imported_locations = run_load_to_vial(
@@ -52,8 +59,10 @@ def load_sites_to_vial(
                 vial_http=vial_http,
                 import_run_id=import_run_id,
                 locations=locations,
+                matched_ids=matched_ids,
                 enable_match=enable_match,
                 enable_create=enable_create,
+                enable_rematch=enable_rematch,
                 match_ids=match_ids,
                 create_ids=create_ids,
                 candidate_distance=candidate_distance,
@@ -69,6 +78,7 @@ def load_sites_to_vial(
                 ]
 
                 if source_ids:
+                    logger.info("Updating existing locations with the ones we created")
                     vial.update_existing_locations(vial_http, locations, source_ids)
 
 
@@ -79,8 +89,10 @@ def run_load_to_vial(
     vial_http: urllib3.connectionpool.ConnectionPool,
     import_run_id: str,
     locations: Optional[rtree.index.Index],
+    matched_ids: Optional[Collection[str]],
     enable_match: bool = True,
     enable_create: bool = False,
+    enable_rematch: bool = False,
     match_ids: Optional[Dict[str, str]] = None,
     create_ids: Optional[Collection[str]] = None,
     candidate_distance: float = 0.6,
@@ -106,6 +118,7 @@ def run_load_to_vial(
     num_imported_locations = 0
     num_new_locations = 0
     num_match_locations = 0
+    num_already_matched_locations = 0
 
     for filepath in outputs.iter_data_paths(
         ennrich_run_dir, suffix=STAGE_OUTPUT_SUFFIX[PipelineStage.ENRICH]
@@ -134,13 +147,20 @@ def run_load_to_vial(
                     match_action = load.ImportMatchAction(action="new")
 
                 elif (enable_match or enable_create) and locations is not None:
-                    match_action = _match_source_to_existing_locations(
-                        normalized_location,
-                        locations,
-                        candidate_distance,
-                        enable_match=enable_match,
-                        enable_create=enable_create,
-                    )
+                    # Match source locations if we are re-matching, or if we
+                    # haven't matched this source location yet
+                    if enable_rematch or (
+                        matched_ids and normalized_location.id not in matched_ids
+                    ):
+                        match_action = _match_source_to_existing_locations(
+                            normalized_location,
+                            locations,
+                            candidate_distance,
+                            enable_match=enable_match,
+                            enable_create=enable_create,
+                        )
+                    else:
+                        num_already_matched_locations += 1
 
                 import_location = _create_import_location(
                     normalized_location, match_action=match_action
@@ -181,13 +201,22 @@ def run_load_to_vial(
 
             continue
 
+    num_unknown_locations = (
+        num_imported_locations
+        - num_new_locations
+        - num_match_locations
+        - num_already_matched_locations
+    )
+
     logger.info(
-        "Imported %d source locations for %s (%d new, %d matched, %d unknown)",
+        "Imported %d source locations for %s "
+        "(%d new, %d matched, %d unknown, %d already matched)",
         num_imported_locations,
         site_dir.name,
         num_new_locations,
         num_match_locations,
-        num_imported_locations - num_new_locations - num_match_locations,
+        num_unknown_locations,
+        num_already_matched_locations,
     )
 
     return import_locations

@@ -3,7 +3,7 @@
 import contextlib
 import json
 import urllib.parse
-from typing import Any, Iterable, Iterator, Tuple
+from typing import Any, Iterable, Iterator, Set, Tuple
 from urllib.error import HTTPError
 
 import geojson
@@ -155,3 +155,41 @@ def update_existing_locations(
 
         for loc in updated_locations:
             locations.insert(_generate_index_row(loc))
+
+
+def search_source_locations(
+    vial_http: urllib3.connectionpool.ConnectionPool,
+    **kwds: Any,
+) -> Iterator[dict]:
+    """Wrapper around search source locations api. Returns geojson."""
+    params = {
+        **kwds,
+        "format": "nlgeojson",
+    }
+
+    query = urllib.parse.urlencode(params)
+
+    resp = vial_http.request(
+        "GET", f"/api/searchSourceLocations?{query}", preload_content=False
+    )
+
+    for line in resp:
+        try:
+            yield geojson.loads(line)
+        except json.JSONDecodeError:
+            logger.warning("Invalid json record in search response: %s", line)
+
+    resp.release_conn()
+
+
+def retrieve_matched_source_location_ids(
+    vial_http: urllib3.connectionpool.ConnectionPool,
+) -> Set[str]:
+    """Return all matched source location ids in VIAL"""
+    source_locations = search_source_locations(vial_http, all=1, matched=1)
+
+    return {
+        loc["properties"]["source_uid"]
+        for loc in source_locations
+        if "properties" in loc and "source_uid" in loc["properties"]
+    }
