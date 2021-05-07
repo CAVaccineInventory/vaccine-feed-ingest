@@ -4,6 +4,7 @@ import contextlib
 import json
 import urllib.parse
 from typing import Any, Iterable, Iterator, Tuple
+from urllib.error import HTTPError
 
 import geojson
 import rtree
@@ -69,19 +70,29 @@ def import_source_locations(
     vial_http: urllib3.connectionpool.ConnectionPool,
     import_run_id: str,
     import_locations: Iterable[load.ImportSourceLocation],
-) -> urllib3.response.HTTPResponse:
+    import_batch_size: int = 500,
+) -> None:
     """Import source locations"""
-    for import_locations_batch in misc.batch(import_locations, 1_000):
+    for import_locations_batch in misc.batch(import_locations, import_batch_size):
         encoded_ndjson = "\n".join(
             [loc.json(exclude_none=True) for loc in import_locations_batch]
         )
 
-        return vial_http.request(
+        rsp = vial_http.request(
             "POST",
             f"/api/importSourceLocations?import_run_id={import_run_id}",
             headers={**vial_http.headers, "Content-Type": "application/x-ndjson"},
             body=encoded_ndjson.encode("utf-8"),
         )
+
+        if rsp.status != 200:
+            raise HTTPError(
+                f"/api/importSourceLocations?import_run_id={import_run_id}",
+                rsp.status,
+                rsp.data[:100],
+                dict(rsp.headers),
+                None,
+            )
 
 
 def search_locations(

@@ -1,5 +1,6 @@
 import pathlib
 from typing import Collection, Dict, Iterable, Iterator, List, Optional
+from urllib.error import HTTPError
 
 import jellyfish
 import pydantic
@@ -30,6 +31,7 @@ def load_sites_to_vial(
     match_ids: Optional[Dict[str, str]],
     create_ids: Optional[Collection[str]],
     candidate_distance: float,
+    import_batch_size: int,
 ) -> None:
     """Load list of sites to vial"""
     with vial.vial_client(vial_server, vial_apikey) as vial_http:
@@ -51,6 +53,7 @@ def load_sites_to_vial(
                 match_ids=match_ids,
                 create_ids=create_ids,
                 candidate_distance=candidate_distance,
+                import_batch_size=import_batch_size,
             )
 
             # If data was loaded then refresh existing locations
@@ -77,6 +80,7 @@ def run_load_to_vial(
     match_ids: Optional[Dict[str, str]] = None,
     create_ids: Optional[Collection[str]] = None,
     candidate_distance: float = 0.6,
+    import_batch_size: int = 500,
 ) -> Optional[List[load.ImportSourceLocation]]:
     """Load source to vial source locations"""
     ennrich_run_dir = outputs.find_latest_run_dir(
@@ -96,6 +100,8 @@ def run_load_to_vial(
         return None
 
     num_imported_locations = 0
+    num_new_locations = 0
+    num_match_locations = 0
 
     for filepath in outputs.iter_data_paths(
         ennrich_run_dir, suffix=STAGE_OUTPUT_SUFFIX[PipelineStage.ENRICH]
@@ -136,6 +142,13 @@ def run_load_to_vial(
                     normalized_location, match_action=match_action
                 )
 
+                num_imported_locations += 1
+                if match_action:
+                    if match_action.action == "existing":
+                        num_match_locations += 1
+                    elif match_action.action == "new":
+                        num_new_locations += 1
+
                 import_locations.append(import_location)
 
         if not import_locations:
@@ -147,25 +160,30 @@ def run_load_to_vial(
             continue
 
         if not dry_run:
-            import_resp = vial.import_source_locations(
-                vial_http, import_run_id, import_locations
-            )
-
-            if import_resp.status != 200:
+            try:
+                vial.import_source_locations(
+                    vial_http,
+                    import_run_id,
+                    import_locations,
+                    import_batch_size=import_batch_size,
+                )
+            except HTTPError as e:
                 logger.warning(
-                    "Failed to import source locations for %s in %s: %s",
+                    "Failed to import some source locations for %s in %s. Because this is action spans multiple remote calls, some locations may have been imported: %s",
                     filepath.name,
                     site_dir.name,
-                    import_resp.data[:100],
+                    e,
                 )
-                continue
 
-        num_imported_locations += len(import_locations)
+            continue
 
     logger.info(
-        "Imported %d source locations for %s",
+        "Imported %d source locations for %s (%d new, %d matched, %d unknown)",
         num_imported_locations,
         site_dir.name,
+        num_new_locations,
+        num_match_locations,
+        num_imported_locations - num_new_locations - num_match_locations,
     )
 
     return import_locations
@@ -257,40 +275,70 @@ def _match_source_to_existing_locations(
     if not source.location:
         return None
 
-    candidates = list(_find_candidates(source, existing, candidate_distance))
+    nearby_candidates = list(_find_candidates(source, existing, candidate_distance))
 
-    if not candidates:
-        logger.info("%s is a new location - nothing close", source.name)
+    if not nearby_candidates:
+        logger.info("NEW: %s (%s): No candidates nearby", source.id, source.name)
         if enable_create:
             return load.ImportMatchAction(action="new")
         else:
             return None
 
     # Filter out candidates that are too different to be a match
-    candidates = [loc for loc in candidates if not _is_different(source, loc)]
+    different_candidates = [
+        loc for loc in nearby_candidates if not _is_different(source, loc)
+    ]
 
-    if not candidates:
-        logger.info("%s is a new location", source.name)
+    if not different_candidates:
+        logger.info(
+            "NEW: %s (%s): %d nearby candidates were not matchable",
+            source.id,
+            source.name,
+            len(nearby_candidates),
+        )
         if enable_create:
             return load.ImportMatchAction(action="new")
         else:
             return None
 
     # Filter to candidates that are similar enough to be the same
-    candidates = [loc for loc in candidates if _is_match(source, loc)]
+    candidates = [loc for loc in different_candidates if _is_match(source, loc)]
 
     # If there is one remaining high confidant match then use it.
     if len(candidates) == 1:
-        logger.info("%s is an existing location", source.name)
+        match_candidate = candidates[0]
+
+        logger.info(
+            "MATCH: %s (%s) matched to %s (%s)",
+            source.id,
+            source.name,
+            match_candidate["properties"]["id"],
+            match_candidate["properties"]["name"],
+        )
         if enable_match:
             return load.ImportMatchAction(
                 action="existing",
-                id=candidates[0]["properties"]["id"],
+                id=match_candidate["properties"]["id"],
             )
         else:
             return None
 
-    logger.info("%d matches, not sure about %s", len(candidates), source.name)
+    if len(candidates) > 1:
+        logger.info(
+            "AMBIGUOUS: %s (%s) has %d matches e.g. %s (%s), %s (%s)",
+            source.id,
+            source.name,
+            len(candidates),
+            candidates[0]["properties"]["id"],
+            candidates[0]["properties"]["name"],
+            candidates[1]["properties"]["id"],
+            candidates[1]["properties"]["name"],
+        )
+    else:
+        logger.info(
+            "MISSING: %s (%s) has no matching candidates", source.id, source.name
+        )
+
     return None
 
 

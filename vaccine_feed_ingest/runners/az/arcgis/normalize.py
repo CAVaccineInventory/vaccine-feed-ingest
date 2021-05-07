@@ -1,19 +1,17 @@
 #!/usr/bin/env python
-# isort: skip_file
 
+import datetime
 import json
-from vaccine_feed_ingest.utils.log import getLogger
 import os
 import pathlib
 import re
 import sys
-from datetime import datetime
 from typing import List, Optional, Tuple
 
 from vaccine_feed_ingest_schema import location as schema
 
+from vaccine_feed_ingest.utils.log import getLogger
 from vaccine_feed_ingest.utils.validation import BOUNDING_BOX
-
 
 logger = getLogger(__file__)
 
@@ -22,7 +20,7 @@ input_dir = pathlib.Path(sys.argv[2])
 
 json_filepaths = input_dir.glob("*.ndjson")
 
-parsed_at_timestamp = datetime.utcnow().isoformat()
+parsed_at_timestamp = datetime.datetime.utcnow().isoformat()
 
 
 def _get_id(site: dict) -> str:
@@ -87,14 +85,14 @@ def _get_opening_dates(site: dict) -> Optional[List[schema.OpenDate]]:
     closes = None
     if site["attributes"]["begindate"] is not None:
         opens = (
-            datetime.fromtimestamp(site["attributes"]["begindate"] // 1000)
+            datetime.datetime.fromtimestamp(site["attributes"]["begindate"] // 1000)
             .date()
             .isoformat()
         )
 
     if site["attributes"]["enddate"] is not None:
         closes = (
-            datetime.fromtimestamp(site["attributes"]["enddate"] // 1000)
+            datetime.datetime.fromtimestamp(site["attributes"]["enddate"] // 1000)
             .date()
             .isoformat()
         )
@@ -110,33 +108,25 @@ def _get_opening_dates(site: dict) -> Optional[List[schema.OpenDate]]:
     ]
 
 
+TIME_RANGE_RE = re.compile(
+    r"(?P<hour>\d{1,2})(:(?P<minute>\d{1,2}))?\s*(?P<am_pm>[AP]\.?M\.?)?"
+)
+
+
 def _parse_time(human_readable_time: str) -> Tuple[int, int]:
-    match = re.match(r"^(?P<hour>\d+):(?P<minute>\d+) ?AM?$", human_readable_time)
+    match = TIME_RANGE_RE.search(human_readable_time)
     if match:
-        return int(match.group("hour")), int(match.group("minute"))
-
-    match = re.match(r"^(?P<hour>\d+):(?P<minute>\d+) ?P[MN]?$", human_readable_time)
-    if match:
-        return int(match.group("hour")) + 12, int(match.group("minute"))
-
-    match = re.match(r"^(?P<hour>\d+) ?AM$", human_readable_time)
-    if match:
-        return int(match.group("hour")), 0
-
-    match = re.match(r"^(?P<hour>\d+) ?PM$", human_readable_time)
-    if match:
-        return int(match.group("hour")) + 12, 0
-
-    match = re.match(r"^(?P<hour>\d+):(?P<minute>\d+)$", human_readable_time)
-    if match:
-        return int(match.group("hour")), int(match.group("minute"))
-
+        hour = int(match.group("hour"))
+        minute = int(match.group("minute") or "0")
+        if (1 <= hour <= 11) and ((match.group("am_pm") or "").startswith("P")):
+            hour += 12
+        return hour, minute
     raise ValueError(human_readable_time)
 
 
-def _normalize_time(human_readable_time: str) -> str:
+def _normalize_time(human_readable_time: str) -> datetime.time:
     hour, minute = _parse_time(human_readable_time)
-    return str(hour % 24).rjust(2, "0") + ":" + str(minute).rjust(2, "0")
+    return datetime.time(hour % 24, minute)
 
 
 def _normalize_hours(
@@ -145,13 +135,12 @@ def _normalize_hours(
     processed_hours = human_readable_hours
     if processed_hours is None:
         return []
+    processed_hours = processed_hours.upper()
 
-    if processed_hours == "8-4":
-        return [schema.OpenHour(day=day, opens="08:00", closes="16:00")]
     if processed_hours == "8:00AM7:00PM":
-        return [schema.OpenHour(day=day, opens="08:00", closes="16:00")]
+        return [schema.OpenHour(day=day, opens="08:00", closes="19:00")]
 
-    processed_hours = processed_hours.upper().lstrip("BY APPOINTMENT ").strip()
+    processed_hours = re.sub("^BY APPOINTMENT", "", processed_hours).strip()
 
     if " AND " in processed_hours:
         ranges = processed_hours.split(" AND ")
@@ -168,13 +157,24 @@ def _normalize_hours(
         logger.warning("unparseable hours: '%s'", human_readable_hours)
         return []
 
-    open_time, close_time = processed_hours.split("-")
+    open_time, close_time = [x.strip() for x in re.split(r"\s*-\s*", processed_hours)]
+    opens = _normalize_time(open_time)
+    closes = _normalize_time(close_time)
+
+    if opens > closes:
+        if not re.search(r"[AP]\.?M\.?$", close_time):
+            # handle the "9-5" case, where the AM/PM is implied
+            closes = closes.replace(hour=closes.hour + 12)
+        elif len(re.findall(r"P\.?M\.?", processed_hours)) == 2:
+            # handle the "10PM - 5PM" typo cases
+            opens = opens.replace(hour=opens.hour - 12)
+
     try:
         return [
             schema.OpenHour(
                 day=day,
-                opens=_normalize_time(open_time.strip().upper()),
-                closes=_normalize_time(close_time.strip().upper()),
+                opens=opens.isoformat("minutes"),
+                closes=closes.isoformat("minutes"),
             )
         ]
     except ValueError:
@@ -210,21 +210,32 @@ def _get_opening_hours(site: dict) -> Optional[List[schema.OpenHour]]:
 
 
 def _get_inventory(site: dict) -> Optional[List[schema.Vaccine]]:
+    # Though the data source includes attributes for each possible vaccine, they
+    # do not appear to be used every time (rather this string is typically set)
     inventory_str = site["attributes"]["vaccine_manufacturer"]
-    inventory = (
-        inventory_str.split(";") if ";" in inventory_str else inventory_str.split(",")
+
+    inventory = []
+
+    pfizer = re.search("pfizer", inventory_str, re.IGNORECASE)
+    moderna = re.search("moderna", inventory_str, re.IGNORECASE)
+    johnson = re.search(
+        "janssen|johnson.*johnson|j&j|j_j", inventory_str, re.IGNORECASE
     )
 
-    return [
-        {
-            "Pfizer_BioNTech": schema.Vaccine(vaccine="pfizer_biontech"),
-            "Pfizer-BioNTech": schema.Vaccine(vaccine="pfizer_biontech"),
-            "Pfizer": schema.Vaccine(vaccine="pfizer_biontech"),
-            "Moderna": schema.Vaccine(vaccine="moderna"),
-            "J_J": schema.Vaccine(vaccine="johnson_johnson_janssen"),
-        }[vaccine.lstrip("\u200b").strip()]
-        for vaccine in inventory
-    ]
+    if pfizer:
+        inventory.append(schema.Vaccine(vaccine=schema.VaccineType.PFIZER_BIONTECH))
+    if moderna:
+        inventory.append(schema.Vaccine(vaccine=schema.VaccineType.MODERNA))
+    if johnson:
+        inventory.append(
+            schema.Vaccine(vaccine=schema.VaccineType.JOHNSON_JOHNSON_JANSSEN)
+        )
+
+    if len(inventory) == 0:
+        logger.warning("No vaccines found in inventory: %s", inventory_str)
+        return None
+
+    return inventory
 
 
 def _get_lat_lng(site: dict) -> Optional[schema.LatLng]:

@@ -1,0 +1,7 @@
+---
+state: mn
+# https://services.arcgis.com/9OIuDHbyhmH91RfZ/arcgis/rest/services/CovidVacLocations_view_prod/FeatureServer
+arcgis:
+- id: 18279cf4ab4740ae92708db437250056
+  layer_names:
+  - covidtestlocations # It says tests, but is actually vaccinations.

@@ -17,6 +17,9 @@ from .stages import common, ingest, load, site
 # Collect locations that are within .6 degrees = 66.6 km = 41 mi
 CANDIDATE_DEGREES_DISTANCE = 0.6
 
+# Default import batch size to vial
+IMPORT_BATCH_SIZE = 500
+
 
 def _generate_run_timestamp() -> str:
     """Generate a timestam that will be recorded in the stage data output dirs"""
@@ -159,6 +162,15 @@ def _candidate_distance_option() -> Callable:
         "candidate_distance",
         type=float,
         default=CANDIDATE_DEGREES_DISTANCE,
+    )
+
+
+def _import_batch_size_option() -> Callable:
+    return click.option(
+        "--import-batch-size",
+        "import_batch_size",
+        type=int,
+        default=lambda: os.environ.get("IMPORT_BATCH_SIZE", IMPORT_BATCH_SIZE),
     )
 
 
@@ -351,6 +363,7 @@ def enrich(
 @_match_ids_option()
 @_create_ids_option()
 @_candidate_distance_option()
+@_import_batch_size_option()
 def load_to_vial(
     sites: Optional[Sequence[str]],
     state: Optional[str],
@@ -363,6 +376,7 @@ def load_to_vial(
     match_ids: Optional[Dict[str, str]],
     create_ids: Optional[Collection[str]],
     candidate_distance: float,
+    import_batch_size: int,
 ) -> None:
     """Load specified sites to vial server."""
     site_dirs = site.get_site_dirs(state, sites)
@@ -385,6 +399,7 @@ def load_to_vial(
         match_ids=match_ids,
         create_ids=create_ids,
         candidate_distance=candidate_distance,
+        import_batch_size=import_batch_size,
     )
 
 
@@ -401,6 +416,7 @@ def load_to_vial(
 @_match_ids_option()
 @_create_ids_option()
 @_candidate_distance_option()
+@_import_batch_size_option()
 @_fail_on_error_option()
 def pipeline(
     sites: Optional[Sequence[str]],
@@ -415,6 +431,7 @@ def pipeline(
     match_ids: Optional[Dict[str, str]],
     create_ids: Optional[Collection[str]],
     candidate_distance: float,
+    import_batch_size: int,
     fail_on_runner_error: bool,
 ) -> None:
     """Run all stages in succession for specified sites."""
@@ -477,6 +494,7 @@ def pipeline(
             match_ids=match_ids,
             create_ids=create_ids,
             candidate_distance=candidate_distance,
+            import_batch_size=import_batch_size,
         )
 
 

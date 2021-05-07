@@ -1,0 +1,4 @@
+---
+state: ak
+site: clinic_list
+parser: arcgis_features
