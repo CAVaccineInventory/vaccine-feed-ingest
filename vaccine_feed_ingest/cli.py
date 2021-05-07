@@ -125,6 +125,15 @@ def _create_option() -> Callable:
     )
 
 
+def _rematch_option() -> Callable:
+    return click.option(
+        "--rematch/--no-rematch",
+        "enable_rematch",
+        type=bool,
+        default=lambda: os.environ.get("ENABLE_REMATCH", "false").lower() == "true",
+    )
+
+
 def _match_ids_option() -> Callable:
     return click.option(
         "--match-ids",
@@ -360,6 +369,7 @@ def enrich(
 @_vial_apikey_option()
 @_match_option()
 @_create_option()
+@_rematch_option()
 @_match_ids_option()
 @_create_ids_option()
 @_candidate_distance_option()
@@ -373,6 +383,7 @@ def load_to_vial(
     vial_apikey: str,
     enable_match: bool,
     enable_create: bool,
+    enable_rematch: bool,
     match_ids: Optional[Dict[str, str]],
     create_ids: Optional[Collection[str]],
     candidate_distance: float,
@@ -396,6 +407,7 @@ def load_to_vial(
         vial_apikey=vial_apikey,
         enable_match=enable_match,
         enable_create=enable_create,
+        enable_rematch=enable_rematch,
         match_ids=match_ids,
         create_ids=create_ids,
         candidate_distance=candidate_distance,
@@ -413,6 +425,7 @@ def load_to_vial(
 @_vial_apikey_option()
 @_match_option()
 @_create_option()
+@_rematch_option()
 @_match_ids_option()
 @_create_ids_option()
 @_candidate_distance_option()
@@ -428,6 +441,7 @@ def pipeline(
     vial_apikey: str,
     enable_match: bool,
     enable_create: bool,
+    enable_rematch: bool,
     match_ids: Optional[Dict[str, str]],
     create_ids: Optional[Collection[str]],
     candidate_distance: float,
@@ -491,6 +505,7 @@ def pipeline(
             vial_apikey=vial_apikey,
             enable_match=enable_match,
             enable_create=enable_create,
+            enable_rematch=enable_rematch,
             match_ids=match_ids,
             create_ids=create_ids,
             candidate_distance=candidate_distance,
