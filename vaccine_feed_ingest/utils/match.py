@@ -13,6 +13,14 @@ from .normalize import provider_id_from_name
 logger = getLogger(__file__)
 
 
+# Map Location fields to concordance authorities
+LEGACY_CONCORDANCE_MAP = {
+    "google_places_id": "google_places",
+    "vaccinefinder_location_id": "vaccinefinder_org",
+    "vaccinespotter_location_id": "vaccinespotter_org",
+}
+
+
 def is_concordance_similar(
     source: location.NormalizedLocation,
     candidate: dict,
@@ -66,6 +74,17 @@ def is_concordance_similar(
         authority, value = entry.split(":", maxsplit=1)
 
         candidate_concordance[authority].add(value)
+
+    # Handle legacy concordance model by copying over the legacy field
+    # ids as though there was a concordance entry for them.
+    for field, authority in LEGACY_CONCORDANCE_MAP.items():
+        if not candidate_props.get(field):
+            continue
+
+        if authority in candidate_concordance:
+            continue
+
+        candidate_concordance[authority] = candidate_props[field]
 
     # Similar if at least one concordance entry matches,
     # even if there are conflicting entries
