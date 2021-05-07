@@ -8,6 +8,7 @@ import re
 import sys
 from typing import List, Optional
 
+from pydantic import ValidationError
 from vaccine_feed_ingest_schema import location as schema
 
 from vaccine_feed_ingest.utils.log import getLogger
@@ -145,6 +146,19 @@ def _get_normalized_location(
     if len(site["attributes"]["loc_name"]) > 256:
         return None
 
+    # Contact parsing for this site is a little flaky. Ensure that a bug for
+    # a single entry does not halt overall scraping.
+    try:
+        contacts = _get_contacts(site)
+    except ValidationError:
+        logger.warning(
+            "Errored while trying to parse contact from %s, %s, or %s",
+            site["attributes"]["SitePhone"],
+            site["attributes"]["Contact"],
+            site["attributes"]["URL"],
+        )
+        contacts = None
+
     return schema.NormalizedLocation(
         id=_get_id(site),
         name=site["attributes"]["loc_name"],
@@ -153,7 +167,7 @@ def _get_normalized_location(
             latitude=site["geometry"]["y"],
             longitude=site["geometry"]["x"],
         ),
-        contact=_get_contacts(site),
+        contact=contacts,
         languages=None,
         opening_dates=None,
         opening_hours=None,
