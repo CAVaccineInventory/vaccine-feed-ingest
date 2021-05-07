@@ -16,7 +16,7 @@ runner_dir = state_dir.parent
 root_dir = runner_dir.parent
 sys.path.append(str(root_dir))
 
-from schema import schema  # noqa: E402
+from vaccine_feed_ingest_schema import location as schema  # noqa: E402
 
 # Configure logger
 logging.basicConfig(
@@ -60,7 +60,7 @@ def _get_id(site: dict) -> str:
     arcgis = "3078b524189848569f62985d71f4584b"
     layer = 0
 
-    return f"{runner}:{site}:{arcgis}_{layer}:{data_id}"
+    return f"{runner}_{site}:{arcgis}_{layer}_{data_id}"
 
 
 def _get_inventory(site: dict) -> Optional[List[schema.Vaccine]]:
@@ -69,6 +69,7 @@ def _get_inventory(site: dict) -> Optional[List[schema.Vaccine]]:
     for field, vaccine in VACCINES_FIELD.items():
         try:
             if site["attributes"][field] > 0 and vaccine not in inventory:
+                vaccine.supply_level = schema.VaccineSupply.IN_STOCK
                 inventory.append(vaccine)
         except KeyError:
             pass
@@ -79,17 +80,76 @@ def _get_inventory(site: dict) -> Optional[List[schema.Vaccine]]:
     return None
 
 
+def _website_fixup(website):
+    if website is None:
+        return None
+
+    website = website.strip()
+
+    if website in ["no", "N/A"]:
+        return None
+
+    if re.search(r"@\S+.(com|org|gov)$", website):
+        # Actually an email
+        return None
+
+    if website.endswith("#"):
+        website = website[:-1]
+
+    if not website.startswith("http"):
+        website = "http://" + website
+
+    return website
+
+
+def _phone_fixup(phone):
+    if phone is None:
+        return None
+
+    if phone == "Non-Public":
+        return None
+
+    if phone == "1-833-UTCARES":
+        return "1-833-882-2737"
+
+    # handle multiple phone numbers
+    phone = phone.split("   ")[0]
+    phone = phone.split("; ")[0]
+
+    if "Houston" in phone:
+        # actually an address
+        return None
+
+    if re.search(r"@\S+.(com|org|gov)$", phone):
+        # actually an email
+        return None
+
+    if phone.startswith("\ufeff"):
+        phone = phone[len("\ufeff") :]
+    elif phone.startswith("Contact number"):
+        phone = phone[len("Contact number") :]
+
+    phone = re.sub(r"(ext)(\d+)", r"\1 \2", phone)
+    phone = re.sub(r"^(\d{3})\)", r"(\1)", phone)
+    phone = re.sub("(, )?option", "ext", phone, flags=re.I)
+
+    if re.match(r"^[\d ]+$", phone):
+        source_phone = re.sub(r"[^\d]", "", phone)
+        if len(source_phone) == 10:
+            phone = f"({source_phone[0:3]}) {source_phone[3:6]}-{source_phone[6:]}"
+
+    return phone
+
+
 def _get_contacts(site: dict) -> Optional[List[schema.Contact]]:
     contacts = []
-    if site["attributes"]["PublicPhone"]:
-        sourcePhone = re.sub("[^0-9]", "", site["attributes"]["PublicPhone"])
-        if len(sourcePhone) == 11:
-            sourcePhone = sourcePhone[1:]
-        phone = f"({sourcePhone[0:3]}) {sourcePhone[3:6]}-{sourcePhone[6:]}"
+    phone = _phone_fixup(site["attributes"]["PublicPhone"])
+    if phone is not None:
         contacts.append(schema.Contact(phone=phone))
 
-    if site["attributes"]["WEBSITE"]:
-        contacts.append(schema.Contact(website=site["attributes"]["WEBSITE"]))
+    website = _website_fixup(site["attributes"]["WEBSITE"])
+    if website is not None:
+        contacts.append(schema.Contact(website=website))
 
     if len(contacts) > 0:
         return contacts
@@ -133,21 +193,32 @@ def _get_address(site: dict) -> Optional[schema.Address]:
                 logger.error("Unable to parse address: %s", ie)
                 return None
 
+        zip = address_field[-1]
+        if len(zip) < 5:
+            zip = None
+
         return schema.Address(
             street1=" ".join(address_field[0:city_starts]),
             street2=None,
             city=" ".join(address_field[city_starts:city_ends]),
             state="TX",
-            zip=address_field[-1],
+            zip=zip,
         )
 
     else:
         # Sometimes the zip can be None, even though the rest of the address has been entered
-        zip = (
-            site["attributes"]["ZIP"]
-            if site["attributes"]["ZIP"] is not None
-            else 00000
-        )
+        if site["attributes"]["ZIP"] is None:
+            zip = None
+        else:
+            zip = str(site["attributes"]["ZIP"])
+
+            # remove typos
+            if len(zip) < 5:
+                zip = None
+            elif re.match(r"\d{6,}", zip):
+                zip = None
+            elif re.match(r"[a-zA-Z]", zip):
+                zip = None
 
         return schema.Address(
             street1=site["attributes"]["ADDRESS"].strip(),
@@ -185,7 +256,7 @@ def _get_normalized_location(site: dict, timestamp: str) -> schema.NormalizedLoc
         notes=None,
         active=None,
         source=schema.Source(
-            source="arcgis",
+            source="tx_arcgis",
             id=site["attributes"]["OBJECTID"],
             fetched_from_uri="https://tdem.maps.arcgis.com/apps/webappviewer/index.html?id=3700a84845c5470cb0dc3ddace5c376b",  # noqa: E501
             fetched_at=timestamp,
