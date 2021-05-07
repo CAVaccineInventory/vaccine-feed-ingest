@@ -14,6 +14,8 @@ from vaccine_feed_ingest.utils.log import getLogger
 
 logger = getLogger(__file__)
 
+SOURCE_NAME = "tx_arcgis"
+
 VACCINES_FIELD = {
     "JJ_AVAILABLE": schema.Vaccine(vaccine=schema.VaccineType.JOHNSON_JOHNSON_JANSSEN),
     "JJ_AVAILABLE2": schema.Vaccine(vaccine=schema.VaccineType.JOHNSON_JOHNSON_JANSSEN),
@@ -38,17 +40,12 @@ def _get_availability(site: dict) -> schema.Availability:
 def _get_id(site: dict) -> str:
     data_id = site["attributes"]["OBJECTID"]
 
-    # Could parse these from directory traversal, but do not for now to avoid
-    # accidental mutation.
-    site = "arcgis"
-    runner = "tx"
-
     # Could parse these from the input file name, but do not for now to avoid
     # accidental mutation.
     arcgis = "3078b524189848569f62985d71f4584b"
     layer = 0
 
-    return f"{runner}_{site}:{arcgis}_{layer}_{data_id}"
+    return f"{arcgis}_{layer}_{data_id}"
 
 
 def _get_inventory(site: dict) -> Optional[List[schema.Vaccine]]:
@@ -232,7 +229,7 @@ def _get_normalized_location(site: dict, timestamp: str) -> schema.NormalizedLoc
         location = None
 
     return schema.NormalizedLocation(
-        id=_get_id(site),
+        id=f"{SOURCE_NAME}:{_get_id(site)}",
         name=site["attributes"]["NAME"],
         address=_get_address(site),
         location=location,
@@ -248,8 +245,8 @@ def _get_normalized_location(site: dict, timestamp: str) -> schema.NormalizedLoc
         notes=None,
         active=None,
         source=schema.Source(
-            source="tx_arcgis",
-            id=site["attributes"]["OBJECTID"],
+            source=SOURCE_NAME,
+            id=_get_id(site),
             fetched_from_uri="https://tdem.maps.arcgis.com/apps/webappviewer/index.html?id=3700a84845c5470cb0dc3ddace5c376b",  # noqa: E501
             fetched_at=timestamp,
             published_at=_get_published_at(site),
