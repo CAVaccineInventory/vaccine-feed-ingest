@@ -121,7 +121,7 @@ def has_matching_phone_number(
         try:
             src_phones.append(phonenumbers.parse(contact.phone, "US"))
         except phonenumbers.NumberParseException:
-            logger.warning("Invalid phone number: %s", contact.phone)
+            logger.warning("Invalid source phone number for location %s: %s", source.id, contact.phone)
             continue
 
     if not src_phones:
