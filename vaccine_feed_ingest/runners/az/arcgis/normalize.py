@@ -210,21 +210,32 @@ def _get_opening_hours(site: dict) -> Optional[List[schema.OpenHour]]:
 
 
 def _get_inventory(site: dict) -> Optional[List[schema.Vaccine]]:
+    # Though the data source includes attributes for each possible vaccine, they
+    # do not appear to be used every time (rather this string is typically set)
     inventory_str = site["attributes"]["vaccine_manufacturer"]
-    inventory = (
-        inventory_str.split(";") if ";" in inventory_str else inventory_str.split(",")
+
+    inventory = []
+
+    pfizer = re.search("pfizer", inventory_str, re.IGNORECASE)
+    moderna = re.search("moderna", inventory_str, re.IGNORECASE)
+    johnson = re.search(
+        "janssen|johnson.*johnson|j&j|j_j", inventory_str, re.IGNORECASE
     )
 
-    return [
-        {
-            "Pfizer_BioNTech": schema.Vaccine(vaccine="pfizer_biontech"),
-            "Pfizer-BioNTech": schema.Vaccine(vaccine="pfizer_biontech"),
-            "Pfizer": schema.Vaccine(vaccine="pfizer_biontech"),
-            "Moderna": schema.Vaccine(vaccine="moderna"),
-            "J_J": schema.Vaccine(vaccine="johnson_johnson_janssen"),
-        }[vaccine.lstrip("\u200b").strip()]
-        for vaccine in inventory
-    ]
+    if pfizer:
+        inventory.append(schema.Vaccine(vaccine=schema.VaccineType.PFIZER_BIONTECH))
+    if moderna:
+        inventory.append(schema.Vaccine(vaccine=schema.VaccineType.MODERNA))
+    if johnson:
+        inventory.append(
+            schema.Vaccine(vaccine=schema.VaccineType.JOHNSON_JOHNSON_JANSSEN)
+        )
+
+    if len(inventory) == 0:
+        logger.warning("No vaccines found in inventory: %s", inventory_str)
+        return None
+
+    return inventory
 
 
 def _get_lat_lng(site: dict) -> Optional[schema.LatLng]:
