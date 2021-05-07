@@ -145,11 +145,11 @@ def _get_contacts(site: dict) -> Optional[List[schema.Contact]]:
     contacts = []
     phone = _phone_fixup(site["attributes"]["PublicPhone"])
     if phone is not None:
-        contacts.append(schema.Contact(phone=phone))
+        contacts.append(schema.Contact(phone=phone, contact_type="booking"))
 
     website = _website_fixup(site["attributes"]["WEBSITE"])
     if website is not None:
-        contacts.append(schema.Contact(website=website))
+        contacts.append(schema.Contact(website=website, contact_type="booking"))
 
     if len(contacts) > 0:
         return contacts
