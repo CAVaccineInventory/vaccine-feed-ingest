@@ -15,12 +15,12 @@ from vaccine_feed_ingest.utils.log import getLogger
 logger = getLogger(__file__)
 
 VACCINES_FIELD = {
-    "JJ_AVAILABLE": schema.Vaccine(vaccine="johnson_johnson_janssen"),
-    "JJ_AVAILABLE2": schema.Vaccine(vaccine="johnson_johnson_janssen"),
-    "MODERNA_AVAILABLE": schema.Vaccine(vaccine="moderna"),
-    "MODERNA_AVAILABLE2": schema.Vaccine(vaccine="moderna"),
-    "PFIZER_AVAILABLE": schema.Vaccine(vaccine="pfizer_biontech"),
-    "PFIZER_AVAILABLE2": schema.Vaccine(vaccine="pfizer_biontech"),
+    "JJ_AVAILABLE": schema.Vaccine(vaccine=schema.VaccineType.JOHNSON_JOHNSON_JANSSEN),
+    "JJ_AVAILABLE2": schema.Vaccine(vaccine=schema.VaccineType.JOHNSON_JOHNSON_JANSSEN),
+    "MODERNA_AVAILABLE": schema.Vaccine(vaccine=schema.VaccineType.MODERNA),
+    "MODERNA_AVAILABLE2": schema.Vaccine(vaccine=schema.VaccineType.MODERNA),
+    "PFIZER_AVAILABLE": schema.Vaccine(vaccine=schema.VaccineType.PFIZER_BIONTECH),
+    "PFIZER_AVAILABLE2": schema.Vaccine(vaccine=schema.VaccineType.PFIZER_BIONTECH),
 }
 
 
@@ -133,11 +133,15 @@ def _get_contacts(site: dict) -> Optional[List[schema.Contact]]:
     contacts = []
     phone = _phone_fixup(site["attributes"]["PublicPhone"])
     if phone is not None:
-        contacts.append(schema.Contact(phone=phone, contact_type="booking"))
+        contacts.append(
+            schema.Contact(phone=phone, contact_type=schema.ContactType.GENERAL)
+        )
 
     website = _website_fixup(site["attributes"]["WEBSITE"])
     if website is not None:
-        contacts.append(schema.Contact(website=website, contact_type="booking"))
+        contacts.append(
+            schema.Contact(website=website, contact_type=schema.ContactType.GENERAL)
+        )
 
     if len(contacts) > 0:
         return contacts
@@ -189,7 +193,7 @@ def _get_address(site: dict) -> Optional[schema.Address]:
             street1=" ".join(address_field[0:city_starts]),
             street2=None,
             city=" ".join(address_field[city_starts:city_ends]),
-            state="TX",
+            state=schema.State.TEXAS,
             zip=zip,
         )
 
@@ -212,7 +216,7 @@ def _get_address(site: dict) -> Optional[schema.Address]:
             street1=site["attributes"]["ADDRESS"].strip(),
             street2=None,
             city=site["attributes"]["CITY"].strip(),
-            state="TX",
+            state=schema.State.TEXAS,
             zip=zip,
         )
 
