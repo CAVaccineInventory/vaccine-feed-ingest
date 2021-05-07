@@ -110,7 +110,7 @@ def has_matching_phone_number(
     try:
         cand_phone = phonenumbers.parse(candidate_props["phone_number"], "US")
     except phonenumbers.NumberParseException:
-        logger.warning("Invalid phone number: %s", candidate_props["phone_number"])
+        logger.warning("Invalid candidate phone number for location %s: %s", <an_id_field>, candidate_props["phone_number"])
         return None
 
     src_phones = []
