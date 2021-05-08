@@ -5,12 +5,12 @@ import re
 import sys
 
 from bs4 import BeautifulSoup
-from typing import List
+from typing import List, Dict
 
 ALLOWED_NORMALIZED_COLUMNS = {'clinic', 'slots', 'type', 'address', 'hours'}
 
 
-def soupify_file(input_path: str) -> List[object]:
+def soupify_file(input_path: pathlib.Path) -> List[BeautifulSoup]:
     """Opens up a provided file path, feeds it into BeautifulSoup.
     Returns a new BeautifulSoup object for each found table
     """
@@ -18,7 +18,7 @@ def soupify_file(input_path: str) -> List[object]:
         return BeautifulSoup(fd, 'html.parser').find_all('table')
 
 
-def find_data_rows(soup: object) -> List[object]:
+def find_data_rows(soup: BeautifulSoup) -> List[BeautifulSoup]:
     """Queries the provided BeautifulSoup to find <tr> elements which are inside a <tbody>.
     Exploring the data shows that such rows correspond to vaccine site data
     """
@@ -27,7 +27,7 @@ def find_data_rows(soup: object) -> List[object]:
     return soup.find_all(is_data_row)
 
 
-def find_column_headings(soup: object) -> List[str]:
+def find_column_headings(soup: BeautifulSoup) -> List[str]:
     """Queries the provided BeautifulSoup to find <th> elements under a <thead>.
     Column names are normalized for later conditional parsing.
     Returns a list of normalized column names
@@ -51,37 +51,37 @@ def find_column_headings(soup: object) -> List[str]:
     return [col for col in translated_cols if col in ALLOWED_NORMALIZED_COLUMNS]
 
 
-def parse_row(row: object, columns: List[str]) -> dict:
+def parse_row(row: BeautifulSoup, columns: List[str]) -> Dict[str, str]:
     """Takes a BeautifulSoup tag corresponding to a single row in an HTML table as input,
     along with an ordered list of normalized column names.
     Labels data in each row according to the position of the column names.
     Returns a dict of labeled data, suitable for transformation into ndjson
     """
-    def extract_appt_slot_count(appt_slots: str) -> int:
+    def extract_appt_slot_count(appt_slots: str) -> str:
         pattern = re.compile('(\d+) slots')
         match = re.search(pattern, appt_slots)
-        return 0 if match is None else int(match.group(1))
+        return '0' if match is None else match.group(1)
 
     data = [td.contents for td in row.find_all('td')]
     assert len(data) >= len(columns), "Failed to parse row, column and field mismatch! {data}, {columns}"
-    row = {}
+    result: Dict[str, str] = {}
     for key, value in zip(columns, data):
         if key == "clinic":
             # Speculatively assign the address field from the clinic name. At least one
             # store has a blank address field but contains the address in the clinic name
             try:
                 clinic, _, address = tuple(value)
-                row['clinic'] = clinic
-                row['address'] = address
+                result['clinic'] = clinic
+                result['address'] = address
             except ValueError:
                 # Not every store contains the address in the clinic name
-                row['clinic'] = value[0]
+                result['clinic'] = value[0]
         if key == "slots":
-            row[key] = extract_appt_slot_count(str(value[0]))
+            result[key] = extract_appt_slot_count(str(value[0]))
         else:
             if len(value) != 0:
-                row[key] = value[0]
-    return row
+                result[key] = value[0]
+    return result
 
 
 if __name__ == "__main__":
@@ -91,14 +91,11 @@ if __name__ == "__main__":
     for html in input_dir.glob("**/*.html"):
         if not html.is_file():
             continue
-        print("Parsing html file found at: {}".format(html))
         stores = []
         for table in soupify_file(html):
             column_headings = find_column_headings(table)
             stores.extend([parse_row(tr, column_headings) for tr in find_data_rows(table)])
-        print("Found {} store locations".format(len(stores)))
         output = "\n".join(json.dumps(store) for store in stores)
         outpath = output_dir / (html.with_suffix('.parsed.ndjson').name)
-        print("writing data to {}".format(outpath))
         with open(outpath, 'w') as fd:
             fd.write(output)
