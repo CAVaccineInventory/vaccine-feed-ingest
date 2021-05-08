@@ -173,14 +173,14 @@ def is_provider_similar(
     return jellyfish.jaro_winkler(src_org, cand_org) >= threshold
 
 
-def has_matching_phone_number(
+def is_phone_number_similar(
     source: location.NormalizedLocation,
     candidate: dict,
 ) -> Optional[bool]:
-    """Compares phone numbers
+    """Compares phone numbers by area code
 
     - True if has at least one matching phone number
-    - False is only mismatching phone numbers
+    - False is mismatching phone numbers within the same area code
     - None if no valid phone numbers to compare
     """
     candidate_props = candidate.get("properties", {})
@@ -220,7 +220,21 @@ def has_matching_phone_number(
         if src_phone == cand_phone:
             return True
 
-    return False
+    # Only consider phone mismatched if numbers have the same area code and do not match
+    cand_area_code = str(cand_phone.national_number)[:3]
+
+    for src_phone in src_phones:
+        src_area_code = str(src_phone.national_number)[:3]
+        # Skip numbers with different area codes
+        if src_area_code != cand_area_code:
+            continue
+
+        # Fail if same area code and do not match
+        if src_phone != cand_phone:
+            return False
+
+    # Could not find a phone number to compare for a match or mismatch
+    return None
 
 
 def get_full_address(address: Optional[location.Address]) -> str:
