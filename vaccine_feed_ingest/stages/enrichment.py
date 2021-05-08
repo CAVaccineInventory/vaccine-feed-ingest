@@ -2,6 +2,7 @@
 import pathlib
 from typing import Dict, Optional
 
+import phonenumbers
 import pydantic
 from vaccine_feed_ingest_schema import location
 
@@ -63,6 +64,8 @@ def _process_location(
     _add_provider_from_name(enriched_location)
     _add_source_link(enriched_location)
 
+    _normalize_phone_format(enriched_location)
+
     if not _valid_address(enriched_location):
         return None
 
@@ -122,6 +125,32 @@ def _add_source_link(loc: location.NormalizedLocation) -> None:
         *(loc.links or []),
         location.Link(authority=loc.source.source, id=loc.source.id),
     ]
+
+
+def _normalize_phone_format(loc: location.NormalizedLocation) -> None:
+    """Normalize phone numbers into standard format"""
+    if not loc.contact:
+        return
+
+    for contact in loc.contact:
+        if not contact.phone:
+            continue
+
+        try:
+            phone = phonenumbers.parse(contact.phone, "US")
+        except phonenumbers.NumberParseException:
+            logger.warning(
+                "Invalid phone number for source location %s: %s",
+                loc.id,
+                contact.phone,
+            )
+            continue
+
+        formatted_phone = phonenumbers.format_number(
+            phone, phonenumbers.PhoneNumberFormat.NATIONAL
+        )
+
+        contact.phone = formatted_phone
 
 
 def _valid_address(loc: location.NormalizedLocation) -> bool:

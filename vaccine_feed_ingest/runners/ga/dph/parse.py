@@ -7,6 +7,7 @@ import sys
 from typing import List
 
 from bs4 import BeautifulSoup
+
 from fetch import location_file_name_for_url
 
 
