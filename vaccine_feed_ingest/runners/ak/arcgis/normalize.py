@@ -2,29 +2,17 @@
 
 import datetime
 import json
-import logging
 import os
 import pathlib
 import re
 import sys
 from typing import List, Optional
 
-# import schema
-site_dir = pathlib.Path(__file__).parent
-state_dir = site_dir.parent
-runner_dir = state_dir.parent
-root_dir = runner_dir.parent
-sys.path.append(str(root_dir))
+from vaccine_feed_ingest_schema import location as schema
 
-from schema import schema  # noqa: E402
+from vaccine_feed_ingest.utils.log import getLogger
 
-# Configure logger
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s %(levelname)s:%(name)s:%(message)s",
-    datefmt="%m/%d/%Y %H:%M:%S",
-)
-logger = logging.getLogger("ak/arcgis/normalize.py")
+logger = getLogger(__file__)
 
 
 def _get_availability(site: dict) -> schema.Availability:
@@ -48,7 +36,7 @@ def _get_id(site: dict) -> str:
 
     # Could parse these from directory traversal, but do not for now to avoid
     # accidental mutation.
-    site = "arcgis"
+    site_name = "arcgis"
     runner = "ak"
 
     # Could parse these from the input file name, but do not for now to avoid
@@ -56,17 +44,17 @@ def _get_id(site: dict) -> str:
     arcgis = "d92cbd6ff2524d7e92bef109f30cb366"
     layer = 0
 
-    return f"{runner}:{site}:{arcgis}_{layer}:{data_id}"
+    return f"{runner}_{site_name}:{arcgis}_{layer}_{data_id}"
 
 
 def _get_inventory(site: dict) -> Optional[List[schema.Vaccine]]:
     vaccines_field = site["attributes"]["flu_vaccinations"].lower().split(",")
 
     potentials = {
-        "pfizer": schema.Vaccine(vaccine="pfizer"),
+        "pfizer": schema.Vaccine(vaccine="pfizer_biontech"),
         "moderna": schema.Vaccine(vaccine="moderna"),
-        "janssen": schema.Vaccine(vaccine="janssen"),
-        "jjj": schema.Vaccine(vaccine="janssen"),
+        "janssen": schema.Vaccine(vaccine="johnson_johnson_janssen"),
+        "jjj": schema.Vaccine(vaccine="johnson_johnson_janssen"),
     }
 
     inventory = []
@@ -147,7 +135,7 @@ def _get_normalized_location(site: dict, timestamp: str) -> schema.NormalizedLoc
         notes=_get_notes(site),
         active=None,
         source=schema.Source(
-            source="arcgis",
+            source="ak_arcgis",
             id=site["attributes"]["globalid"],
             fetched_from_uri="https://services1.arcgis.com/WzFsmainVTuD5KML/ArcGIS/rest/services/COVID19_Vaccine_Site_Survey_API/FeatureServer/0",  # noqa: E501
             fetched_at=timestamp,

@@ -1,82 +1,107 @@
 #!/usr/bin/env python
+# isort: skip_file
 
 import datetime
 import json
+from vaccine_feed_ingest.utils.log import getLogger
 import pathlib
 import sys
+from typing import Optional
+
+import pydantic
+from vaccine_feed_ingest_schema import location as schema
 
 from vaccine_feed_ingest.utils.normalize import provider_id_from_name
+from vaccine_feed_ingest.utils.validation import BOUNDING_BOX
+
+logger = getLogger(__file__)
+
+
+def _get_address(site: dict) -> Optional[schema.Address]:
+    try:
+        return schema.Address(
+            street1=site["address"],
+            city=site["city"],
+            state=site["state"],
+            zip=site["postal_code"],
+        )
+    except pydantic.ValidationError:
+        logger.warning(
+            "Invalid address for %s (%s). Returning None",
+            site["id"],
+            f"{site['address']} {site['city']} {site['state']} {site['postal_code']}",
+        )
+
+    return None
+
+
+def _get_lat_lng(geometry: dict, id: str) -> Optional[schema.LatLng]:
+    try:
+        lat_lng = schema.LatLng(
+            latitude=geometry["coordinates"][1], longitude=geometry["coordinates"][0]
+        )
+        if BOUNDING_BOX.latitude.contains(
+            lat_lng.latitude
+        ) and BOUNDING_BOX.longitude.contains(lat_lng.longitude):
+            return lat_lng
+
+        logger.warning(
+            "Out of bounds lat/lng for %s (%s). Returning None",
+            id,
+            f"lat={geometry['coordinates'][1]}, lng={geometry['coordinates'][0]}",
+        )
+    except pydantic.ValidationError:
+        logger.warning(
+            "Invalid lat/lng for %s (%s). Returning None",
+            id,
+            f"lat={geometry['coordinates'][1]}, lng={geometry['coordinates'][0]}",
+        )
+
+    return None
 
 
 def normalize(site_blob: dict, timestamp: str) -> dict:
     site = site_blob["properties"]
-    geometry = site_blob["geometry"]
-    street1 = site["address"]
-    street2 = None  # this is part of street1...
 
-    normalized = {
-        "id": f"vaccinespotter_org:{site['id']}",
-        "name": site["name"],
-        "address": {
-            "street1": street1,
-            "street2": street2,
-            "city": site["city"],
-            "state": site["state"],
-            "zip": site["postal_code"],
-        },
-        "location": {
-            "latitude": geometry["coordinates"][1],
-            "longitude": geometry["coordinates"][0],
-        },
-        "contact": [
-            {
-                "contact_type": None,
-                "phone": None,
-                "website": site["url"],
-                "other": None,
-            },
-        ],
-        "availability": {
-            "appointments": site["appointments_available"],
-            "drop_in": None,
-        },
-        "access": {
-            "walk": None,
-            "drive": None,
-            "wheelchair": None,
-        },
-        "languages": [],
-        "links": [
-            {
-                "authority": "vaccinespotter_org",
-                "id": site["id"],
-            },
-        ],
-        "fetched_at": timestamp,
-        "published_at": site[
-            "appointments_last_fetched"  # we could also use `appointments_last_modified`
-        ],
-        "active": None,
-        "source": {
-            "source": "vaccinespotter_org",
-            "id": site["id"],
-            "fetched_from_uri": "https://www.vaccinespotter.org/api/v0/US.json",
-            "fetched_at": timestamp,
-            "published_at": site[
-                "appointments_last_fetched"  # we could also use `appointments_last_modified`
-            ],
-            "data": site_blob,
-        },
-    }
+    links = [schema.Link(authority="vaccinespotter_org", id=site["id"])]
 
     parsed_provider_link = provider_id_from_name(
         site["provider_brand_name"]  # or use site["name"]?
     )
     if parsed_provider_link is not None:
-        normalized["links"].append(
-            {"authority": parsed_provider_link[0], "id": parsed_provider_link[1]}
+        links.append(
+            schema.Link(authority=parsed_provider_link[0], id=parsed_provider_link[1])
         )
-    return normalized
+
+    return schema.NormalizedLocation(
+        id=f"vaccinespotter_org:{site['id']}",
+        name=site["name"],
+        address=_get_address(site),
+        location=_get_lat_lng(site_blob["geometry"], site["id"]),
+        contact=[
+            schema.Contact(contact_type=None, phone=None, website=site["url"]),
+        ],
+        languages=None,
+        opening_dates=None,
+        opening_hours=None,
+        availability=schema.Availability(
+            appointments=site["appointments_available"], drop_in=None
+        ),
+        inventory=None,
+        access=schema.Access(walk=None, drive=None, wheelchair=None),
+        parent_organization=None,
+        links=links,
+        notes=None,
+        active=None,
+        source=schema.Source(
+            source="vaccinespotter_org",
+            id=site["id"],
+            fetched_from_uri="https://www.vaccinespotter.org/api/v0/US.json",  # noqa: E501
+            fetched_at=timestamp,
+            published_at=site["appointments_last_fetched"],
+            data=site_blob,
+        ),
+    ).dict()
 
 
 parsed_at_timestamp = datetime.datetime.utcnow().isoformat()

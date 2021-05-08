@@ -1,13 +1,14 @@
 """Helper methods for finding code and configs for each site"""
 
-import logging
 import os
 import pathlib
-from typing import Iterator, Optional, Sequence
+from typing import Iterator, Optional, Sequence, Tuple
+
+from vaccine_feed_ingest.utils.log import getLogger
 
 from .common import RUNNERS_DIR, STAGE_CMD_NAME, PipelineStage
 
-logger = logging.getLogger("ingest")
+logger = getLogger(__file__)
 
 
 def get_site_dirs_for_state(state: Optional[str] = None) -> Iterator[pathlib.Path]:
@@ -83,6 +84,10 @@ def find_executeable(
     if not cmd:
         return None
 
+    # yml files do not need to be executable
+    if cmd.name.endswith(".yml"):
+        return None
+
     if not os.access(cmd, os.X_OK):
         logger.warn("%s in %s is not marked as executable.", cmd.name, str(site_dir))
         return None
@@ -111,3 +116,18 @@ def find_yml(
         return None
 
     return yml
+
+
+def resolve_executable(
+    site_dir: pathlib.Path, stage: PipelineStage
+) -> Tuple[Optional[pathlib.Path], Optional[pathlib.Path]]:
+    """Returns the executable and yml paths for specified site/stage."""
+    if stage not in (PipelineStage.FETCH, PipelineStage.PARSE):
+        raise Exception(f"Resolution not supported for stage {STAGE_CMD_NAME[stage]}")
+    executable_path = find_executeable(site_dir, stage)
+    if executable_path:
+        return (executable_path, None)
+    yml_path = find_yml(site_dir, stage)
+    if not yml_path:
+        return (None, None)
+    return (find_executeable(RUNNERS_DIR.joinpath("_shared"), stage), yml_path)

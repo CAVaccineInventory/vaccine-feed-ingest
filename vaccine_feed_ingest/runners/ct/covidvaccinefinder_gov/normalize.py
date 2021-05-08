@@ -1,77 +1,143 @@
 #!/usr/bin/env python
+# isort: skip_file
 
 import datetime
 import json
+from vaccine_feed_ingest.utils.log import getLogger
 import pathlib
 import sys
+from typing import List, Optional
+
+import pydantic
+from vaccine_feed_ingest_schema import location as schema
 
 from vaccine_feed_ingest.utils.normalize import provider_id_from_name
+from vaccine_feed_ingest.utils.validation import BOUNDING_BOX
+
+logger = getLogger(__file__)
+
+
+def _in_bounds(lat_lng: schema.LatLng) -> bool:
+    if BOUNDING_BOX.latitude.contains(
+        lat_lng.latitude
+    ) and BOUNDING_BOX.longitude.contains(lat_lng.longitude):
+        return True
+    return False
+
+
+def _get_lat_lng(site: dict) -> Optional[schema.LatLng]:
+    try:
+        source_lat_lng = schema.LatLng(latitude=site["lat"], longitude=site["lng"])
+
+        # In the CT data source, some lat/lng pairs are flipped.
+        # If the lat/lng from the datasource is outside our expected boundaries,
+        # flip them.
+        if not _in_bounds(source_lat_lng):
+            flipped_lat_lng = schema.LatLng(
+                latitude=source_lat_lng.longitude, longitude=source_lat_lng.latitude
+            )
+            if not _in_bounds(flipped_lat_lng):
+                logger.warning(
+                    "Out of bounds and unflippable lat/lng for %s (%s)",
+                    site["_id"],
+                    source_lat_lng,
+                )
+                return None
+            return flipped_lat_lng
+        return source_lat_lng
+
+    except pydantic.ValidationError as e:
+        logger.warning("Invalid or missing lat/lng for %s: %s", site["_id"], str(e))
+
+    return None
+
+
+def _get_contact(site: dict) -> List[schema.Contact]:
+    contacts = []
+
+    phone = site["phone"]
+    website = site["link"]
+
+    if phone:
+        contacts.append(schema.Contact(contact_type="booking", phone=phone))
+
+    if website:
+        contacts.append(schema.Contact(contact_type="booking", website=website))
+
+    return contacts
+
+
+def _get_inventory(site: dict) -> List[schema.Vaccine]:
+    vaccines = []
+
+    for vaccine_blob in site["providerVaccines"]:
+        vaccine = vaccine_blob["name"]
+        if vaccine.lower() == "moderna":
+            vaccines.append(schema.Vaccine(vaccine="moderna", supply_level="in_stock"))
+        if vaccine.lower() == "pfizer":
+            vaccines.append(
+                schema.Vaccine(vaccine="pfizer_biontech", supply_level="in_stock")
+            )
+        if vaccine.lower() == "johnson & johnson":
+            vaccines.append(
+                schema.Vaccine(
+                    vaccine="johnson_johnson_janssen", supply_level="in_stock"
+                )
+            )
+
+    return vaccines
 
 
 def normalize(site: dict, timestamp: str) -> dict:
-    normalized = {
-        "id": f"ct_gov:{site['_id']}",
-        "name": site["displayName"],
-        "address": {
-            "street1": site["addressLine1"],
-            "street2": site["addressLine2"],
-            "city": site["city"],
-            "state": "CT",
-            "zip": site["zip"],
-        },
-        "location": {
-            "latitude": site["lat"],
-            "longitude": site["lng"],
-        },
-        "contact": [
-            {
-                "contact_type": "booking",
-                "phone": site["phone"],
-                "website": site["link"],
-            },
-        ],
-        "availability": {
-            "appointments": site["availability"],
-        },
-        "access": {
-            "drive": site["isDriveThru"],
-        },
-        "inventory": [
-            {"vaccine": vaccine["name"]} for vaccine in site["providerVaccines"]
-        ],
-        "links": [
-            {
-                "authority": "ct_gov",
-                "id": site["_id"],
-            },
-            {
-                "authority": "ct_gov:network_id",
-                "id": site["networkId"],
-            },
-        ],
-        "parent_organization": {
-            "name": site["networks"][0]["name"],
-        },
-        "fetched_at": timestamp,
-        "published_at": site["lastModified"],
-        "source": {
-            "source": "ct",
-            "id": site["_id"],
-            "fetched_from_uri": "https://covidvaccinefinder.ct.gov/api/HttpTriggerGetProvider",
-            "fetched_at": timestamp,
-            "published_at": site["lastModified"],
-            "data": site,
-        },
-    }
+    links = [
+        schema.Link(authority="ct_gov", id=site["_id"]),
+    ]
+
+    parent_organization = schema.Organization(name=site["networks"][0]["name"])
 
     parsed_provider_link = provider_id_from_name(site["name"])
     if parsed_provider_link is not None:
-        normalized["links"].append(
-            {"authority": parsed_provider_link[0], "id": parsed_provider_link[1]}
+        links.append(
+            schema.Link(authority=parsed_provider_link[0], id=parsed_provider_link[1])
         )
-        normalized["parent_organization"]["id"] = parsed_provider_link[0]
 
-    return normalized
+        parent_organization.id = parsed_provider_link[0]
+
+    return schema.NormalizedLocation(
+        id=f"ct_covidvaccinefinder_gov:{site['_id']}",
+        name=site["displayName"],
+        address=schema.Address(
+            street1=site["addressLine1"],
+            street2=site["addressLine2"],
+            city=site["city"],
+            state="CT",
+            zip=site["zip"],
+        ),
+        location=_get_lat_lng(site),
+        contact=_get_contact(site),
+        languages=None,
+        opening_dates=None,
+        opening_hours=None,
+        availability=schema.Availability(
+            appointments=site["availability"],
+        ),
+        inventory=_get_inventory(site),
+        access=schema.Access(
+            drive=site["isDriveThru"],
+        ),
+        parent_organization=parent_organization,
+        links=links,
+        notes=None,
+        active=None,
+        source=schema.Source(
+            source="ct_covidvaccinefinder_gov",
+            id=site["_id"],
+            fetched_from_uri="https://covidvaccinefinder.ct.gov/api/HttpTriggerGetProvider",  # noqa: E501
+            fetched_at=timestamp,
+            published_at=site["lastModified"],
+            data=site,
+        ),
+    ).dict()
 
 
 output_dir = pathlib.Path(sys.argv[1])

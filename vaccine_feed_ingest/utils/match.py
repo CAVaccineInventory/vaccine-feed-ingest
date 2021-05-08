@@ -1,10 +1,229 @@
 import re
-from typing import Optional
+from collections import defaultdict
+from typing import Dict, Optional, Set
 
-from vaccine_feed_ingest.schema.schema import Address
+import jellyfish
+import phonenumbers
+import us
+from vaccine_feed_ingest_schema import location
+
+from .log import getLogger
+from .normalize import provider_id_from_name
+
+logger = getLogger(__file__)
 
 
-def get_full_address(address: Optional[Address]) -> str:
+def is_concordance_similar(
+    source: location.NormalizedLocation,
+    candidate: dict,
+) -> Optional[bool]:
+    """Compare concordances for similarity
+
+    Counts as similar even if there are multiple concordance entries
+    from the same authority on the candidate, but will count as disimilar if
+    the entry on the source differs from the candidate.
+
+    Examples:
+    - "A:1" matches "A:1", "B:2"
+    - "A:1" does not match "A:2", "B:2"
+    - "A:1" matches "A:1", "A:2"
+    - "A:1", "A:2" matches "A:1", "A:2"
+    - "A:1", "A:2" matches "A:1", "A:2", "A:3"
+    - "A:1", "B:2" matches "A:2", "B:2"
+
+    - True if a concordance entry matches
+    - False if a concordance entry conflicts
+    - None if couldn't compare concordances
+    """
+    if not source.links:
+        return None
+
+    candidate_props = candidate.get("properties")
+
+    if not candidate_props or not candidate_props.get("concordances"):
+        return None
+
+    source_concordance: Dict[str, Set[str]] = defaultdict(lambda: set())
+    for link in source.links:
+        # Skip entries that are prefixed with _ since they are used as tags
+        # and should not be used for matching.
+        if link.authority.startswith("_"):
+            continue
+
+        source_concordance[link.authority].add(link.id)
+
+    candidate_concordance: Dict[str, Set[str]] = defaultdict(lambda: set())
+    for entry in candidate_props["concordances"]:
+        # Skip entries that are prefixed with _ since they are used as tags
+        # and should not be used for matching.
+        if entry.startswith("_"):
+            continue
+
+        # Skip concordances with a colon
+        if ":" not in entry:
+            continue
+
+        authority, value = entry.split(":", maxsplit=1)
+
+        candidate_concordance[authority].add(value)
+
+    # Similar if at least one concordance entry matches,
+    # even if there are conflicting entries
+    for authority, src_values in source_concordance.items():
+        if authority not in candidate_concordance:
+            continue
+
+        cand_values = candidate_concordance[authority]
+
+        if src_values.intersection(cand_values):
+            return True
+
+    # Dissimilar if concordance entries conflict,
+    # and none of them had previously matched
+    for authority, src_values in source_concordance.items():
+        if authority not in candidate_concordance:
+            continue
+
+        cand_values = candidate_concordance[authority]
+
+        if not src_values.issubset(cand_values):
+            return False
+
+    # No entries matched or conflicted, so we don't know similarity
+    return None
+
+
+def is_address_similar(
+    source: location.NormalizedLocation,
+    candidate: dict,
+) -> Optional[bool]:
+    """Compare address for similarity
+
+    - True if address matches exactly after canonicalization
+    - False if anything those match
+    - None if couldn't compare addresses
+    """
+    if not source.address:
+        return None
+
+    if not candidate["properties"].get("full_address"):
+        return None
+
+    # States must exist to compare
+    if not source.address.state or not candidate["properties"].get("state"):
+        return None
+
+    # City must exist to compare
+    if not source.address.city:
+        return None
+
+    # Street must exist to compare
+    if not source.address.street1:
+        return None
+
+    # States must exactly match
+    src_state = us.states.lookup(source.address.state)
+    cand_state = us.states.lookup(candidate["properties"]["state"])
+
+    if src_state != cand_state:
+        return False
+
+    src_addr = canonicalize_address(get_full_address(source.address))
+    cand_addr = canonicalize_address(candidate["properties"]["full_address"])
+
+    return src_addr == cand_addr
+
+
+def is_provider_similar(
+    source: location.NormalizedLocation,
+    candidate: dict,
+    threshold: float = 0.9,
+) -> Optional[float]:
+    """Calculate a similarity score between providers.
+
+    - True if similarity is above threshold
+    - False if similarity is below threshold
+    - None if couldn't compare providers
+    """
+    if not source.parent_organization:
+        return None
+
+    src_org = source.parent_organization.name or source.parent_organization.id
+
+    if not src_org:
+        return None
+
+    src_org = src_org.lower().replace("_", " ")
+
+    candidate_props = candidate.get("properties", {})
+
+    cand_org = None
+    candidate_provider_record = candidate_props.get("provider")
+    if candidate_provider_record and candidate_provider_record.get("name"):
+        cand_org = candidate_provider_record["name"].lower()
+
+    elif candidate_props.get("name"):
+        provider_parts = provider_id_from_name(candidate_props["name"])
+        if provider_parts:
+            cand_org = provider_parts[0].lower().replace("_", " ")
+
+    if not cand_org:
+        return None
+
+    return jellyfish.jaro_winkler(src_org, cand_org) >= threshold
+
+
+def has_matching_phone_number(
+    source: location.NormalizedLocation,
+    candidate: dict,
+) -> Optional[bool]:
+    """Compares phone numbers
+
+    - True if has at least one matching phone number
+    - False is only mismatching phone numbers
+    - None if no valid phone numbers to compare
+    """
+    candidate_props = candidate.get("properties", {})
+
+    if not candidate_props.get("phone_number"):
+        return None
+
+    try:
+        cand_phone = phonenumbers.parse(candidate_props["phone_number"], "US")
+    except phonenumbers.NumberParseException:
+        logger.warning(
+            "Invalid candidate phone number for location %s: %s",
+            candidate_props["id"],
+            candidate_props["phone_number"],
+        )
+        return None
+
+    src_phones = []
+    for contact in source.contact or []:
+        if not contact.phone:
+            continue
+
+        try:
+            src_phones.append(phonenumbers.parse(contact.phone, "US"))
+        except phonenumbers.NumberParseException:
+            logger.warning(
+                "Invalid source phone number for location %s: %s",
+                source.id,
+                contact.phone,
+            )
+            continue
+
+    if not src_phones:
+        return None
+
+    for src_phone in src_phones:
+        if src_phone == cand_phone:
+            return True
+
+    return False
+
+
+def get_full_address(address: Optional[location.Address]) -> str:
     if address is None:
         return ""
     if address.street2:
