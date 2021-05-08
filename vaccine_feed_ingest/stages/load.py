@@ -43,6 +43,9 @@ def load_sites_to_vial(
     with vial.vial_client(vial_server, vial_apikey) as vial_http:
         import_run_id = vial.start_import_run(vial_http)
 
+        locations = None
+        matched_ids = None
+
         if enable_match or enable_create:
             logger.info("Loading existing location from VIAL")
             locations = vial.retrieve_existing_locations_as_index(vial_http)
