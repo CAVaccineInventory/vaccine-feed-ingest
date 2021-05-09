@@ -59,7 +59,7 @@ def parse_row(row: BeautifulSoup, columns: List[str]) -> Dict[str, str]:
     """
 
     def extract_appt_slot_count(appt_slots: str) -> str:
-        pattern = re.compile("(\d+) slots")
+        pattern = re.compile(r"(\d+) slots")
         match = re.search(pattern, appt_slots)
         return "0" if match is None else match.group(1)
 
