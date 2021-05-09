@@ -3,6 +3,7 @@
 import os
 import pathlib
 import sys
+import urllib.parse
 
 import requests
 import yaml
@@ -61,17 +62,18 @@ if "parser" not in config or config["parser"] == "arcgis":
         raise e
 elif config["parser"] == "prepmod":
     try:
-        base_url = "%s/appointment/en/clinic/search" % config["url"]
+        base_url = urllib.parse.urljoin(config["url"], "appointment/en/clinic/search")
         page = 1
         while True:
-            url = "{}?page={}".format(base_url, page)
+            params = urllib.parse.urlencode({"page": page})
+            url = f"{base_url}?{params}"
             response = requests.get(url, allow_redirects=False)
 
             # when out of results, will return 302
             if response.status_code != 200:
                 break
 
-            with open(os.path.join(output_dir, "{}.html".format(page)), "w") as f:
+            with open(os.path.join(output_dir, f"{page}.html"), "w") as f:
                 f.write(response.text)
 
             page += 1

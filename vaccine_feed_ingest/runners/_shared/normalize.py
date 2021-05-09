@@ -8,6 +8,7 @@ import os
 import pathlib
 import re
 import sys
+import urllib.parse
 from typing import List
 
 import yaml
@@ -39,7 +40,7 @@ def _get_source(config: dict, site: dict, timestamp: str) -> schema.Source:
     return schema.Source(
         source=config["site"],
         id=site["clinic_id"],
-        fetched_from_uri=f"{config['url']}/clinic/search",
+        fetched_from_uri=urllib.parse.urljoin(config["url"], "clinic/search"),
         fetched_at=timestamp,
         data=site,
     )

@@ -63,16 +63,12 @@ def _output_ndjson(json_list: List[dict], out_filepath: pathlib.Path) -> None:
 
 
 def _prepmod_find_data_item(parent, label, offset):
+    row_matches = [x for x in parent.find_all(["p", "div"]) if label in x.get_text()]
     try:
-        row_matches = [
-            x for x in parent.find_all(["p", "div"]) if label in x.get_text()
-        ]
         content = row_matches[-1].contents[offset]
-        return (
-            content.strip() if isinstance(content, str) else content.get_text().strip()
-        )
-    except Exception:
+    except IndexError:
         return ""
+    return content.strip() if isinstance(content, str) else content.get_text().strip()
 
 
 config = _get_config(YML_CONFIG)

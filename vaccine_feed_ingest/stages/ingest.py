@@ -240,9 +240,6 @@ def run_normalize(
 
         try:
             if yml_path:
-                normalize_path = site.find_executeable(
-                    RUNNERS_DIR.joinpath("_shared"), PipelineStage.NORMALIZE
-                )
                 subprocess.run(
                     [
                         str(normalize_path),
