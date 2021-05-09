@@ -25,10 +25,24 @@ results = []
 for input_file in input_dir.glob("*.json"):
     with input_file.open() as fin:
         data = json.load(fin)
-        try:
-            locations = data["data"]["searchLocations"]["locations"]
-        except KeyError:
-            logger.error("Data in unexpected format!")
+
+        if not data:
+            logger.error("No data!")
+            continue
+
+        if not data.get("data"):
+            logger.error("No data data!")
+            continue
+
+        if not data["data"].get("searchLocations"):
+            logger.error("No data data searchLocations!")
+            continue
+
+        if not data["data"]["searchLocations"]["locations"]:
+            logger.warning("No data data searchLocations locations!")
+            continue
+
+        locations = data["data"]["searchLocations"]["locations"]
         results.extend(locations)
 
 with output_file.open("w") as fout:
