@@ -15,7 +15,7 @@ CENTRAL_ZIP_CODE = 50010
 
 def main(argv):
     output_dir = argv[1]
-    outfile_path = os.path.join(output_dir, "il_state.json")
+    outfile_path = os.path.join(output_dir, "ia_state.json")
     response = requests.post(
         SEARCH_ENDPOINT, {"address": CENTRAL_ZIP_CODE, "range": SEARCH_RADIUS}
     )
