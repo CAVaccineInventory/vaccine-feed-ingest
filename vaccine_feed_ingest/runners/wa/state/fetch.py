@@ -10,6 +10,7 @@ logger = getLogger(__file__)
 
 
 # See https://apim-vaccs-prod.azure-api.net/web/graphql for the full interface w/documention
+# editorconfig-checker-disable
 QUERY = """
 {
   searchLocations(
@@ -79,6 +80,7 @@ QUERY = """
   }
 }
 """
+# editorconfig-checker-enable
 
 GRAPHQL_ENDPOINT = "https://apim-vaccs-prod.azure-api.net/web/graphql"
 
