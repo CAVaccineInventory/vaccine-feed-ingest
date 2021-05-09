@@ -180,8 +180,8 @@ def is_phone_number_similar(
     """Compares phone numbers by area code
 
     - True if has at least one matching phone number
-    - False is mismatching phone numbers within the same area code
-    - None if no valid phone numbers to compare
+    - False if mismatching phone numbers within the same area code
+    - None if no valid phone numbers to compare, or valid phone numbers are in different area codes
     """
     candidate_props = candidate.get("properties", {})
 
