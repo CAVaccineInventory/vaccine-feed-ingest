@@ -3,9 +3,6 @@ import json
 import pathlib
 import sys
 
-OUTPUT_DIR = pathlib.Path(sys.argv[1])
-INPUT_DIR = pathlib.Path(sys.argv[2])
-
 
 def zip_infile_outfile_pairs(input_dir, output_dir):
     infile_paths = input_dir.glob("*.json")
