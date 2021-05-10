@@ -59,7 +59,7 @@ def _get_contacts(site: dict) -> Optional[List[schema.Contact]]:
             return None
         if url == "COVID-19 Vaccine Information - Hennepin Healthcare":
             return None
-        url = re.sub("^https/:", "https://", url)  # fix typos
+        url = re.sub(r'^https/:', 'https://', url)  # fix typos
 
         if not url.startswith("http"):
             url = "http://" + url
