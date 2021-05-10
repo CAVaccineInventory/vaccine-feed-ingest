@@ -13,6 +13,14 @@ from .normalize import provider_id_from_name
 logger = getLogger(__file__)
 
 
+# Map Location fields to concordance authorities
+LEGACY_CONCORDANCE_MAP = {
+    "google_places_id": "google_places",
+    "vaccinefinder_location_id": "vaccinefinder_org",
+    "vaccinespotter_location_id": "vaccinespotter_org",
+}
+
+
 def is_concordance_similar(
     source: location.NormalizedLocation,
     candidate: dict,
@@ -66,6 +74,17 @@ def is_concordance_similar(
         authority, value = entry.split(":", maxsplit=1)
 
         candidate_concordance[authority].add(value)
+
+    # Handle legacy concordance model by copying over the legacy field
+    # ids as though there was a concordance entry for them.
+    for field, authority in LEGACY_CONCORDANCE_MAP.items():
+        if not candidate_props.get(field):
+            continue
+
+        if authority in candidate_concordance:
+            continue
+
+        candidate_concordance[authority] = candidate_props[field]
 
     # Similar if at least one concordance entry matches,
     # even if there are conflicting entries
@@ -173,15 +192,15 @@ def is_provider_similar(
     return jellyfish.jaro_winkler(src_org, cand_org) >= threshold
 
 
-def has_matching_phone_number(
+def is_phone_number_similar(
     source: location.NormalizedLocation,
     candidate: dict,
 ) -> Optional[bool]:
-    """Compares phone numbers
+    """Compares phone numbers by area code
 
     - True if has at least one matching phone number
-    - False is only mismatching phone numbers
-    - None if no valid phone numbers to compare
+    - False if mismatching phone numbers within the same area code
+    - None if no valid phone numbers to compare, or valid phone numbers are in different area codes
     """
     candidate_props = candidate.get("properties", {})
 
@@ -220,7 +239,21 @@ def has_matching_phone_number(
         if src_phone == cand_phone:
             return True
 
-    return False
+    # Only consider phone mismatched if numbers have the same area code and do not match
+    cand_area_code = str(cand_phone.national_number)[:3]
+
+    for src_phone in src_phones:
+        src_area_code = str(src_phone.national_number)[:3]
+        # Skip numbers with different area codes
+        if src_area_code != cand_area_code:
+            continue
+
+        # Fail if same area code and do not match
+        if src_phone != cand_phone:
+            return False
+
+    # Could not find a phone number to compare for a match or mismatch
+    return None
 
 
 def get_full_address(address: Optional[location.Address]) -> str:

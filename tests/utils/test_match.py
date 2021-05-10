@@ -19,7 +19,7 @@ def test_is_provider_similar(full_location, minimal_location, vial_location):
     assert not match.is_provider_similar(minimal_location, vial_location)
 
 
-def test_has_matching_phone_number(full_location, minimal_location, vial_location):
-    assert match.has_matching_phone_number(full_location, vial_location)
+def test_is_phone_number_similar(full_location, minimal_location, vial_location):
+    assert match.is_phone_number_similar(full_location, vial_location)
 
-    assert not match.has_matching_phone_number(minimal_location, vial_location)
+    assert not match.is_phone_number_similar(minimal_location, vial_location)

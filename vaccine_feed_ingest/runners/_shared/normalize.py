@@ -3,19 +3,44 @@
 import calendar
 import datetime
 import json
+import logging
+import os
 import pathlib
 import re
 import sys
+import urllib.parse
 from typing import List
 
+import yaml
 from vaccine_feed_ingest_schema import location as schema
 
+# Configure logger
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s %(levelname)s:%(name)s:%(message)s",
+    datefmt="%m/%d/%Y %H:%M:%S",
+)
+logger = logging.getLogger("_shared/parse.py")
 
-def _get_source(site: dict, timestamp: str) -> schema.Source:
+OUTPUT_DIR = pathlib.Path(sys.argv[1])
+INPUT_DIR = pathlib.Path(sys.argv[2])
+YML_CONFIG = pathlib.Path(sys.argv[3])
+
+
+def _get_config(yml_config: pathlib.Path) -> dict:
+    with open(yml_config, "r") as stream:
+        try:
+            config = yaml.safe_load(stream)
+        except yaml.YAMLError as exc:
+            print(exc)
+    return config
+
+
+def _get_source(config: dict, site: dict, timestamp: str) -> schema.Source:
     return schema.Source(
-        source="wa_prepmod",
+        source=config["site"],
         id=site["clinic_id"],
-        fetched_from_uri="https://prepmod.doh.wa.gov/clinic/search",
+        fetched_from_uri=urllib.parse.urljoin(config["url"], "clinic/search"),
         fetched_at=timestamp,
         data=site,
     )
@@ -55,8 +80,8 @@ def _get_address(site: dict) -> schema.Address:
     return schema.Address(
         street1=address_split[0],
         street2=adr2,
-        city=address_split[-2].replace(" WA", ""),
-        state="WA",
+        city=address_split[-2].replace(f" {config['state'].upper()}", ""),
+        state=config["state"].upper(),
         zip=address_split[-1],
     )
 
@@ -96,46 +121,51 @@ def _get_opening_hours(site: dict) -> List[schema.OpenHour]:
     ]
 
 
-def _get_contact(site: dict) -> List[schema.Contact]:
+def _get_contact(config: dict, site: dict) -> List[schema.Contact]:
     return [
         schema.Contact(
             contact_type="booking",
-            website=f"https://prepmod.doh.wa.gov/client/registration?clinic_id={site['clinic_id']}",
+            website=f"{config['url']}/appointment/en/client/registration?clinic_id={site['clinic_id']}",
         )
     ]
 
 
-def normalize(site: dict, timestamp: str) -> str:
+def _get_out_filepath(in_filepath: pathlib.Path, out_dir: pathlib.Path) -> pathlib.Path:
+    filename, _ = os.path.splitext(in_filepath.name)
+    return out_dir.joinpath(f"{filename}.normalized.ndjson")
+
+
+def normalize(config: dict, site: dict, timestamp: str) -> str:
     """
     sample:
     {"name": "Rebel Med NW - COVID Vaccine Clinic", "date": "04/30/2021", "address": "5401 Leary Ave NW, Seattle WA, 98107", "vaccines": "Moderna COVID-19 Vaccine", "ages": "Adults, Seniors", "info": "truncated", "hours": "09:00 am - 05:00 pm", "available": "14", "special": "If you are signing up for a second dose, you must get the same vaccine brand as your first dose.", "clinic_id": "2731"} # noqa: E501
     """
     normalized = schema.NormalizedLocation(
-        id=f"wa_prepmod:{site['clinic_id']}",
+        id=f"{config['site']}:{site['clinic_id']}",
         name=site["name"],
         address=_get_address(site),
         availability=schema.Availability(appointments=True),
-        contact=_get_contact(site),
+        contact=_get_contact(config, site),
         inventory=_get_inventory(site),
         opening_dates=_get_opening_dates(site),
         opening_hours=_get_opening_hours(site),
         notes=_get_notes(site),
-        source=_get_source(site, timestamp),
+        source=_get_source(config, site, timestamp),
     ).dict()
     return normalized
 
 
 parsed_at_timestamp = datetime.datetime.utcnow().isoformat()
 
-input_dir = pathlib.Path(sys.argv[2])
-input_file = input_dir / "data.parsed.ndjson"
-output_dir = pathlib.Path(sys.argv[1])
-output_file = output_dir / "data.normalized.ndjson"
+config = _get_config(YML_CONFIG)
 
-with input_file.open() as parsed_lines:
-    with output_file.open("w") as fout:
-        for line in parsed_lines:
-            site = json.loads(line)
-            normalized_site = normalize(site, parsed_at_timestamp)
-            json.dump(normalized_site, fout)
-            fout.write("\n")
+if config["parser"] == "prepmod":
+    for input_file in INPUT_DIR.glob("*.ndjson"):
+        output_file = _get_out_filepath(input_file, OUTPUT_DIR)
+        with input_file.open() as parsed_lines:
+            with output_file.open("w") as fout:
+                for line in parsed_lines:
+                    site = json.loads(line)
+                    normalized_site = normalize(config, site, parsed_at_timestamp)
+                    json.dump(normalized_site, fout)
+                    fout.write("\n")
