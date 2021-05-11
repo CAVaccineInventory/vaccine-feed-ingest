@@ -7,10 +7,7 @@ import sys
 import re
 from typing import List, Optional, Dict
 
-from pydantic.error_wrappers import ValidationError
-
 from vaccine_feed_ingest_schema import location as schema
-
 from vaccine_feed_ingest.utils.log import getLogger
 
 logger = getLogger(__file__)
@@ -19,7 +16,7 @@ Site = Dict[str, str]
 
 
 def get_site_id(site: Site) -> str:
-    return f"us_physicians_immediate:{hash(site['address'])}"
+    return f"us_physicians_immediate:{site['table_id']}_{site['row_id']}"
 
 
 def infer_address(site: Site) -> schema.Address:
@@ -91,7 +88,7 @@ def normalize(site: Site, timestamp: str) -> schema.NormalizedLocation:
         inventory=parse_vaccine(site),
         source=schema.Source(
             source="us_physicians_immediate",
-            id=get_site_id(site).split(':')[-1],
+            id=site['row_id'],
             fetched_from_uri="https://physiciansimmediatecare.com/covid-19-vaccination-locations/",
             fetched_at=timestamp,
             data=site

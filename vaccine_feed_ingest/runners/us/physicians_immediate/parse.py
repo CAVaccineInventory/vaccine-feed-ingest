@@ -51,7 +51,7 @@ def find_column_headings(soup: BeautifulSoup) -> List[str]:
     return [col for col in translated_cols if col in ALLOWED_NORMALIZED_COLUMNS]
 
 
-def parse_row(row: BeautifulSoup, columns: List[str]) -> Dict[str, str]:
+def parse_row(row: BeautifulSoup, columns: List[str], table_id: str) -> Dict[str, str]:
     """Takes a BeautifulSoup tag corresponding to a single row in an HTML table as input,
     along with an ordered list of normalized column names.
     Labels data in each row according to the position of the column names.
@@ -84,6 +84,8 @@ def parse_row(row: BeautifulSoup, columns: List[str]) -> Dict[str, str]:
         else:
             if len(value) != 0:
                 result[key] = value[0]
+    result['row_id'] = row.attrs['data-row_id']
+    result['table_id'] = table_id
     return result
 
 
@@ -96,9 +98,10 @@ if __name__ == "__main__":
             continue
         stores = []
         for table in soupify_file(html):
+            table_id = table.attrs["data-footable_id"]
             column_headings = find_column_headings(table)
             stores.extend(
-                [parse_row(tr, column_headings) for tr in find_data_rows(table)]
+                [parse_row(tr, column_headings, table_id) for tr in find_data_rows(table)]
             )
         output = "\n".join(json.dumps(store) for store in stores)
         outpath = output_dir / (html.with_suffix(".parsed.ndjson").name)
