@@ -19,5 +19,5 @@ base_url = "https://carbonhealth.com/static/data"
 latest = requests.get(f"{base_url}/rev-manifest.json").json()["covid-vaccine.json"]
 
 r = requests.get(f"{base_url}/rev/{latest}")
-with open(os.path.join(output_dir, "output.json"), "w") as f:
+with open(os.path.join(output_dir, latest), "w") as f:
     f.write(r.text)
