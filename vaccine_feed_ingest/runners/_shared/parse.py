@@ -3,10 +3,12 @@
 import json
 import os
 import pathlib
+import re
 import sys
 from typing import List
 
 import yaml
+from bs4 import BeautifulSoup
 
 from vaccine_feed_ingest.utils.log import getLogger
 
@@ -60,7 +62,17 @@ def _output_ndjson(json_list: List[dict], out_filepath: pathlib.Path) -> None:
             fout.write("\n")
 
 
+def _prepmod_find_data_item(parent, label, offset):
+    row_matches = [x for x in parent.find_all(["p", "div"]) if label in x.get_text()]
+    try:
+        content = row_matches[-1].contents[offset]
+    except IndexError:
+        return ""
+    return content.strip() if isinstance(content, str) else content.get_text().strip()
+
+
 config = _get_config(YML_CONFIG)
+EXTRACT_CLINIC_ID = re.compile(r".*clinic(\d*)\.png")
 
 if config["parser"] == "arcgis_features":
     """
@@ -96,6 +108,52 @@ elif config["parser"] == "json_list":
 
         _output_ndjson(json_list, out_filepath)
 
+elif config["parser"] == "prepmod":
+    """
+    Parse HTML 'prepmod' data.
+    """
+    input_filenames = INPUT_DIR.glob("*.html")
+
+    for filename in input_filenames:
+        out_filepath = _get_out_filepath(filename, OUTPUT_DIR)
+        text = open(filename, "r").read()
+        soup = BeautifulSoup(text, "html.parser")
+
+        # classes only used on titles for search results
+        with open(out_filepath, "w") as fout:
+            for title in soup.select(".text-xl.font-black"):
+                parent = title.parent
+                combined_name = title.get_text().strip()
+                name, date = combined_name.rsplit(" on ", 1)
+                address = title.find_next_sibling("p").get_text().strip()
+                vaccines = _prepmod_find_data_item(parent, "Vaccinations offered", -2)
+                ages = _prepmod_find_data_item(parent, "Age groups served", -1)
+                additional_info = _prepmod_find_data_item(
+                    parent, "Additional Information", -1
+                )
+                hours = _prepmod_find_data_item(parent, "Clinic Hours", -1)
+                available_count = (
+                    _prepmod_find_data_item(parent, "Available Appointments", -1) or 0
+                )
+                special = _prepmod_find_data_item(parent, "Special Instructions", -1)
+                find_clinic_id = EXTRACT_CLINIC_ID.match(
+                    parent.find_next_sibling("div", "map-image").find("img")["src"]
+                )
+                clinic_id = find_clinic_id.group(1)
+                data = {
+                    "name": name,
+                    "date": date,
+                    "address": address,
+                    "vaccines": vaccines,
+                    "ages": ages,
+                    "info": additional_info,
+                    "hours": hours,
+                    "available": available_count,
+                    "special": special,
+                    "clinic_id": clinic_id,
+                }
+                json.dump(data, fout)
+                fout.write("\n")
 else:
     logger.error("Parser '%s' was not recognized.", config["parser"])
     raise NotImplementedError(f"No shared parser available for '{config['parser']}'.")

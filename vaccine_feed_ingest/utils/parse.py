@@ -3,6 +3,10 @@ Utilities for the parse step
 """
 import re
 
+from .log import getLogger
+
+logger = getLogger(__file__)
+
 
 def location_id_from_name(name: str) -> str:
     """Get a stable ID for a location from its name.

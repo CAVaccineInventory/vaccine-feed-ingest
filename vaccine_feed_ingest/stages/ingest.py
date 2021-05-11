@@ -191,7 +191,9 @@ def run_normalize(
     dry_run: bool = False,
     fail_on_runner_error: bool = True,
 ) -> bool:
-    normalize_path = site.find_executeable(site_dir, PipelineStage.NORMALIZE)
+    normalize_path, yml_path = site.resolve_executable(
+        site_dir, PipelineStage.NORMALIZE
+    )
     if not normalize_path:
         logger.info("No normalize cmd for %s to run.", site_dir.name)
         return False
@@ -237,10 +239,21 @@ def run_normalize(
         )
 
         try:
-            subprocess.run(
-                [str(normalize_path), normalize_output_dir, normalize_input_dir],
-                check=True,
-            )
+            if yml_path:
+                subprocess.run(
+                    [
+                        str(normalize_path),
+                        normalize_output_dir,
+                        normalize_input_dir,
+                        str(yml_path),
+                    ],
+                    check=True,
+                )
+            else:
+                subprocess.run(
+                    [str(normalize_path), normalize_output_dir, normalize_input_dir],
+                    check=True,
+                )
         except CalledProcessError as e:
             if fail_on_runner_error:
                 raise e

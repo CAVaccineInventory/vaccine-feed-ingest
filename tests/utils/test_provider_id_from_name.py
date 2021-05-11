@@ -1,5 +1,6 @@
-from vaccine_feed_ingest.utils.normalize import provider_id_from_name
 from vaccine_feed_ingest_schema.location import VaccineProvider
+
+from vaccine_feed_ingest.utils.normalize import provider_id_from_name
 
 
 def test_provider_id_from_name():
@@ -7,12 +8,16 @@ def test_provider_id_from_name():
     _test_provider("Acme Pharmacy #1058", VaccineProvider.ACME, "1058")
 
     _test_provider("Albertsons Pharmacy #1915", VaccineProvider.ALBERTSONS, "1915")
-    _test_provider("Albertsons Market Pharmacy #1915", VaccineProvider.ALBERTSONS, "1915")
+    _test_provider(
+        "Albertsons Market Pharmacy #1915", VaccineProvider.ALBERTSONS, "1915"
+    )
 
     _test_provider("Big Y Pharmacy #17 Rx #408532", VaccineProvider.BIG_Y, "408532")
     _test_provider("Big Y Pharmacy #067209", VaccineProvider.BIG_Y, "67209")
 
-    _test_provider("Brookshire Pharmacy #14 #351329", VaccineProvider.BROOKSHIRE, "351329")
+    _test_provider(
+        "Brookshire Pharmacy #14 #351329", VaccineProvider.BROOKSHIRE, "351329"
+    )
 
     _test_provider("COSTCO MARKET PHARMACY #122", VaccineProvider.COSTCO, "122")
     _test_provider("COSTCO PHARMACY #122", VaccineProvider.COSTCO, "122")
@@ -37,8 +42,12 @@ def test_provider_id_from_name():
 
     _test_provider("Drugco Discount Pharmacy #3425", VaccineProvider.DRUGCO, "3425")
 
-    _test_provider("Family  Fare   Pharmacy 0115 #5221", VaccineProvider.FAMILY_FARE, "5221")
-    _test_provider("Family Fare Pharmacy #0115 #5221", VaccineProvider.FAMILY_FARE, "5221")
+    _test_provider(
+        "Family  Fare   Pharmacy 0115 #5221", VaccineProvider.FAMILY_FARE, "5221"
+    )
+    _test_provider(
+        "Family Fare Pharmacy #0115 #5221", VaccineProvider.FAMILY_FARE, "5221"
+    )
 
     _test_provider("Food City Pharmacy #0115 #5221", VaccineProvider.FOOD_CITY, "5221")
 
@@ -49,10 +58,16 @@ def test_provider_id_from_name():
 
     _test_provider("Fry's Food And Drug #66000061", VaccineProvider.FRYS, "66000061")
 
-    _test_provider("Genoa Healthcare 00010 (Chattanooga - Bell Avenue)", VaccineProvider.GENOA, "10")
+    _test_provider(
+        "Genoa Healthcare 00010 (Chattanooga - Bell Avenue)",
+        VaccineProvider.GENOA,
+        "10",
+    )
     _test_provider("Genoa Healthcare LLC #00072", VaccineProvider.GENOA, "72")
 
-    _test_provider("Giant Eagle Pharmacy #0012 #G00122", VaccineProvider.GIANT_EAGLE, "122")
+    _test_provider(
+        "Giant Eagle Pharmacy #0012 #G00122", VaccineProvider.GIANT_EAGLE, "122"
+    )
 
     _test_provider("Giant Food #198", VaccineProvider.GIANT_FOOD, "198")
 
@@ -66,7 +81,9 @@ def test_provider_id_from_name():
 
     _test_provider("Harps Pharmacy #177", VaccineProvider.HARPS, "177")
 
-    _test_provider("Harris Teeter Pharmacy #09700030", VaccineProvider.HARRIS_TEETER, "9700030")
+    _test_provider(
+        "Harris Teeter Pharmacy #09700030", VaccineProvider.HARRIS_TEETER, "9700030"
+    )
 
     _test_provider("Hartig Drug Co #34 #324429", VaccineProvider.HARTIG, "324429")
     _test_provider("Hartig Drug Co 26 #324429", VaccineProvider.HARTIG, "324429")
@@ -79,14 +96,26 @@ def test_provider_id_from_name():
 
     _test_provider("Ingles Pharmacy #031 #438575", VaccineProvider.INGLES, "438575")
 
-    _test_provider("KAISER HEALTH PLAN B PHY 722", VaccineProvider.KAISER_HEALTH_PLAN, "722")
-    _test_provider("KAISER HEALTH PLAN BLDG PHY 632", VaccineProvider.KAISER_HEALTH_PLAN, "632")
-    _test_provider("KAISER HEALTH PLAN MOB 1 PHY 511", VaccineProvider.KAISER_HEALTH_PLAN, "511")
+    _test_provider(
+        "KAISER HEALTH PLAN B PHY 722", VaccineProvider.KAISER_HEALTH_PLAN, "722"
+    )
+    _test_provider(
+        "KAISER HEALTH PLAN BLDG PHY 632", VaccineProvider.KAISER_HEALTH_PLAN, "632"
+    )
+    _test_provider(
+        "KAISER HEALTH PLAN MOB 1 PHY 511", VaccineProvider.KAISER_HEALTH_PLAN, "511"
+    )
 
-    _test_provider("KAISER PERMANENTE PHARMACY #054", VaccineProvider.KAISER_PERMANENTE, "54")
+    _test_provider(
+        "KAISER PERMANENTE PHARMACY #054", VaccineProvider.KAISER_PERMANENTE, "54"
+    )
 
-    _test_provider("King Soopers Pharmacy #62000121", VaccineProvider.KING_SOOPERS, "62000121")
-    _test_provider("King Soopers Pharmacy 62000001", VaccineProvider.KING_SOOPERS, "62000001")
+    _test_provider(
+        "King Soopers Pharmacy #62000121", VaccineProvider.KING_SOOPERS, "62000121"
+    )
+    _test_provider(
+        "King Soopers Pharmacy 62000001", VaccineProvider.KING_SOOPERS, "62000001"
+    )
 
     _test_provider("Kroger Pharmacy #01100330", VaccineProvider.KROGER, "1100330")
     _test_provider("Kroger Pharmacy 743", VaccineProvider.KROGER, "743")
@@ -106,10 +135,18 @@ def test_provider_id_from_name():
 
     _test_provider("Pavilions PHARMACY #8545", VaccineProvider.PAVILIONS, "8545")
 
-    _test_provider("Pick N Save Pharmacy #53400102", VaccineProvider.PICK_N_SAVE, "53400102")
+    _test_provider(
+        "Pick N Save Pharmacy #53400102", VaccineProvider.PICK_N_SAVE, "53400102"
+    )
 
-    _test_provider("Price Chopper Pharmacy 184 #039929", VaccineProvider.PRICE_CHOPPER, "39929")
-    _test_provider("Price Chopper Pharmacy #20 #MS1004804", VaccineProvider.PRICE_CHOPPER, "1004804")
+    _test_provider(
+        "Price Chopper Pharmacy 184 #039929", VaccineProvider.PRICE_CHOPPER, "39929"
+    )
+    _test_provider(
+        "Price Chopper Pharmacy #20 #MS1004804",
+        VaccineProvider.PRICE_CHOPPER,
+        "1004804",
+    )
 
     _test_provider("Publix Super Markets Inc. #850", VaccineProvider.PUBLIX, "850")
 
@@ -146,7 +183,9 @@ def test_provider_id_from_name():
     _test_provider("Walgreens #24295", VaccineProvider.WALGREENS, "24295")
     _test_provider("Walgreens Co. #1158", VaccineProvider.WALGREENS, "1158")
     _test_provider("Walgreens Pharmacy #24295", VaccineProvider.WALGREENS, "24295")
-    _test_provider("Walgreens Specialty Pharmacy #35326", VaccineProvider.WALGREENS, "35326")
+    _test_provider(
+        "Walgreens Specialty Pharmacy #35326", VaccineProvider.WALGREENS, "35326"
+    )
     _test_provider("Walgreens Specialty #24295", VaccineProvider.WALGREENS, "24295")
 
     _test_provider("Walmart Inc, #2509", VaccineProvider.WALMART, "2509")
@@ -164,6 +203,10 @@ def test_provider_id_from_name():
 
 
 def _test_provider(input_str, expected_provider_name, expected_provider_id):
-    actual_provider_name, actual_provider_id = provider_id_from_name(input_str)
+    result = provider_id_from_name(input_str)
+
+    assert result
+    actual_provider_name, actual_provider_id = result
+
     assert actual_provider_name == expected_provider_name
     assert actual_provider_id == expected_provider_id

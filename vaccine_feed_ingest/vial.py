@@ -3,7 +3,8 @@
 import contextlib
 import json
 import urllib.parse
-from typing import Any, Iterable, Iterator, Tuple
+from typing import Any, Iterable, Iterator, Set, Tuple
+from urllib.error import HTTPError
 
 import geojson
 import rtree
@@ -70,19 +71,28 @@ def import_source_locations(
     import_run_id: str,
     import_locations: Iterable[load.ImportSourceLocation],
     import_batch_size: int = 500,
-) -> urllib3.response.HTTPResponse:
+) -> None:
     """Import source locations"""
     for import_locations_batch in misc.batch(import_locations, import_batch_size):
         encoded_ndjson = "\n".join(
             [loc.json(exclude_none=True) for loc in import_locations_batch]
         )
 
-        return vial_http.request(
+        rsp = vial_http.request(
             "POST",
             f"/api/importSourceLocations?import_run_id={import_run_id}",
             headers={**vial_http.headers, "Content-Type": "application/x-ndjson"},
             body=encoded_ndjson.encode("utf-8"),
         )
+
+        if rsp.status != 200:
+            raise HTTPError(
+                f"/api/importSourceLocations?import_run_id={import_run_id}",
+                rsp.status,
+                rsp.data[:100],
+                dict(rsp.headers),
+                None,
+            )
 
 
 def search_locations(
@@ -145,3 +155,41 @@ def update_existing_locations(
 
         for loc in updated_locations:
             locations.insert(_generate_index_row(loc))
+
+
+def search_source_locations(
+    vial_http: urllib3.connectionpool.ConnectionPool,
+    **kwds: Any,
+) -> Iterator[dict]:
+    """Wrapper around search source locations api. Returns geojson."""
+    params = {
+        **kwds,
+        "format": "nlgeojson",
+    }
+
+    query = urllib.parse.urlencode(params)
+
+    resp = vial_http.request(
+        "GET", f"/api/searchSourceLocations?{query}", preload_content=False
+    )
+
+    for line in resp:
+        try:
+            yield geojson.loads(line)
+        except json.JSONDecodeError:
+            logger.warning("Invalid json record in search response: %s", line)
+
+    resp.release_conn()
+
+
+def retrieve_matched_source_location_ids(
+    vial_http: urllib3.connectionpool.ConnectionPool,
+) -> Set[str]:
+    """Return all matched source location ids in VIAL"""
+    source_locations = search_source_locations(vial_http, all=1, matched=1)
+
+    return {
+        loc["properties"]["source_uid"]
+        for loc in source_locations
+        if "properties" in loc and "source_uid" in loc["properties"]
+    }

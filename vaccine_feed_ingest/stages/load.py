@@ -1,5 +1,6 @@
 import pathlib
 from typing import Collection, Dict, Iterable, Iterator, List, Optional
+from urllib.error import HTTPError
 
 import jellyfish
 import pydantic
@@ -12,7 +13,12 @@ from vaccine_feed_ingest_schema import load, location
 from vaccine_feed_ingest.utils.log import getLogger
 
 from .. import vial
-from ..utils.match import canonicalize_address, get_full_address
+from ..utils.match import (
+    is_address_similar,
+    is_concordance_similar,
+    is_phone_number_similar,
+    is_provider_similar,
+)
 from . import outputs
 from .common import STAGE_OUTPUT_SUFFIX, PipelineStage
 
@@ -27,6 +33,7 @@ def load_sites_to_vial(
     vial_apikey: str,
     enable_match: bool,
     enable_create: bool,
+    enable_rematch: bool,
     match_ids: Optional[Dict[str, str]],
     create_ids: Optional[Collection[str]],
     candidate_distance: float,
@@ -36,8 +43,17 @@ def load_sites_to_vial(
     with vial.vial_client(vial_server, vial_apikey) as vial_http:
         import_run_id = vial.start_import_run(vial_http)
 
+        locations = None
+        matched_ids = None
+
         if enable_match or enable_create:
+            logger.info("Loading existing location from VIAL")
             locations = vial.retrieve_existing_locations_as_index(vial_http)
+
+            # Skip loading already matched if re-matching
+            if not enable_rematch:
+                logger.info("Loading already matched source locations from VIAL")
+                matched_ids = vial.retrieve_matched_source_location_ids(vial_http)
 
         for site_dir in site_dirs:
             imported_locations = run_load_to_vial(
@@ -47,8 +63,10 @@ def load_sites_to_vial(
                 vial_http=vial_http,
                 import_run_id=import_run_id,
                 locations=locations,
+                matched_ids=matched_ids,
                 enable_match=enable_match,
                 enable_create=enable_create,
+                enable_rematch=enable_rematch,
                 match_ids=match_ids,
                 create_ids=create_ids,
                 candidate_distance=candidate_distance,
@@ -64,6 +82,7 @@ def load_sites_to_vial(
                 ]
 
                 if source_ids:
+                    logger.info("Updating existing locations with the ones we created")
                     vial.update_existing_locations(vial_http, locations, source_ids)
 
 
@@ -74,8 +93,10 @@ def run_load_to_vial(
     vial_http: urllib3.connectionpool.ConnectionPool,
     import_run_id: str,
     locations: Optional[rtree.index.Index],
+    matched_ids: Optional[Collection[str]],
     enable_match: bool = True,
     enable_create: bool = False,
+    enable_rematch: bool = False,
     match_ids: Optional[Dict[str, str]] = None,
     create_ids: Optional[Collection[str]] = None,
     candidate_distance: float = 0.6,
@@ -99,6 +120,9 @@ def run_load_to_vial(
         return None
 
     num_imported_locations = 0
+    num_new_locations = 0
+    num_match_locations = 0
+    num_already_matched_locations = 0
 
     for filepath in outputs.iter_data_paths(
         ennrich_run_dir, suffix=STAGE_OUTPUT_SUFFIX[PipelineStage.ENRICH]
@@ -127,17 +151,31 @@ def run_load_to_vial(
                     match_action = load.ImportMatchAction(action="new")
 
                 elif (enable_match or enable_create) and locations is not None:
-                    match_action = _match_source_to_existing_locations(
-                        normalized_location,
-                        locations,
-                        candidate_distance,
-                        enable_match=enable_match,
-                        enable_create=enable_create,
-                    )
+                    # Match source locations if we are re-matching, or if we
+                    # haven't matched this source location yet
+                    if enable_rematch or (
+                        matched_ids and normalized_location.id not in matched_ids
+                    ):
+                        match_action = _match_source_to_existing_locations(
+                            normalized_location,
+                            locations,
+                            candidate_distance,
+                            enable_match=enable_match,
+                            enable_create=enable_create,
+                        )
+                    else:
+                        num_already_matched_locations += 1
 
                 import_location = _create_import_location(
                     normalized_location, match_action=match_action
                 )
+
+                num_imported_locations += 1
+                if match_action:
+                    if match_action.action == "existing":
+                        num_match_locations += 1
+                    elif match_action.action == "new":
+                        num_new_locations += 1
 
                 import_locations.append(import_location)
 
@@ -150,29 +188,50 @@ def run_load_to_vial(
             continue
 
         if not dry_run:
-            import_resp = vial.import_source_locations(
-                vial_http,
-                import_run_id,
-                import_locations,
-                import_batch_size=import_batch_size,
-            )
-
-            if import_resp.status != 200:
+            try:
+                vial.import_source_locations(
+                    vial_http,
+                    import_run_id,
+                    import_locations,
+                    import_batch_size=import_batch_size,
+                )
+            except HTTPError as e:
                 logger.warning(
-                    "Failed to import source locations for %s in %s: %s",
+                    "Failed to import some source locations for %s in %s. Because this is action spans multiple remote calls, some locations may have been imported: %s",
                     filepath.name,
                     site_dir.name,
-                    import_resp.data[:100],
+                    e,
                 )
-                continue
 
-        num_imported_locations += len(import_locations)
+            continue
 
-    logger.info(
-        "Imported %d source locations for %s",
-        num_imported_locations,
-        site_dir.name,
+    num_unknown_locations = (
+        num_imported_locations
+        - num_new_locations
+        - num_match_locations
+        - num_already_matched_locations
     )
+
+    if enable_rematch:
+        logger.info(
+            "Imported %d source locations for %s (%d new, %d matched, %d unknown)",
+            num_imported_locations,
+            site_dir.name,
+            num_new_locations,
+            num_match_locations,
+            num_unknown_locations,
+        )
+    else:
+        logger.info(
+            "Imported %d source locations for %s "
+            "(%d new, %d matched, %d unknown, %d had existing match)",
+            num_imported_locations,
+            site_dir.name,
+            num_new_locations,
+            num_match_locations,
+            num_unknown_locations,
+            num_already_matched_locations,
+        )
 
     return import_locations
 
@@ -226,28 +285,24 @@ def _is_different(source: location.NormalizedLocation, candidate: dict) -> bool:
 
 def _is_match(source: location.NormalizedLocation, candidate: dict) -> bool:
     """Return True if candidate is so similar it must be a match"""
-    source_links = (
-        set("{}:{}".format(link.authority, link.id) for link in source.links)
-        if source.links
-        else set()
-    )
+    # If concordance matches or doesn't match then trust that first.
+    concordance_matches = is_concordance_similar(source, candidate)
+    if concordance_matches is not None:
+        return concordance_matches
 
-    candidate = candidate["properties"]
-    candidate_links = (
-        set(candidate["concordances"]) if "concordances" in candidate else set()
-    )
-    shared_links = source_links.intersection(candidate_links)
+    # Don't match locations with different providers
+    provider_matches = is_provider_similar(source, candidate, threshold=0.7)
+    if provider_matches is not None and provider_matches is False:
+        return False
 
-    if len(shared_links) > 0:
-        # Shared concordances, mark as match
+    # If there are phone numbers and the phone numbers don't match then fail to match
+    phone_matches = is_phone_number_similar(source, candidate)
+    if phone_matches is not None and phone_matches is False:
+        return False
+
+    address_matches = is_address_similar(source, candidate)
+    if address_matches is not None and address_matches is True:
         return True
-
-    if candidate["full_address"] is not None and source.address is not None:
-        if canonicalize_address(
-            get_full_address(source.address)
-        ) == canonicalize_address(candidate["full_address"]):
-            # Canonicalized address matches, mark as match
-            return True
 
     return False
 
@@ -263,40 +318,70 @@ def _match_source_to_existing_locations(
     if not source.location:
         return None
 
-    candidates = list(_find_candidates(source, existing, candidate_distance))
+    nearby_candidates = list(_find_candidates(source, existing, candidate_distance))
 
-    if not candidates:
-        logger.info("%s is a new location - nothing close", source.name)
+    if not nearby_candidates:
+        logger.info("NEW: %s (%s): No candidates nearby", source.id, source.name)
         if enable_create:
             return load.ImportMatchAction(action="new")
         else:
             return None
 
     # Filter out candidates that are too different to be a match
-    candidates = [loc for loc in candidates if not _is_different(source, loc)]
+    different_candidates = [
+        loc for loc in nearby_candidates if not _is_different(source, loc)
+    ]
 
-    if not candidates:
-        logger.info("%s is a new location", source.name)
+    if not different_candidates:
+        logger.info(
+            "NEW: %s (%s): %d nearby candidates were not matchable",
+            source.id,
+            source.name,
+            len(nearby_candidates),
+        )
         if enable_create:
             return load.ImportMatchAction(action="new")
         else:
             return None
 
     # Filter to candidates that are similar enough to be the same
-    candidates = [loc for loc in candidates if _is_match(source, loc)]
+    candidates = [loc for loc in different_candidates if _is_match(source, loc)]
 
     # If there is one remaining high confidant match then use it.
     if len(candidates) == 1:
-        logger.info("%s is an existing location", source.name)
+        match_candidate = candidates[0]
+
+        logger.info(
+            "MATCH: %s (%s) matched to %s (%s)",
+            source.id,
+            source.name,
+            match_candidate["properties"]["id"],
+            match_candidate["properties"]["name"],
+        )
         if enable_match:
             return load.ImportMatchAction(
                 action="existing",
-                id=candidates[0]["properties"]["id"],
+                id=match_candidate["properties"]["id"],
             )
         else:
             return None
 
-    logger.info("%d matches, not sure about %s", len(candidates), source.name)
+    if len(candidates) > 1:
+        logger.info(
+            "AMBIGUOUS: %s (%s) has %d matches e.g. %s (%s), %s (%s)",
+            source.id,
+            source.name,
+            len(candidates),
+            candidates[0]["properties"]["id"],
+            candidates[0]["properties"]["name"],
+            candidates[1]["properties"]["id"],
+            candidates[1]["properties"]["name"],
+        )
+    else:
+        logger.info(
+            "MISSING: %s (%s) has no matching candidates", source.id, source.name
+        )
+
     return None
 
 

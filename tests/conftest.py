@@ -1,5 +1,4 @@
 import pytest
-
 from vaccine_feed_ingest_schema import location
 
 
@@ -22,7 +21,6 @@ def full_location():
         name="Rite Aid Pharmacy 5952",
         address=location.Address(
             street1="1991 Mountain Boulevard",
-            street2="#1",
             city="Oakland",
             state="CA",
             zip="94611",
@@ -35,7 +33,11 @@ def full_location():
             location.Contact(
                 contact_type=location.ContactType.BOOKING,
                 phone="(916) 445-2841",
-            )
+            ),
+            location.Contact(
+                contact_type=location.ContactType.GENERAL,
+                phone="(510) 339-2215",
+            ),
         ],
         languages=["en"],
         opening_dates=[
@@ -68,12 +70,12 @@ def full_location():
         ),
         parent_organization=location.Organization(
             id=location.VaccineProvider.RITE_AID,
-            name="Rite Aid",
+            name="Rite Aid Pharmacy",
         ),
         links=[
             location.Link(
                 authority=location.LocationAuthority.GOOGLE_PLACES,
-                id="abc123",
+                id="ChIJA0MOOYWHj4ARW8M-vrC9yGA",
             ),
         ],
         notes=["long note goes here"],
@@ -87,3 +89,33 @@ def full_location():
             data={"id": "dad13365-2202-4dea-9b37-535288b524fe"},
         ),
     )
+
+
+@pytest.fixture
+def vial_location():
+    return {
+        "type": "Feature",
+        "properties": {
+            "id": "recmq8dNXlV1yWipP",
+            "name": "RITE AID PHARMACY 05952",
+            "state": "CA",
+            "latitude": 37.82733,
+            "longitude": -122.21058,
+            "location_type": "Pharmacy",
+            "import_ref": "vca-airtable:recmq8dNXlV1yWipP",
+            "phone_number": "510-339-2215",
+            "full_address": "1991 MOUNTAIN BOULEVARD, OAKLAND, CA 94611",
+            "county": "Alameda",
+            "google_places_id": "ChIJA0MOOYWHj4ARW8M-vrC9yGA",
+            "vaccinefinder_location_id": "ed4af07f-1a17-408b-b705-7c982b7d25d6",
+            "vaccinespotter_location_id": "7384085",
+            "hours": "Monday - Friday: 9:00 AM \u2013 9:00 PM\nSaturday: 9:00 AM \u2013 6:00 PM\nSunday: 10:00 AM \u2013 6:00 PM",
+            "provider": {"name": "Rite-Aid Pharmacy", "type": "Pharmacy"},
+            "concordances": [
+                "google_places:ChIJA0MOOYWHj4ARW8M-vrC9yGA",
+                "vaccinefinder:ed4af07f-1a17-408b-b705-7c982b7d25d6",
+                "vaccinespotter_org:7384085",
+            ],
+        },
+        "geometry": {"type": "Point", "coordinates": [-122.21058, 37.82733]},
+    }
