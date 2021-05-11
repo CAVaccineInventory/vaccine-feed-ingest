@@ -3,11 +3,12 @@
 import datetime
 import json
 import pathlib
-import sys
 import re
-from typing import List, Optional, Dict
+import sys
+from typing import Dict, List, Optional
 
 from vaccine_feed_ingest_schema import location as schema
+
 from vaccine_feed_ingest.utils.log import getLogger
 
 logger = getLogger(__file__)
@@ -45,9 +46,9 @@ def infer_address(site: Site) -> schema.Address:
     zip_re = re.compile(r"\b([0-9]{5}(?:-[0-9]{4})?)\b\s*$")
 
     return schema.Address(
-        state=maybe_last_match(state_re, site['address']),
-        street1=site['address'],
-        zip=maybe_last_match(zip_re, site['address'])
+        state=maybe_last_match(state_re, site["address"]),
+        street1=site["address"],
+        zip=maybe_last_match(zip_re, site["address"]),
     )
 
 
@@ -67,32 +68,29 @@ def parse_vaccine(site: Site) -> Optional[List[schema.Vaccine]]:
     potentials = {
         "pfizer": schema.VaccineType.PFIZER_BIONTECH,  # not observed in the data
         "moderna": schema.VaccineType.MODERNA,
-        "johnson & johnson": schema.VaccineType.JOHNSON_JOHNSON_JANSSEN
+        "johnson & johnson": schema.VaccineType.JOHNSON_JOHNSON_JANSSEN,
     }
     match = potentials.get(site["type"].lower().strip())
 
     if match is None:
         return None
     else:
-        return [{
-            "vaccine": match,
-            "supply_level": supply
-            }]
+        return [{"vaccine": match, "supply_level": supply}]
 
 
 def normalize(site: Site, timestamp: str) -> schema.NormalizedLocation:
     return schema.NormalizedLocation(
         id=get_site_id(site),
-        name=site['clinic'],
+        name=site["clinic"],
         address=infer_address(site),
         inventory=parse_vaccine(site),
         source=schema.Source(
             source="us_physicians_immediate",
-            id=site['row_id'],
+            id=site["row_id"],
             fetched_from_uri="https://physiciansimmediatecare.com/covid-19-vaccination-locations/",
             fetched_at=timestamp,
-            data=site
-        )
+            data=site,
+        ),
     )
 
 

@@ -84,8 +84,8 @@ def parse_row(row: BeautifulSoup, columns: List[str], table_id: str) -> Dict[str
         else:
             if len(value) != 0:
                 result[key] = value[0]
-    result['row_id'] = row.attrs['data-row_id']
-    result['table_id'] = table_id
+    result["row_id"] = row.attrs["data-row_id"]
+    result["table_id"] = table_id
     return result
 
 
@@ -101,7 +101,10 @@ if __name__ == "__main__":
             table_id = table.attrs["data-footable_id"]
             column_headings = find_column_headings(table)
             stores.extend(
-                [parse_row(tr, column_headings, table_id) for tr in find_data_rows(table)]
+                [
+                    parse_row(tr, column_headings, table_id)
+                    for tr in find_data_rows(table)
+                ]
             )
         output = "\n".join(json.dumps(store) for store in stores)
         outpath = output_dir / (html.with_suffix(".parsed.ndjson").name)
