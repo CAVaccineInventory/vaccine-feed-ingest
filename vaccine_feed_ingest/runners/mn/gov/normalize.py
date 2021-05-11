@@ -4,6 +4,7 @@ import datetime
 import json
 import os
 import pathlib
+import re
 import sys
 from typing import List, Optional
 
@@ -58,8 +59,7 @@ def _get_contacts(site: dict) -> Optional[List[schema.Contact]]:
             return None
         if url == "COVID-19 Vaccine Information - Hennepin Healthcare":
             return None
-        if url == "https/:www.Lewisdrug.com":
-            url = "https://www.lewisdrug.com"
+        url = re.sub(r"^https/:", "https://", url)  # fix typos
 
         if not url.startswith("http"):
             url = "http://" + url
@@ -132,8 +132,8 @@ def _get_opening_hours(site: dict) -> Optional[List[schema.OpenHour]]:
                         closes=_parse_time(end),
                     )
                 )
-            except ValidationError:
-                pass  # ignore hours that were entered incorrectly
+            except ValidationError as e:
+                logger.info("ignoring incorrect open hours: %r", e)
 
     if open_hours:
         return open_hours

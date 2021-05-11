@@ -7,6 +7,7 @@ import phonenumbers
 import us
 from vaccine_feed_ingest_schema import location
 
+from ..stages import enrichment
 from .log import getLogger
 from .normalize import provider_id_from_name
 
@@ -190,6 +191,51 @@ def is_provider_similar(
         return None
 
     return jellyfish.jaro_winkler(src_org, cand_org) >= threshold
+
+
+def is_provider_tag_similar(
+    source: location.NormalizedLocation,
+    candidate: dict,
+) -> Optional[float]:
+    """Check if provider concordance tags match if they exist
+
+    - True if both have tags and the values match
+    - False if both have tags and the values do not match
+    - None if one of them didn't have a tag
+    """
+    if not source.links:
+        return None
+
+    candidate_props = candidate.get("properties")
+
+    if not candidate_props or not candidate_props.get("concordances"):
+        return None
+
+    source_provider_tag = None
+    for link in source.links:
+        if link.authority == enrichment.PROVIDER_TAG:
+            source_provider_tag = link.id
+            break
+
+    if not source_provider_tag:
+        return None
+
+    candidate_provider_tag = None
+    for entry in candidate_props["concordances"]:
+        # Skip concordances without a colon
+        if ":" not in entry:
+            continue
+
+        authority, value = entry.split(":", maxsplit=1)
+
+        if authority == enrichment.PROVIDER_TAG:
+            candidate_provider_tag = value
+            break
+
+    if not candidate_provider_tag:
+        return None
+
+    return source_provider_tag == candidate_provider_tag
 
 
 def is_phone_number_similar(

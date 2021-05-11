@@ -18,6 +18,7 @@ from ..utils.match import (
     is_concordance_similar,
     is_phone_number_similar,
     is_provider_similar,
+    is_provider_tag_similar,
 )
 from . import outputs
 from .common import STAGE_OUTPUT_SUFFIX, PipelineStage
@@ -272,13 +273,10 @@ def _is_different(source: location.NormalizedLocation, candidate: dict) -> bool:
         if jellyfish.jaro_winkler(src_city, cand_city) < 0.1:
             return True
 
-    # Parent organization must be slightly similar to match.
-    if source.parent_organization and candidate_props.get("provider"):
-        src_org = source.parent_organization.name or source.parent_organization.id
-        cand_org = candidate_props["provider"].get("name")
-
-        if src_org and cand_org and jellyfish.jaro_winkler(src_org, cand_org) < 0.1:
-            return True
+    # Exclude candidates with mismatched provider tags
+    provider_tag_matches = is_provider_tag_similar(source, candidate)
+    if provider_tag_matches is False:
+        return True
 
     return False
 
@@ -291,9 +289,17 @@ def _is_match(source: location.NormalizedLocation, candidate: dict) -> bool:
         return concordance_matches
 
     # Don't match locations with different providers
-    provider_matches = is_provider_similar(source, candidate, threshold=0.7)
-    if provider_matches is not None and provider_matches is False:
-        return False
+    # Try matching with provider tag first, and then switch to provider name match
+    provider_tag_matches = is_provider_tag_similar(source, candidate)
+
+    if provider_tag_matches is not None:
+        if provider_tag_matches is False:
+            return False
+
+    else:
+        provider_matches = is_provider_similar(source, candidate, threshold=0.7)
+        if provider_matches is not None and provider_matches is False:
+            return False
 
     # If there are phone numbers and the phone numbers don't match then fail to match
     phone_matches = is_phone_number_similar(source, candidate)
