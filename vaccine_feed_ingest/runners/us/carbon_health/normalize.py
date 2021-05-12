@@ -9,42 +9,21 @@ from typing import Any, List, Optional
 
 import orjson
 import us
-from vaccine_feed_ingest_schema import location
+from vaccine_feed_ingest_schema import location as schema
+from vaccine_feed_ingest_schema.common import BaseModel
 
 from vaccine_feed_ingest.utils.log import getLogger
 from vaccine_feed_ingest.utils.normalize import normalize_zip
 
-# Performance optimization.
+# Performance optimization: skip validation in our pydantic models.
 #
-# This is different from the usual python-based normalize stages in this repo.
-# The difference is justified because it saves a lot of time[1] by disabling
-# validation.  Disabling this validation is ok because the ingestion framework
-# already does exactly the same validation after calling this code.
-#
-# You can get the normal behavior by flipping `optimized` to False.
-#
-# [1]. In my tests, most of the time spent running this normalizer was spent
-# running validations. Flipping optimized to True cut the running time in half.
-# This normalizer has a larger dataset than average, so perf wins are more
-# significant.
+# This is safe to do because the ingestion framework will do the same
+# validation after running us.
 optimized = True
 if optimized:
-
-    def location_to_dict(x):
-        return x
-
-    class Schema:
-        ZIPCODE_RE = location.ZIPCODE_RE
-
-        def __getattr__(self, _):
-            return dict
-
-    schema = Schema()
+    BaseModel.create = BaseModel.construct
 else:
-    schema = location
-
-    def location_to_dict(x):
-        return x.dict()
+    BaseModel.create = BaseModel.__init__
 
 
 logger = getLogger(__file__)
@@ -75,7 +54,7 @@ def _get_contacts(site: dict) -> Optional[List[schema.Contact]]:
 
     if phone := site["phoneNumber"]:
         if len(phone) == 10:
-            contacts.append(schema.Contact(phone=phone))
+            contacts.append(schema.Contact.create(phone=phone))
 
     def cleanup_url(url):
         if not url or not url.strip():
@@ -104,20 +83,20 @@ def _get_contacts(site: dict) -> Optional[List[schema.Contact]]:
         return url
 
     if location_url == "healthyguilford.com, conehealth.com/vaccine":
-        contacts.append(schema.Contact(website="http://healthyguilford.com"))
-        contacts.append(schema.Contact(website="https://conehealth.com/vaccine"))
+        contacts.append(schema.Contact.create(website="http://healthyguilford.com"))
+        contacts.append(schema.Contact.create(website="https://conehealth.com/vaccine"))
     # A few sites have "locationUrl" set to something like this:
     # `https://myvaccine.fl.gov/ or 866-201-6313`
     elif match := re.match(
         r"^(https://\S+) or (\d\d\d-\d\d\d-\d\d\d\d)$", location_url
     ):
-        contacts.append(schema.Contact(phone=match[2]))
-        contacts.append(schema.Contact(website=match[1]))
+        contacts.append(schema.Contact.create(phone=match[2]))
+        contacts.append(schema.Contact.create(website=match[1]))
     elif url := cleanup_url(location_url):
-        contacts.append(schema.Contact(website=url))
+        contacts.append(schema.Contact.create(website=url))
 
     if registration_link := cleanup_url(_get_filter(site, "registrationLink", "")):
-        contacts.append(schema.Contact(website=registration_link))
+        contacts.append(schema.Contact.create(website=registration_link))
 
     if contacts:
         return contacts
@@ -157,7 +136,7 @@ def _get_opening_hours(site: dict) -> Optional[List[schema.OpenHour]]:
         if opens and closes:
             if opens < closes:
                 open_hours.append(
-                    schema.OpenHour(
+                    schema.OpenHour.create(
                         day=days_by_index[hours["day"] - 1],
                         opens=opens,
                         closes=closes,
@@ -176,7 +155,7 @@ def _get_opening_hours(site: dict) -> Optional[List[schema.OpenHour]]:
 
 def _get_availability(site: dict) -> Optional[schema.Availability]:
     if _get_filter(site, "acceptsWalkIns", "") == "1":
-        return schema.Availability(drop_in=True)
+        return schema.Availability.create(drop_in=True)
 
 
 def _get_state(site: dict) -> Optional[str]:
@@ -209,7 +188,7 @@ def _get_inventory(site: dict) -> Optional[List[schema.Vaccine]]:
     vaccines = []
     for their_name, our_name in vaccine_names:
         if _get_filter(site, f"offers{their_name}", "") == "1":
-            vaccines.append(schema.Vaccine(vaccine=our_name))
+            vaccines.append(schema.Vaccine.create(vaccine=our_name))
 
     if vaccines:
         return vaccines
@@ -226,17 +205,17 @@ def _get_notes(site: dict) -> Optional[List[str]]:
 def _get_normalized_location(
     site: dict, timestamp: str, filename: str
 ) -> schema.NormalizedLocation:
-    return schema.NormalizedLocation(
+    return schema.NormalizedLocation.create(
         id=_get_id(site),
         name=site["name"],
-        address=schema.Address(
+        address=schema.Address.create(
             street1=site["firstLine"],
             street2=None,
             city=site["city"],
             state=_get_state(site),
             zip=_get_zip(site),
         ),
-        location=schema.LatLng(
+        location=schema.LatLng.create(
             latitude=site["x"],
             longitude=site["y"],
         ),
@@ -251,7 +230,7 @@ def _get_normalized_location(
         links=None,
         notes=_get_notes(site),
         active=None,
-        source=schema.Source(
+        source=schema.Source.create(
             source="us_carbon_health",
             id=site["id"],
             fetched_from_uri=f"https://carbonhealth.com/static/data/rev/{filename}",
@@ -287,13 +266,11 @@ for in_filepath in json_filepaths:
             fout.write(
                 b"\n".join(
                     orjson.dumps(
-                        location_to_dict(
-                            _get_normalized_location(
-                                orjson.loads(site_json),
-                                parsed_at_timestamp,
-                                filename,
-                            )
-                        )
+                        _get_normalized_location(
+                            orjson.loads(site_json),
+                            parsed_at_timestamp,
+                            filename,
+                        ).dict()
                     )
                     for site_json in fin
                 )
