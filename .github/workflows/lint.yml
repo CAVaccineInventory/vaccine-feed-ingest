@@ -13,7 +13,7 @@ jobs:
     name: Action Linter
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v2.3.4
       - uses: cschleiden/actions-linter@v1
         with:
           workflows: '[".github/workflows/*.yml"]'
@@ -35,7 +35,7 @@ jobs:
           sudo apt-get update
           sudo apt-get install libbz2-dev liblzma-dev libreadline-dev libsqlite3-dev
 
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v2.3.4
         with:
           repository: CAVaccineInventory/vaccine-feed-ingest
           path: ./vaccine-feed-ingest/
@@ -95,7 +95,7 @@ jobs:
           sudo apt-get update
           sudo apt-get install libbz2-dev liblzma-dev libreadline-dev libsqlite3-dev
 
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v2.3.4
         with:
           repository: CAVaccineInventory/vaccine-feed-ingest
           path: ./vaccine-feed-ingest/
@@ -157,7 +157,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v2.3.4
         with:
           # Full git history is needed to get a proper list of changed files within `super-linter`
           fetch-depth: 0
