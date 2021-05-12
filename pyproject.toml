@@ -22,7 +22,7 @@ python-dotenv = "^0.17.0"
 pathy = {extras = ["gcs"], version = "^0.5.2"}
 arcgis = "^1.8.5"
 PyYAML = "^5.4.1"
-pydantic = "^1.8.1"
+pydantic = "^1.8.2"
 Rtree = "^0.9.7"
 Shapely = "^1.7.1"
 geojson = "^2.5.0"
