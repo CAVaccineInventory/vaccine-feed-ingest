@@ -6,4 +6,4 @@ url: https://www.maimmunizations.org
 params:
   q[venue_search_name_or_venue_name_i_cont]: ''
 headers:
-  User-Agent: github.com/CAVaccineInventory
+  User-Agent: Vaccinebot (+https://www.vaccinatethestates.com/vaccinebot)
