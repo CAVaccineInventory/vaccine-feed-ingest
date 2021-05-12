@@ -2,6 +2,7 @@
 
 import os
 import sys
+from urllib.parse import urljoin
 
 import requests
 
@@ -14,10 +15,13 @@ if output_dir is None:
     logger.error("Must pass an output_dir as first argument")
     sys.exit(1)
 
-base_url = "https://carbonhealth.com/static/data"
+BASE_URL = "https://carbonhealth.com/static/data/"
 
-latest = requests.get(f"{base_url}/rev-manifest.json").json()["covid-vaccine.json"]
+r = requests.get(urljoin(BASE_URL, "rev-manifest.json"))
+r.raise_for_status()
+latest = r.json()["covid-vaccine.json"]
 
-r = requests.get(f"{base_url}/rev/{latest}")
+r = requests.get(urljoin(BASE_URL, f"rev/{latest}"))
+r.raise_for_status()
 with open(os.path.join(output_dir, latest), "w") as f:
     f.write(r.text)
