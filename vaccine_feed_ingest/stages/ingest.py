@@ -391,7 +391,7 @@ def _validate_normalized(output_dir: pathlib.Path) -> bool:
     ):
         with filepath.open() as ndjson_file:
             for line_no, content in enumerate(ndjson_file):
-                if len(content) > MAX_NORMALIZED_RECORD_SIZE):
+                if len(content) > MAX_NORMALIZED_RECORD_SIZE:
                     logger.warning(
                         "Source location too large to process in %s at line %d: %s",
                         filepath,
