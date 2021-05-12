@@ -234,6 +234,14 @@ def normalize_url(url: Optional[str]) -> Optional[str]:
 
 
 def normalize_phone(phone: Optional[str]) -> Optional[List[str]]:
+    if phone is None:
+        return []
+
+    # Canonicalize various terms; lowercase to simplify.
+    phone = phone.lower()
+    phone = phone.replace(" option ", " ext. ")
+    phone = phone.replace(" press ", " ext. ")
+
     phones = []
     for match in phonenumbers.PhoneNumberMatcher(phone, "US"):
         phones.append(
