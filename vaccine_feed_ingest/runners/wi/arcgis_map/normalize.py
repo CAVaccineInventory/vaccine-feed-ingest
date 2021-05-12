@@ -8,15 +8,13 @@ import re
 import sys
 from typing import List, Optional
 
-from arcgis.geometry import project
-from arcgis.gis import GIS
+import pyproj
+
 from vaccine_feed_ingest_schema import location as schema
 
 from vaccine_feed_ingest.utils.log import getLogger
 
 logger = getLogger(__file__)
-
-GIS()  # initialize GIS, for _get_locations_batch
 
 
 def _get_id(site: dict) -> str:
@@ -51,27 +49,22 @@ def _get_contacts(site: dict) -> Optional[List[schema.Contact]]:
     return None
 
 
-# The input geometry is in a different projection from our normalized geometry,
-# so we need to project it. The projection api from arcgis has a noticeable
-# per-call overhead, so we batch the projections.
-def _get_locations_batch(sites: List[dict]) -> List[Optional[schema.LatLng]]:
-    result = []
-    for x in project([s["geometry"] for s in sites], in_sr=3857, out_sr=4326):
-        if "coordinates" in x:
-            coords = x["coordinates"]
-            result.append(
-                schema.LatLng(
-                    latitude=coords[1],
-                    longitude=coords[0],
-                )
-            )
-        else:
-            result.append(None)
-    return result
+transformer = pyproj.Transformer.from_crs(3857, 4326)
+
+
+def _get_location(site: dict) -> Optional[schema.LatLng]:
+    if site["geometry"]["x"] == "NaN":
+        return None
+
+    x, y = transformer.transform(site["geometry"]["x"], site["geometry"]["y"])
+    return schema.LatLng(
+        latitude=x,
+        longitude=y,
+    )
 
 
 def _get_normalized_location(
-    site: dict, timestamp: str, location: Optional[schema.LatLng]
+    site: dict, timestamp: str
 ) -> schema.NormalizedLocation:
     return schema.NormalizedLocation(
         id=_get_id(site),
@@ -83,7 +76,7 @@ def _get_normalized_location(
             state=site["attributes"]["STATE"],
             zip=site["attributes"]["ZIP"],
         ),
-        location=location,
+        location=_get_location(site),
         contact=_get_contacts(site),
         languages=None,
         opening_dates=None,
@@ -125,11 +118,11 @@ for in_filepath in json_filepaths:
 
     with in_filepath.open() as fin:
         with out_filepath.open("w") as fout:
-            sites = [json.loads(s) for s in fin]
-            locations = _get_locations_batch(sites)
-            for parsed_site, location in zip(sites, locations):
+            for site_json in fin:
+                parsed_site = json.loads(site_json)
+
                 normalized_site = _get_normalized_location(
-                    parsed_site, parsed_at_timestamp, location
+                    parsed_site, parsed_at_timestamp
                 )
 
                 json.dump(normalized_site.dict(), fout)
