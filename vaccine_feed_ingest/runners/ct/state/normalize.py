@@ -38,13 +38,13 @@ def _get_availability(site: dict) -> Optional[schema.Availability]:
 
     for field in ("description", "application_process", "hours_of_operation"):
         if site[field] == None:
-            site[field] = ''
-        else:
-            value = site[field].lower()
-            if "appointment" in value:
-                appointments = True
-            if re.search("walk[ |-]in", value):
-                drop_in = True
+            continue
+        
+        value = site[field].lower()
+        if "appointment" in value:
+            appointments = True
+        if re.search("walk[ |-]in", value):
+            drop_in = True
 
     if drop_in or appointments:
         return schema.Availability(drop_in=drop_in, appointments=appointments)
