@@ -9,7 +9,6 @@ import sys
 from typing import List, Optional
 
 import pyproj
-
 from vaccine_feed_ingest_schema import location as schema
 
 from vaccine_feed_ingest.utils.log import getLogger
@@ -63,9 +62,7 @@ def _get_location(site: dict) -> Optional[schema.LatLng]:
     )
 
 
-def _get_normalized_location(
-    site: dict, timestamp: str
-) -> schema.NormalizedLocation:
+def _get_normalized_location(site: dict, timestamp: str) -> schema.NormalizedLocation:
     return schema.NormalizedLocation(
         id=_get_id(site),
         name=site["attributes"]["NAME"],
