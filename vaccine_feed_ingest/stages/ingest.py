@@ -18,6 +18,9 @@ from .common import STAGE_OUTPUT_SUFFIX, PipelineStage
 logger = getLogger(__file__)
 
 
+MAX_NORMALIZED_RECORD_SIZE = 15_000  # Maximum record size of 15KB for normalized reords
+
+
 def run_fetch(
     site_dir: pathlib.Path,
     output_dir: pathlib.Path,
@@ -388,6 +391,15 @@ def _validate_normalized(output_dir: pathlib.Path) -> bool:
     ):
         with filepath.open() as ndjson_file:
             for line_no, content in enumerate(ndjson_file):
+                if len(content) > MAX_NORMALIZED_RECORD_SIZE):
+                    logger.warning(
+                        "Source location too large to process in %s at line %d: %s",
+                        filepath,
+                        line_no,
+                        content[:100],
+                    )
+                    return False
+
                 try:
                     normalized_location = location.NormalizedLocation.parse_raw(content)
                 except pydantic.ValidationError as e:
@@ -395,7 +407,7 @@ def _validate_normalized(output_dir: pathlib.Path) -> bool:
                         "Invalid source location in %s at line %d: %s\n%s",
                         filepath,
                         line_no,
-                        content,
+                        content[:100],
                         str(e),
                     )
                     return False
