@@ -163,7 +163,7 @@ jobs:
           fetch-depth: 0
 
       - name: Non-Python Lint
-        uses: github/super-linter@v3.17.0
+        uses: github/super-linter@v3.17.1
         env:
           # Only validate files modified in the PR/commit
           VALIDATE_ALL_CODEBASE: false
