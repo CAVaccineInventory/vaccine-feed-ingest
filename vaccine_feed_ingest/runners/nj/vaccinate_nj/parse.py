@@ -1,7 +1,8 @@
 #!/usr/bin/env python
 
-import sys
 import pathlib
+import sys
+
 import ndjson
 
 output_path = pathlib.Path(sys.argv[1])
