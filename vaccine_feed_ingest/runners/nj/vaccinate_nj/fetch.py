@@ -1,4 +1,7 @@
+#!/usr/bin/env python
+
 import json
+import pathlib
 import sys
 
 import requests
@@ -16,6 +19,6 @@ url = "https://c19vaccinelocatornj.info/api/v1/vaccine/locations/page"
 result = requests.post(url, json=data)
 assert result.status_code == 200
 
-output_path = str(sys.argv[1])
-with open(output_path, "w") as f:
+output_path = pathlib.Path(sys.argv[1])
+with open(output_path / "data.json", "w") as f:
     json.dump(json.loads(result.content), f)
