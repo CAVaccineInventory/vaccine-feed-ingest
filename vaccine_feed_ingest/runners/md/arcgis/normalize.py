@@ -129,6 +129,41 @@ def _get_contacts(site: dict) -> Optional[List[schema.Contact]]:
 
 
 def _strip_flavor_text(raw: str) -> str:
+    parsable = [
+        "Mon - Fri 7 a.m. - 11 a.m.",
+        "Mon - Fri 7 a.m. - 7 p.m.",
+        "Mon - Fri 7 am - 7 pm",
+        "Mon - Fri 7am - 7 pm",
+        "Mon - Fri 8 a.m. - 4:30 p.m.",
+        "Mon - Fri 8 a.m. - 5 p.m. ",
+        "Mon - Fri 8 a.m. - 5 p.m.",
+        "Mon - Sat 7:30 a.m. - 5 p.m.",
+        "Mon - Sun 9:00 a.m. - 5 p.m.",
+        "Mon - Fri 8:30 a.m. - 6:30 p.m. Sat. 9 a.m. - 1 p.m.",
+        "Mon, Tues, Thurs, Fri: 7:30am - 3pm, Wed: 3pm - 7pm",
+        "Mon- Fri 7 a.m. - 11 a.m. and 2 PM-4 PM ",
+        "mon- fri 7 a.m. - 11 a.m. and 2 pm-4 pm",
+        "Mon- Fri 7 a.m. - 11 a.m.",
+        "Sun 10am - 4pm, Mon - Fri 10am - 7pm, Sat 10am - 5pm",
+        "Sun 10am - 5pm, Mon - Fri 8am - 9pm, Sat 9am - 6pm",
+        "Sun 10am - 5pm, Mon - Fri 9am - 9pm, Sat 9am - 6pm",
+        "Sun 10am - 6pm, Mon - Fri 8am - 9pm, Sat 9am - 6pm",
+        "Sun 9am - 5pm, Mon - Fri 8am - 10pm, Sat 9am - 7pm",
+        "Sun 9am - 5pm, Mon - Fri 8am - 9pm, Sat 9am - 7pm",
+        "Wed - Sat 10am to 6pm",
+        "Wed - Sun 8 a.m. to 4 p.m.",
+        "wed - sun 8 a.m. - 4 p.m.",
+        "wed - sun 9 a.m. - 5 p.m.",
+        "Sun - Thur 9:00 a.m. - 5 p.m.",
+        "tues - sat 8 a.m. - 4 p.m.",
+        "tues 12:00 p.m. - 8:00 p.m., weds - sat 9:00 a.m. - 5:00 p.m.",
+        "thursday-saturday,10:30 a.m. – 4:30 p.m.",
+        "weds 12:00 p.m. - 8:00 p.m.; tues, thurs - sun 9:00 a.m. - 5:00 p.m.",
+    ]
+
+    parsable = [x.lower() for x in parsable]
+    raw = raw.lower().replace("  ", " ")
+
     if re.search("covid (testing|hotline)", raw):
         # i can't parse these just reading them, never mind in code
         """
@@ -137,7 +172,7 @@ def _strip_flavor_text(raw: str) -> str:
         "Mon - Fri 8:30 a.m. - 4:30 p.m.covid hotline Mon - Sat 8:30 a.m. - 4:30 p.m. and Sun 8:30 a.m. - 2 p.m."
         """
         return ""
-    elif raw == "varies":
+    elif re.search("(varies|vary)", raw):
         return ""
     elif raw.startswith("limited walk-up, no appointment slots available"):
         """
@@ -157,7 +192,29 @@ def _strip_flavor_text(raw: str) -> str:
             .replace(" from ", "")
             .strip()
         )
-    else:
+    elif raw.startswith(
+        "a limited number of no-appointment vaccinations are available every day"
+    ):
+        return (
+            raw.replace(
+                "a limited number of no-appointment vaccinations are available every day",
+                "",
+            )
+            .replace(" from ", "")
+            .strip()
+        )
+    elif raw.startswith(
+        "a limited number of no-appointment vaccinations are available"
+    ):
+        return (
+            raw.replace("available", "")
+            .replace("a limited number of no-appointment vaccinations are", "")
+            .replace(" through ", "-")
+            .replace(" from ", "")
+            .strip()
+        )
+
+    elif raw not in parsable:
         """
         "Mon - Fri 7 a.m. - 11 a.m."
         "Mon - Fri 7 a.m. - 7 p.m."
@@ -178,6 +235,9 @@ def _strip_flavor_text(raw: str) -> str:
         "Sun 9am - 5pm, Mon - Fri 8am - 9pm, Sat 9am - 7pm"
         "Wed - Sat 10am to 6pm"
         """
+        logger.info(f"Unable to parse hours string '{raw}'")
+        return None
+    else:
         return raw
 
 
