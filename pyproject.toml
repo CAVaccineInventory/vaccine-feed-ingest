@@ -7,7 +7,7 @@ authors = ["Bryan Culbertson <bryan.culbertson@gmail.com>"]
 [tool.poetry.dependencies]
 # Lint
 flake8 = { version = "^3.9.2", optional = true }
-black = { version = "^21.5b0", optional = true }
+black = { version = "^21.5b1", optional = true }
 mypy = { version = "^0.812", optional = true }
 isort = { version = "^5.8.0", optional = true }
 
@@ -22,7 +22,7 @@ python-dotenv = "^0.17.0"
 pathy = {extras = ["gcs"], version = "^0.5.2"}
 arcgis = "^1.8.5"
 PyYAML = "^5.4.1"
-pydantic = "^1.8.1"
+pydantic = "^1.8.2"
 Rtree = "^0.9.7"
 Shapely = "^1.7.1"
 geojson = "^2.5.0"
@@ -41,6 +41,7 @@ html5lib = "^1.1"
 url-normalize = "^1.4.3"
 dateparser = "^1.0.0"
 phonenumbers = "^8.12.22"
+pyproj = "^3.0.1"
 ndjson = "^0.3.1"
 
 [tool.poetry.dev-dependencies]

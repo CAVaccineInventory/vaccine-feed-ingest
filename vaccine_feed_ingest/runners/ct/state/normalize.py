@@ -37,6 +37,9 @@ def _get_availability(site: dict) -> Optional[schema.Availability]:
     drop_in, appointments = None, None
 
     for field in ("description", "application_process", "hours_of_operation"):
+        if not site.get(field):
+            continue
+
         value = site[field].lower()
         if "appointment" in value:
             appointments = True

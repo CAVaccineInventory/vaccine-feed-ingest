@@ -67,6 +67,17 @@ def _sites_argument() -> Callable:
     return click.argument("sites", nargs=-1, type=str)
 
 
+def _exclude_sites_option() -> Callable:
+    return click.option(
+        "--exclude-sites",
+        type=str,
+        default=lambda: os.environ.get("EXCLUDE_SITES", ""),
+        callback=lambda ctx, param, value: set(
+            [item.strip().lower() for item in value.split(",")]
+        ),
+    )
+
+
 def _stages_option() -> Callable:
     return click.option(
         "--stages",
@@ -221,12 +232,14 @@ def _compute_has_parse(site_dir: pathlib.Path) -> bool:
 
 @cli.command()
 @_sites_argument()
+@_exclude_sites_option()
 @_state_option()
 @_output_dir_option()
 @_dry_run_option()
 @_fail_on_error_option()
 def fetch(
     sites: Optional[Sequence[str]],
+    exclude_sites: Optional[Collection[str]],
     state: Optional[str],
     output_dir: pathlib.Path,
     dry_run: bool,
@@ -234,7 +247,7 @@ def fetch(
 ) -> None:
     """Run fetch process for specified sites."""
     timestamp = _generate_run_timestamp()
-    site_dirs = site.get_site_dirs(state, sites)
+    site_dirs = site.get_site_dirs(state, sites, exclude_sites)
 
     for site_dir in site_dirs:
         ingest.run_fetch(
@@ -248,6 +261,7 @@ def fetch(
 
 @cli.command()
 @_sites_argument()
+@_exclude_sites_option()
 @_state_option()
 @_output_dir_option()
 @_dry_run_option()
@@ -255,6 +269,7 @@ def fetch(
 @_fail_on_error_option()
 def parse(
     sites: Optional[Sequence[str]],
+    exclude_sites: Optional[Collection[str]],
     state: Optional[str],
     output_dir: pathlib.Path,
     dry_run: bool,
@@ -263,7 +278,7 @@ def parse(
 ) -> None:
     """Run parse process for specified sites."""
     timestamp = _generate_run_timestamp()
-    site_dirs = site.get_site_dirs(state, sites)
+    site_dirs = site.get_site_dirs(state, sites, exclude_sites)
 
     for site_dir in site_dirs:
         ingest.run_parse(
@@ -278,6 +293,7 @@ def parse(
 
 @cli.command()
 @_sites_argument()
+@_exclude_sites_option()
 @_state_option()
 @_output_dir_option()
 @_dry_run_option()
@@ -285,6 +301,7 @@ def parse(
 @_fail_on_error_option()
 def normalize(
     sites: Optional[Sequence[str]],
+    exclude_sites: Optional[Collection[str]],
     state: Optional[str],
     output_dir: pathlib.Path,
     dry_run: bool,
@@ -293,7 +310,7 @@ def normalize(
 ) -> None:
     """Run normalize process for specified sites."""
     timestamp = _generate_run_timestamp()
-    site_dirs = site.get_site_dirs(state, sites)
+    site_dirs = site.get_site_dirs(state, sites, exclude_sites)
 
     for site_dir in site_dirs:
         ingest.run_normalize(
@@ -308,18 +325,20 @@ def normalize(
 
 @cli.command()
 @_sites_argument()
+@_exclude_sites_option()
 @_state_option()
 @_output_dir_option()
 @_fail_on_error_option()
 def all_stages(
     sites: Optional[Sequence[str]],
+    exclude_sites: Optional[Collection[str]],
     state: Optional[str],
     output_dir: pathlib.Path,
     fail_on_runner_error: bool,
 ) -> None:
     """Run all stages in succession for specified sites."""
     timestamp = _generate_run_timestamp()
-    site_dirs = site.get_site_dirs(state, sites)
+    site_dirs = site.get_site_dirs(state, sites, exclude_sites)
 
     for site_dir in site_dirs:
         fetch_success = ingest.run_fetch(
@@ -343,18 +362,20 @@ def all_stages(
 
 @cli.command()
 @_sites_argument()
+@_exclude_sites_option()
 @_state_option()
 @_output_dir_option()
 @_dry_run_option()
 def enrich(
     sites: Optional[Sequence[str]],
+    exclude_sites: Optional[Collection[str]],
     state: Optional[str],
     output_dir: pathlib.Path,
     dry_run: bool,
 ) -> None:
     """Run enrich process for specified sites."""
     timestamp = _generate_run_timestamp()
-    site_dirs = site.get_site_dirs(state, sites)
+    site_dirs = site.get_site_dirs(state, sites, exclude_sites)
 
     for site_dir in site_dirs:
         ingest.run_enrich(site_dir, output_dir, timestamp, dry_run)
@@ -362,6 +383,7 @@ def enrich(
 
 @cli.command()
 @_sites_argument()
+@_exclude_sites_option()
 @_state_option()
 @_output_dir_option()
 @_dry_run_option()
@@ -376,6 +398,7 @@ def enrich(
 @_import_batch_size_option()
 def load_to_vial(
     sites: Optional[Sequence[str]],
+    exclude_sites: Optional[Collection[str]],
     state: Optional[str],
     output_dir: pathlib.Path,
     dry_run: bool,
@@ -390,7 +413,7 @@ def load_to_vial(
     import_batch_size: int,
 ) -> None:
     """Load specified sites to vial server."""
-    site_dirs = site.get_site_dirs(state, sites)
+    site_dirs = site.get_site_dirs(state, sites, exclude_sites)
 
     if match_ids and create_ids:
         conflicting_ids = set(match_ids.keys()) & set(create_ids)
@@ -417,6 +440,7 @@ def load_to_vial(
 
 @cli.command()
 @_sites_argument()
+@_exclude_sites_option()
 @_state_option()
 @_output_dir_option()
 @_dry_run_option()
@@ -433,6 +457,7 @@ def load_to_vial(
 @_fail_on_error_option()
 def pipeline(
     sites: Optional[Sequence[str]],
+    exclude_sites: Optional[Collection[str]],
     state: Optional[str],
     output_dir: pathlib.Path,
     dry_run: bool,
@@ -450,7 +475,7 @@ def pipeline(
 ) -> None:
     """Run all stages in succession for specified sites."""
     timestamp = _generate_run_timestamp()
-    site_dirs = site.get_site_dirs(state, sites)
+    site_dirs = site.get_site_dirs(state, sites, exclude_sites)
 
     sites_to_load = []
 

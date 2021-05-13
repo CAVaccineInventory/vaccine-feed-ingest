@@ -2,8 +2,9 @@
 Various tricks for matching source locations to product locations from VIAL
 """
 import re
-from typing import Optional, Tuple
+from typing import List, Optional, Tuple
 
+import phonenumbers
 import url_normalize
 from vaccine_feed_ingest_schema.location import VaccineProvider
 
@@ -230,3 +231,22 @@ def normalize_url(url: Optional[str]) -> Optional[str]:
         return url
 
     return url_normalize.url_normalize(url)
+
+
+def normalize_phone(phone: Optional[str]) -> Optional[List[str]]:
+    if phone is None:
+        return []
+
+    # Canonicalize various terms; lowercase to simplify.
+    phone = phone.lower()
+    phone = phone.replace(" option ", " ext. ")
+    phone = phone.replace(" press ", " ext. ")
+
+    phones = []
+    for match in phonenumbers.PhoneNumberMatcher(phone, "US"):
+        phones.append(
+            phonenumbers.format_number(
+                match.number, phonenumbers.PhoneNumberFormat.NATIONAL
+            )
+        )
+    return phones
