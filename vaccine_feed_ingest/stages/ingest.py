@@ -12,7 +12,7 @@ from vaccine_feed_ingest_schema import location
 from vaccine_feed_ingest.utils.log import getLogger
 
 from ..utils.validation import VACCINATE_THE_STATES_BOUNDARY
-from . import enrichment, outputs, site
+from . import caching, enrichment, outputs, site
 from .common import STAGE_OUTPUT_SUFFIX, PipelineStage
 
 logger = getLogger(__file__)
@@ -343,7 +343,18 @@ def run_enrich(
             enrich_output_dir,
         )
 
-        success = enrichment.enrich_locations(enrich_input_dir, enrich_output_dir)
+        enrich_stage_dir = outputs.generate_stage_dir(
+            output_dir,
+            site_dir.parent.name,
+            site_dir.name,
+            PipelineStage.ENRICH,
+        )
+
+        api_cache_path = enrich_stage_dir / ".api_cache.tar.gz"
+        with caching.cache_from_archive(api_cache_path) as api_cache:
+            success = enrichment.enrich_locations(
+                enrich_input_dir, enrich_output_dir, api_cache
+            )
 
         if not success:
             logger.error(

@@ -2,6 +2,7 @@
 import pathlib
 from typing import Dict, Optional
 
+import diskcache
 import phonenumbers
 import pydantic
 from vaccine_feed_ingest_schema import location
@@ -18,7 +19,11 @@ logger = getLogger(__file__)
 PROVIDER_TAG = "_tag_provider"
 
 
-def enrich_locations(input_dir: pathlib.Path, output_dir: pathlib.Path) -> bool:
+def enrich_locations(
+    input_dir: pathlib.Path,
+    output_dir: pathlib.Path,
+    api_cache: Optional[diskcache.Cache] = None,
+) -> bool:
     """Enrich locations in normalized input_dir and write them to output_dir"""
     enriched_locations = []
 
