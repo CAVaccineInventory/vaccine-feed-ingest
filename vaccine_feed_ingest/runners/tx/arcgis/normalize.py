@@ -11,6 +11,7 @@ from typing import List, Optional
 from vaccine_feed_ingest_schema import location as schema
 
 from vaccine_feed_ingest.utils.log import getLogger
+from vaccine_feed_ingest.utils.normalize import normalize_phone
 
 logger = getLogger(__file__)
 
@@ -128,11 +129,14 @@ def _phone_fixup(phone):
 
 def _get_contacts(site: dict) -> Optional[List[schema.Contact]]:
     contacts = []
-    phone = _phone_fixup(site["attributes"]["PublicPhone"])
-    if phone is not None:
-        contacts.append(
-            schema.Contact(phone=phone, contact_type=schema.ContactType.GENERAL)
-        )
+    phones = normalize_phone(site["attributes"]["PublicPhone"])
+
+    for phone in phones:
+        phone = _phone_fixup(phone)
+        if phone is not None:
+            contacts.append(
+                schema.Contact(phone=phone, contact_type=schema.ContactType.GENERAL)
+            )
 
     website = _website_fixup(site["attributes"]["WEBSITE"])
     if website is not None:
