@@ -242,11 +242,20 @@ def normalize_phone(phone: Optional[str]) -> Optional[List[str]]:
     phone = phone.replace(" option ", " ext. ")
     phone = phone.replace(" press ", " ext. ")
 
+    # The library doesn't match 311 etc; use a placeholder and then revert.
+    phone = re.sub(r"\b211\b", "(900) 211-0000", phone)
+    phone = re.sub(r"\b311\b", "(900) 311-0000", phone)
+
     phones = []
     for match in phonenumbers.PhoneNumberMatcher(phone, "US"):
-        phones.append(
-            phonenumbers.format_number(
-                match.number, phonenumbers.PhoneNumberFormat.NATIONAL
+        if match.number.national_number == 9002110000:
+            phones.append("211")
+        elif match.number.national_number == 9003110000:
+            phones.append("311")
+        else:
+            phones.append(
+                phonenumbers.format_number(
+                    match.number, phonenumbers.PhoneNumberFormat.NATIONAL
+                )
             )
-        )
     return phones
