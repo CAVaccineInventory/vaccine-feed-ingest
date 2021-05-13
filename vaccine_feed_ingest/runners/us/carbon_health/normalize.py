@@ -19,11 +19,17 @@ from vaccine_feed_ingest.utils.normalize import normalize_zip
 #
 # This is safe to do because the ingestion framework will do the same
 # validation after running us.
-optimized = True
-if optimized:
-    BaseModel.create = BaseModel.construct
-else:
-    BaseModel.create = BaseModel.__init__
+OPTIMIZED = True
+
+
+def _create_instance(cls, *args, **kwds):
+    if OPTIMIZED:
+        return cls.construct(*args, **kwds)
+    else:
+        return cls(*args, **kwds)
+
+
+BaseModel.create = classmethod(_create_instance)
 
 
 logger = getLogger(__file__)
