@@ -60,6 +60,14 @@ def _get_lat_lng(geometry: dict, id: str) -> Optional[schema.LatLng]:
     return None
 
 
+def _strip_source_data(site_blob: dict) -> None:
+    """Strip out fields which make the source blob too big to store"""
+    # Remove list of all available appoitments times. We are not using this information
+    # and it makes each record 65K+
+    if site_blob.get("properties") and site_blob["properties"].get("appointments"):
+        del site_blob["properties"]["appointments"]
+
+
 def normalize(site_blob: dict, timestamp: str) -> dict:
     site = site_blob["properties"]
 
@@ -72,6 +80,8 @@ def normalize(site_blob: dict, timestamp: str) -> dict:
         links.append(
             schema.Link(authority=parsed_provider_link[0], id=parsed_provider_link[1])
         )
+
+    _strip_source_data(site_blob)
 
     return schema.NormalizedLocation(
         id=f"vaccinespotter_org:{site['id']}",
