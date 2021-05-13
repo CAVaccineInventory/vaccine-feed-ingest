@@ -25,8 +25,9 @@ def _get_city(site: dict) -> str:
 
 def _get_id(site: dict) -> str:
     name = _get_name(site)
+    city = _get_city(site)
 
-    id = location_id_from_name(name)
+    id = location_id_from_name(f"{name}_{city}")
 
     return id
 
