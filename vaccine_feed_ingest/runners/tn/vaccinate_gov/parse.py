@@ -24,8 +24,8 @@ def parse_address(address):
 
     rest = match.group("rest")
     tn_pattern = re.compile(r",?\s*\b(TN|Tennessee)\b", re.IGNORECASE)
-    if re.search(tn_pattern, rest) is None:
-        raise Exception(f"This address doesn't look like it's for Tennessee: {address}")
+    # if re.search(tn_pattern, rest) is None:
+    #     raise Exception(f"This address doesn't look like it's for Tennessee: {address}")
     city = re.sub(tn_pattern, "", rest)
 
     return {

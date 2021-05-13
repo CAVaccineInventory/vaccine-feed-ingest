@@ -10,6 +10,7 @@ from typing import List, Optional
 from vaccine_feed_ingest_schema import location as schema
 
 from vaccine_feed_ingest.utils.log import getLogger
+from vaccine_feed_ingest.utils.parse import location_id_from_name
 
 logger = getLogger(__file__)
 
@@ -26,10 +27,7 @@ def _get_id(site: dict) -> str:
     name = _get_name(site)
     city = _get_city(site)
 
-    id = f"{name}_{city}".lower()
-    id = id.replace(" ", "_").replace("\u2019", "_")
-    id = id.replace(".", "_").replace(",", "_").replace("'", "_")
-    id = id.replace("(", "_").replace(")", "_").replace("/", "_")
+    id = location_id_from_name(f"{name}_{city}")
 
     return id
 

@@ -12,7 +12,7 @@ import pathlib
 import sys
 from typing import List, Optional
 
-from vaccine_feed_ingest_schema import schema  # noqa: E402
+from vaccine_feed_ingest_schema import location as schema  # noqa: E402
 
 logging.basicConfig(
     level=logging.INFO,
@@ -50,7 +50,7 @@ def _get_city(site: dict) -> str:
 
 
 def _get_address(site: dict) -> Optional[schema.Address]:
-    if "address" not in site:
+    if "address" not in site or "lines" not in site:
         return None
 
     return schema.Address(

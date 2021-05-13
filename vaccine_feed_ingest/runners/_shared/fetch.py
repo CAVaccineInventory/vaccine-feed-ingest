@@ -63,11 +63,13 @@ if "parser" not in config or config["parser"] == "arcgis":
 elif config["parser"] == "prepmod":
     try:
         base_url = urllib.parse.urljoin(config["url"], "appointment/en/clinic/search")
+        headers = config.get("headers") or {}
+        extra_params = config.get("params") or {}
         page = 1
         while True:
-            params = urllib.parse.urlencode({"page": page})
+            params = urllib.parse.urlencode(extra_params | {"page": page})
             url = f"{base_url}?{params}"
-            response = requests.get(url, allow_redirects=False)
+            response = requests.get(url, allow_redirects=False, headers=headers)
 
             # when out of results, will return 302
             if response.status_code != 200:
