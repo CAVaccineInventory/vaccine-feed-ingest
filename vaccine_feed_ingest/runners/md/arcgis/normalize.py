@@ -172,7 +172,7 @@ def _strip_flavor_text(raw: str) -> str:
         "Mon - Fri 8:30 a.m. - 4:30 p.m.covid hotline Mon - Sat 8:30 a.m. - 4:30 p.m. and Sun 8:30 a.m. - 2 p.m."
         """
         return ""
-    elif re.search("(varies|vary)", raw):
+    elif re.search(r"(varies|vary)", raw):
         return ""
     elif raw.startswith("limited walk-up, no appointment slots available"):
         """
