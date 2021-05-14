@@ -30,26 +30,34 @@ def _get_contacts(site: dict) -> Optional[List[schema.Contact]]:
     contacts = []
 
     records_with_bad_urls = [
-        "38327",
-        "38316",
-        "38328",
-        "38465",
-        "38852",
-        "39047",
-        "39048",
-        "39072",
-        "39519",
-        "39520",
-        "40071",
+        "40071",  # "Westlab Pharmacy"
     ]
 
-    if site["id"] not in records_with_bad_urls and site["location"]["extra_fields"].get(
-        "website", None
-    ):
-        url = site["location"]["extra_fields"]["website"]
+    url = site["location"]["extra_fields"].get("website", None)
+
+    if site["id"] not in records_with_bad_urls and url:
+
+        # some website fields have "call <phone number>" in them
+        m = re.match(
+            r"(?:call\s)?((?:\d{3}-\d{3}-\d{4})|(?:\(\d{3}\) \d{3}-\d{4}))",
+            url,
+            re.IGNORECASE,
+        )
+        if m:
+            contacts.append(schema.Contact(phone=m.group(1)))
+            return
+
+        # some website fields have an email address in them
+        # using a simplistic regex here for the data in the input
+        m = re.match(r"\w+@\w+\.com", url)
+
+        if m:
+            contacts.append(schema.Contact(email=m.group(0)))
+            return
+
         if not url.startswith("http://") and not url.startswith("https://"):
             # stuff a scheme at the beginning if one is missing or
-            # typo-ed
+            # typo-ed as ://
             url = re.sub(r"^(.*?:(//)?)?", "http://", url)
 
         # some URLs have spaces in them
