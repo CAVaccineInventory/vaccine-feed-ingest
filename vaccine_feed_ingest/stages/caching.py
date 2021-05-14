@@ -1,10 +1,10 @@
 """Load and store a diskcache from remote storage"""
 
 import contextlib
-import tempfile
 import pathlib
-import tarfile
 import shutil
+import tarfile
+import tempfile
 from typing import Iterator
 
 import diskcache
