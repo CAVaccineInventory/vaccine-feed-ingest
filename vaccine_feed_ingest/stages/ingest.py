@@ -343,15 +343,9 @@ def run_enrich(
             enrich_output_dir,
         )
 
-        enrich_stage_dir = outputs.generate_stage_dir(
-            output_dir,
-            site_dir.parent.name,
-            site_dir.name,
-            PipelineStage.ENRICH,
-        )
-
-        api_cache_path = enrich_stage_dir / ".api_cache.tar.gz"
-        with caching.cache_from_archive(api_cache_path) as api_cache:
+        with caching.api_cache_for_stage(
+            output_dir, site_dir, PipelineStage.ENRICH
+        ) as api_cache:
             success = enrichment.enrich_locations(
                 enrich_input_dir, enrich_output_dir, api_cache
             )
