@@ -40,14 +40,13 @@ def tableau_item_to_parsed_site(tableau_entry):
     if main_data["Phone-value"] != "%null%":
         contact["phone"] = main_data["Phone-value"]
 
-    out = {}
-    out["id"] = id
-    if contact:
-        out["contact"] = contact
-    out["name"] = name
-    out["address"] = address
-    out["minimum_age"] = minimum_age
-    return out
+    return {
+        "id": id,
+        "contact": contact,
+        "name": name,
+        "address": address,
+        "minimum_age": minimum_age,
+    }
 
 
 def parse_tableau(file_contents):
