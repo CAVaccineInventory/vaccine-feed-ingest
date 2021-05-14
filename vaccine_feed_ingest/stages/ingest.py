@@ -317,7 +317,10 @@ def run_enrich(
     if not outputs.data_exists(
         normalize_run_dir, suffix=STAGE_OUTPUT_SUFFIX[PipelineStage.NORMALIZE]
     ):
-        logger.warning("No normalize data available to enrich for %s.", site_dir.name)
+        logger.warning(
+            "No normalize data available to enrich for %s.",
+            f"{site_dir.parent.name}/{site_dir.name}",
+        )
         return False
 
     with tempfile.TemporaryDirectory(
@@ -343,6 +346,9 @@ def run_enrich(
         success = enrichment.enrich_locations(enrich_input_dir, enrich_output_dir)
 
         if not success:
+            logger.error(
+                "Enrichment failed for %s.", f"{site_dir.parent.name}/{site_dir.name}"
+            )
             return False
 
         if not dry_run:
