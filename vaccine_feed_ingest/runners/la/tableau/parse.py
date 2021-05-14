@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+import itertools
 import json
 import pathlib
 import re
@@ -39,14 +40,13 @@ def tableau_item_to_parsed_site(tableau_entry):
     if main_data["Phone-value"] != "%null%":
         contact["phone"] = main_data["Phone-value"]
 
-    out = {}
-    out["id"] = id
-    if contact:
-        out["contact"] = contact
-    out["name"] = name
-    out["address"] = address
-    out["minimum_age"] = minimum_age
-    return out
+    return {
+        "id": id,
+        "contact": contact,
+        "name": name,
+        "address": address,
+        "minimum_age": minimum_age,
+    }
 
 
 def parse_tableau(file_contents):
@@ -66,18 +66,25 @@ def parse_tableau(file_contents):
     full_data = utils.getDataFull(presModelMap, dataSegments)
     indices_info = utils.getIndicesInfo(presModelMap, "Vaccination Sites")
     data_dict = utils.getData(full_data, indices_info)
-    num_entries = len(data_dict["Site-value"])
     # Transpose columns to rows (tableau-scraping uses pandas, but we don't strictly need to do that)
-    # Rows are actually duplicated; some have map, some have website.
-    entries = []
-    for i in range(0, num_entries, 2):
-        main_data = {k: v[i] for (k, v) in data_dict.items()}
-        extra_data = {
-            "Dimension-value": data_dict["Dimension-value"][i + 1],
-            "Value-alias": data_dict["Value-alias"][i + 1],
-        }
-        entries.append((main_data, extra_data))
-    return [tableau_item_to_parsed_site(entry) for entry in entries]
+    # i.e. {'a': [a1, a2, a3], 'b': [b1, b2, b3]} --> [{'a': a1, 'b': b1}, {'a': a2, 'b': b2}, {'a': a3, 'b': b3}]
+    transposed_data = map(
+        dict,
+        itertools.starmap(
+            zip, zip(itertools.repeat(data_dict.keys()), zip(*data_dict.values()))
+        ),
+    )
+    # Data contains at least one bad value; filter it out. See https://github.com/CAVaccineInventory/vaccine-feed-ingest/issues/621
+    filtered_transposed_data = (
+        row for row in transposed_data if row["Site-value"] != "%null%"
+    )
+    # Adjacent rows are actually duplicates; some have map, some have website. Combine into one.
+    doubled_filtered_transposed_data = zip(
+        filtered_transposed_data, filtered_transposed_data
+    )
+    return (
+        tableau_item_to_parsed_site(entry) for entry in doubled_filtered_transposed_data
+    )
 
 
 output_dir = pathlib.Path(sys.argv[1])
