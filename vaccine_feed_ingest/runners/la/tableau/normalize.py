@@ -11,7 +11,7 @@ from typing import List, Optional
 from vaccine_feed_ingest_schema import location as schema
 
 from vaccine_feed_ingest.utils.log import getLogger
-from vaccine_feed_ingest.utils.normalize import provider_id_from_name
+from vaccine_feed_ingest.utils.normalize import normalize_url, provider_id_from_name
 
 logger = getLogger(__file__)
 
@@ -32,9 +32,7 @@ def _get_contacts(site: dict) -> Optional[List[schema.Contact]]:
             contacts.append(schema.Contact(contact_type="general", email=uri[7:]))
         else:
             contacts.append(
-                schema.Contact(
-                    contact_type="general", website=site["contact"]["website"]
-                )
+                schema.Contact(contact_type="general", website=normalize_url(uri))
             )
 
     if len(contacts) > 0:
