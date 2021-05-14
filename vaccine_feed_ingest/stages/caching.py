@@ -26,7 +26,10 @@ def cache_from_archive(archive_path: pathlib.Path) -> Iterator[diskcache.Cache]:
                 archive_file.extractall(tmp_diskcache_dir)
 
         with diskcache.Cache(
-            tmp_diskcache_dir, disk=diskcache.JSONDisk, disk_compress_level=1
+            tmp_diskcache_dir,
+            disk=diskcache.JSONDisk,
+            disk_compress_level=1,
+            eviction_policy="least-frequently-used",
         ) as cache:
             # Before using cache cull expired items
             cache.cull()
@@ -42,6 +45,8 @@ def cache_from_archive(archive_path: pathlib.Path) -> Iterator[diskcache.Cache]:
         )
 
         tmp_archive_path = pathlib.Path(tmp_archive_str)
+
+        archive_path.parent.mkdir(parents=True, exist_ok=True)
 
         # Overwrite cache archive with new data
         with tmp_archive_path.open("rb") as src_file:
