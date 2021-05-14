@@ -30,6 +30,7 @@ setup_macos() {
 
     maybe_install "python3.9" "Python 3.9" "brew install python@3.9"
     maybe_install "poetry" "Poetry" "brew install poetry"
+    maybe_install "pdftohtml" "pdftohtml" "brew install pdftohtml"
     maybe_install "gdal-config" "GDAL" "brew install gdal"
     if [ "$(gdal-config --version)" != "3.2.2" ]; then
         maybe_install "gdal-3.2.2" "a new enough GDAL" "brew upgrade gdal"
@@ -68,6 +69,7 @@ setup_linux() {
         liblzma-dev \
         libreadline-dev \
         libsqlite3-dev \
+        pdftohtml \
         python3.9 \
         python3-pip \
         curl

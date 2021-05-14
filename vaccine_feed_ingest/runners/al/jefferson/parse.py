@@ -4,6 +4,7 @@ import json
 import logging
 import os
 import pathlib
+import re
 import subprocess
 import sys
 from typing import List, NamedTuple, Optional, Text
@@ -83,7 +84,7 @@ def _get_primary_link_tag(e: etree.Element) -> Optional[etree.Element]:
     This heuristic helps filter out two unusual cases in the PDF/XML:
     - blank links
     - overlapping link regions from a different column:
-      `<text><a href="wronglink">w</a><a href="rightlink">ww.provider.com</a></text>`
+    `<text><a href="wronglink">w</a><a href="rightlink">ww.provider.com</a></text>`
     """
     for link_tag in e.findall("a"):
         if sum(map(len, link_tag.itertext())) >= 4:
@@ -243,6 +244,29 @@ def _parse_page(page: etree.Element) -> ParsedPage:
     return ParsedPage(number=page_num, providers=parsed_providers)
 
 
+_GENERIC_ENTRY_PREFIXES = [
+    "AL \\d+/\\d+",
+    "CONDADO DE JEFFERSON",
+    "COVID-19",
+    "If you have questions",
+    "JEFFERSON COUNTY",
+    "PLEASE",
+    "PREGUNTAS",
+    "SITIOS DE",
+    "This is a list of agencies",
+    "UPDATED",
+    "VACCINE FAQ",
+]
+_GENERIC_ENTRY_REGEX = re.compile("(" + "|".join(_GENERIC_ENTRY_PREFIXES) + ")")
+
+
+def _is_valid_site(site: List[Text]) -> bool:
+    """Filters out entries in the Jefferson County document
+    that are unlikely to contain vaccine provider site information,
+    based on the contents of their first line."""
+    return len(site) > 0 and re.match(_GENERIC_ENTRY_REGEX, site[0]) is None
+
+
 def _get_sites(provider: ParsedProvider, page: int) -> List[List[Text]]:
     """Gets the list of vaccine site details for the given vaccine provider.
 
@@ -271,7 +295,7 @@ def _get_sites(provider: ParsedProvider, page: int) -> List[List[Text]]:
             current_site = []
             sites.append(current_site)
 
-    return [site for site in sites if site]
+    return list(filter(_is_valid_site, sites))
 
 
 def main():
