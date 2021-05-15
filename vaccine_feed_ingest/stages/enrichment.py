@@ -1,6 +1,6 @@
 """Method for enriching location records after that are normalized"""
 import pathlib
-from typing import Dict, Optional
+from typing import Collection, Dict, Optional
 
 import diskcache
 import phonenumbers
@@ -9,6 +9,7 @@ from vaccine_feed_ingest_schema import location
 
 from vaccine_feed_ingest.utils.log import getLogger
 
+from ..apis.placekey import PlacekeyAPI
 from ..utils import normalize
 from . import outputs
 from .common import STAGE_OUTPUT_SUFFIX, PipelineStage
@@ -23,12 +24,25 @@ def enrich_locations(
     input_dir: pathlib.Path,
     output_dir: pathlib.Path,
     api_cache: Optional[diskcache.Cache] = None,
+    enrich_apis: Optional[Collection[str]] = None,
+    placekey_apikey: Optional[str] = None,
 ) -> bool:
     """Enrich locations in normalized input_dir and write them to output_dir"""
     enriched_locations = []
 
+    if enrich_apis is None:
+        enrich_apis = set()
+
+    placekey_api = None
+    if "placekey" in enrich_apis:
+        if api_cache is not None and placekey_apikey:
+            placekey_api = PlacekeyAPI(api_cache, placekey_apikey)
+        else:
+            logger.info("Skipping placekey because placekey api is not configured")
+
     processed_files = 0
     processed_lines = 0
+
     for filepath in outputs.iter_data_paths(
         input_dir, suffix=STAGE_OUTPUT_SUFFIX[PipelineStage.NORMALIZE]
     ):
@@ -46,7 +60,10 @@ def enrich_locations(
                     )
                     continue
 
-                enriched_location = _process_location(normalized_location)
+                enriched_location = _process_location(
+                    normalized_location,
+                    placekey_api=placekey_api,
+                )
 
                 if not enriched_location:
                     continue
@@ -74,6 +91,7 @@ def enrich_locations(
 
 def _process_location(
     normalized_location: location.NormalizedLocation,
+    placekey_api: Optional[PlacekeyAPI] = None,
 ) -> Optional[location.NormalizedLocation]:
     """Run through all of the methods to enrich the location"""
     enriched_location = normalized_location.copy()
@@ -83,6 +101,8 @@ def _process_location(
     _add_provider_tag(enriched_location)
 
     _normalize_phone_format(enriched_location)
+
+    _add_placekey_link(enriched_location, placekey_api)
 
     if not _valid_address(enriched_location):
         logger.warning(
@@ -198,6 +218,47 @@ def _add_provider_tag(loc: location.NormalizedLocation) -> None:
     loc.links = [
         *(loc.links or []),
         location.Link(authority=PROVIDER_TAG, id=provider_id),
+    ]
+
+
+def _add_placekey_link(
+    loc: location.NormalizedLocation,
+    placekey_api: Optional[PlacekeyAPI],
+) -> None:
+    """Add placekey concordance to location if we can"""
+    if placekey_api is None:
+        return
+
+    if not loc.location:
+        return
+
+    if not _valid_address(loc):
+        return
+
+    street_address = [loc.address.street1]
+    if loc.address.street2:
+        street_address.append(loc.address.street2)
+
+    loc_placekey = placekey_api.lookup_placekey(
+        loc.location.latitude,
+        loc.location.longitude,
+        loc.name,
+        ", ".join(street_address),
+        loc.address.city,
+        loc.address.state,
+        loc.address.zip,
+    )
+
+    if not loc_placekey:
+        return
+
+    # Verify "what" part of placekey is specified or else placekey isn't specific enough
+    if "@" not in loc_placekey or loc_placekey.startswith("@"):
+        return
+
+    loc.links = [
+        *(loc.links or []),
+        location.Link(authority="placekey", id=loc_placekey),
     ]
 
 

@@ -89,6 +89,27 @@ def _stages_option() -> Callable:
     )
 
 
+def _enrich_apis_option() -> Callable:
+    return click.option(
+        "--enrich-apis",
+        "enrich_apis",
+        type=str,
+        default=lambda: os.environ.get("ENRICH_APIS", ""),
+        callback=lambda ctx, param, value: set(
+            [item.strip().lower() for item in value.split(",")]
+        ),
+    )
+
+
+def _placekey_apikey_option() -> Callable:
+    return click.option(
+        "--placekey-apikey",
+        "placekey_apikey",
+        type=str,
+        default=lambda: os.environ.get("PLACEKEY_APIKEY", ""),
+    )
+
+
 def _fail_on_error_option() -> Callable:
     return click.option(
         "--fail-on-runner-error/--no-fail-on-runner-error",
@@ -375,6 +396,8 @@ def all_stages(
 @_state_option()
 @_output_dir_option()
 @_api_cache_option()
+@_enrich_apis_option()
+@_placekey_apikey_option()
 @_dry_run_option()
 def enrich(
     sites: Optional[Sequence[str]],
@@ -382,6 +405,8 @@ def enrich(
     state: Optional[str],
     output_dir: pathlib.Path,
     enable_apicache: bool,
+    enrich_apis: Optional[Collection[str]],
+    placekey_apikey: Optional[str],
     dry_run: bool,
 ) -> None:
     """Run enrich process for specified sites."""
@@ -394,6 +419,8 @@ def enrich(
             output_dir,
             timestamp,
             enable_apicache=enable_apicache,
+            enrich_apis=enrich_apis,
+            placekey_apikey=placekey_apikey,
             dry_run=dry_run,
         )
 
@@ -463,6 +490,8 @@ def load_to_vial(
 @_dry_run_option()
 @_stages_option()
 @_api_cache_option()
+@_enrich_apis_option()
+@_placekey_apikey_option()
 @_vial_server_option()
 @_vial_apikey_option()
 @_match_option()
@@ -481,6 +510,8 @@ def pipeline(
     dry_run: bool,
     stages: Collection[common.PipelineStage],
     enable_apicache: bool,
+    enrich_apis: Optional[Collection[str]],
+    placekey_apikey: Optional[str],
     vial_server: Optional[str],
     vial_apikey: Optional[str],
     enable_match: bool,
@@ -538,6 +569,8 @@ def pipeline(
                 output_dir,
                 timestamp,
                 enable_apicache=enable_apicache,
+                enrich_apis=enrich_apis,
+                placekey_apikey=placekey_apikey,
             )
 
             if not enrich_success:
