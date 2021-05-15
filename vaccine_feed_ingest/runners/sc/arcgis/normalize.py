@@ -135,7 +135,20 @@ def _get_inventory(site: dict) -> Optional[List[schema.Vaccine]]:
 def _get_normalized_location(
     site: dict, timestamp: str
 ) -> Optional[schema.NormalizedLocation]:
-    if len(site["attributes"]["loc_name"]) > 256:
+    if site["attributes"] is None:
+        logger.error(
+            "Cannot normalize site data without an 'attributes' field: %s", site
+        )
+        return None
+    name = site["attributes"]["loc_name"]
+    if name is None:
+        logger.error(
+            "Cannot normalize site data without an 'attributes.loc_name' field: %s",
+            site,
+        )
+        return None
+    if len(name) > 256:
+        logger.error("Site name must have 256 characters or fewer; ignoring %s", name)
         return None
 
     # Contact parsing for this site is a little flaky. Ensure that a bug for
@@ -153,7 +166,7 @@ def _get_normalized_location(
 
     return schema.NormalizedLocation(
         id=_get_id(site),
-        name=site["attributes"]["loc_name"],
+        name=name,
         address=_get_address(site),
         location=schema.LatLng(
             latitude=site["geometry"]["y"],

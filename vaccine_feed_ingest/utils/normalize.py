@@ -237,7 +237,7 @@ def normalize_url(url: Optional[str]) -> Optional[str]:
 
 def normalize_phone(
     phone: Optional[str], contact_type: Optional[str] = None
-) -> Optional[List[location.Contact]]:
+) -> List[location.Contact]:
     if phone is None:
         return []
 
