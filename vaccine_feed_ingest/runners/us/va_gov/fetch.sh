@@ -1,6 +1,6 @@
-#!/bin/zsh
+#!/usr/bin/env bash
 
-set -Eeuo pipefail  ##Note: most of this code derived from existing pipeline curl scripts, of course
+set -Eeuo pipefail
 
 output_dir=""
 
@@ -11,8 +11,12 @@ else
 fi
 
 # Per VA_gov spec available at https://developer.va.gov/explore/facilities/docs/facilities?version=current
-(cd "$output_dir" && curl -X GET 'https://sandbox-api.va.gov/services/va_facilities/v0/facilities/all' \  
---header "apikey: ${TOKEN_FETCH_US_VA}" --create-dirs -o 'va_gov.json')  ##takes an API key that you can self-service create from https://developer.va.gov/apply -- or I can provide
+(cd "$output_dir" && curl -X GET 'https://sandbox-api.va.gov/services/va_facilities/v0/facilities/all' \
+--header "apikey: ${TOKEN_FETCH_US_VA}" --create-dirs -o 'va_gov.json')
+
+
+
+##takes an API key that you can self-service create from https://developer.va.gov/apply -- or I can provide
 ##this secret out-of-band via Discord or whatever
 
 ##Note: Sandbox appears to be appropriate environment for read-only access; it appears prod is only for authorized developers that are building things that 
