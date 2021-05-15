@@ -9,8 +9,8 @@ set -o pipefail
 
 maybe_install() {
 
-    exists=$(which "$1")
-    if [ "xx$exists" == "xx" ]; then
+    exists="$(which "$1")"
+    if [ -z "$exists" ]; then
         echo "$2 doesn't seem to be installed locally, but I can do it for you."
         echo "Press Return to continue"
         echo ""
@@ -49,7 +49,7 @@ setup_macos() {
 
 setup_linux() {
     echo "I think you're running Linux"
-    if [ "xx$(which apt-get)" == "xx" ]; then
+    if [ -z "$(which apt-get)" ]; then
         echo "It looks like you don't have an 'apt-get' command."
         echo ""
         echo "You're probably running an RPM-based distribution."
@@ -92,7 +92,7 @@ setup_unsupported() {
     echo "but would be absolutely delighted to take a patch."
 }
 
-if [ "x$OSTYPE" = "x" ]; then
+if [ -z "$OSTYPE" ]; then
     echo "I think you're running this script under sh instead of bash."
     echo "Try running:"
     echo " bash $0"
