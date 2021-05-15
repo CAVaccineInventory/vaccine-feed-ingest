@@ -1,6 +1,6 @@
 #!/bin/zsh
 
-set -Eeuo pipefail
+set -Eeuo pipefail  ##Note: most of this code derived from existing pipeline curl scripts, of course
 
 output_dir=""
 
