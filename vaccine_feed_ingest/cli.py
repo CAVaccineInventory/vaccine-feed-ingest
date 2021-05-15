@@ -469,8 +469,8 @@ def pipeline(
     output_dir: pathlib.Path,
     dry_run: bool,
     stages: Collection[common.PipelineStage],
-    vial_server: str,
-    vial_apikey: str,
+    vial_server: Optional[str],
+    vial_apikey: Optional[str],
     enable_match: bool,
     enable_create: bool,
     enable_rematch: bool,
@@ -532,6 +532,12 @@ def pipeline(
         sites_to_load.append(site_dir)
 
     if common.PipelineStage.LOAD_TO_VIAL in stages and sites_to_load:
+        if not vial_server:
+            raise Exception("Must pass --vial-server for load-to-vial stage")
+
+        if not vial_apikey:
+            raise Exception("Must pass --vial-apikey for load-to-vial stage")
+
         load.load_sites_to_vial(
             sites_to_load,
             output_dir,
