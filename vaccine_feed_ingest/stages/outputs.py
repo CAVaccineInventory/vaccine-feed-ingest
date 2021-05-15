@@ -5,6 +5,8 @@ from typing import Iterator, Optional
 
 from .common import STAGE_OUTPUT_NAME, PipelineStage
 
+API_CACHE_NAME = ".api_cache.tar.gz"
+
 
 def find_all_run_dirs(
     base_output_dir: pathlib.Path,
@@ -66,6 +68,16 @@ def generate_run_dir(
 ) -> pathlib.Path:
     """Generate output path for a specific run of a pipeline stage."""
     return generate_stage_dir(base_output_dir, state, site, stage) / timestamp
+
+
+def generate_api_cache_path(
+    base_output_dir: pathlib.Path,
+    state: str,
+    site: str,
+    stage: PipelineStage,
+) -> pathlib.Path:
+    """Generate api cache path for site and stage."""
+    return generate_stage_dir(base_output_dir, state, site, stage) / API_CACHE_NAME
 
 
 def iter_data_paths(

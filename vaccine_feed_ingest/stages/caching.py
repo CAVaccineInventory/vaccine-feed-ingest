@@ -9,6 +9,61 @@ from typing import Iterator
 
 import diskcache
 
+from . import common, outputs
+
+
+@contextlib.contextmanager
+def api_cache_for_stage(
+    base_output_dir: pathlib.Path,
+    site_dir: pathlib.Path,
+    stage: common.PipelineStage,
+) -> Iterator[diskcache.Cache]:
+    """Load api cache from archive for the specified site and stage"""
+    api_cache_path = outputs.generate_api_cache_path(
+        base_output_dir,
+        site_dir.parent.name,
+        site_dir.name,
+        stage,
+    )
+
+    with cache_from_archive(api_cache_path) as api_cache:
+        yield api_cache
+
+
+def remove_api_cache(
+    base_output_dir: pathlib.Path,
+    site_dir: pathlib.Path,
+    stage: common.PipelineStage,
+) -> None:
+    api_cache_path = outputs.generate_api_cache_path(
+        base_output_dir,
+        site_dir.parent.name,
+        site_dir.name,
+        stage,
+    )
+
+    api_cache_path.unlink(missing_ok=True)
+
+
+def evict_api_cache(
+    base_output_dir: pathlib.Path,
+    site_dir: pathlib.Path,
+    stage: common.PipelineStage,
+    tag: str,
+) -> int:
+    api_cache_path = outputs.generate_api_cache_path(
+        base_output_dir,
+        site_dir.parent.name,
+        site_dir.name,
+        stage,
+    )
+
+    if not api_cache_path.exists():
+        return 0
+
+    with api_cache_for_stage(base_output_dir, site_dir, stage) as api_cache:
+        return api_cache.evict(tag)
+
 
 @contextlib.contextmanager
 def cache_from_archive(archive_path: pathlib.Path) -> Iterator[diskcache.Cache]:
