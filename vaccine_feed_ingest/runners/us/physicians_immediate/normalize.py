@@ -3,10 +3,11 @@
 import datetime
 import json
 import pathlib
-import re
+import pprint
 import sys
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, OrderedDict
 
+import usaddress
 from vaccine_feed_ingest_schema import location as schema
 
 from vaccine_feed_ingest.utils.log import getLogger
@@ -22,34 +23,100 @@ def get_site_id(site: Site) -> str:
 
 def infer_address(site: Site) -> schema.Address:
     """The source data does not separate address components into separate fields.
-    This function makes some guesses about how to extract data from these unstructured
-    addresses, when available.
-
-    NB: The entire source address is dumped into the 'street1' field. If these heuristics
-    work then additional fields will be filled out, but we don't remove any information
-    from the original address string
+    This function imports the probabilistic parser from `usaddress` to make sense
+    of the scraped address data. Some extra patches are applied to fix errors in this
+    specfic dataset.
     """
 
-    def maybe_last_match(pattern: re.Pattern, text: str) -> Optional[str]:
-        matches = re.findall(pattern, text)
-        if matches is not None and len(matches) > 0:
-            return matches[-1]
+    parsed_address, address_type = usaddress.tag(site["address"])
+    assert (
+        address_type == "Street Address"
+    ), f"Invariant: address normalization only works for addresses of type 'Street Address', not {address_type}"
+    patched_address = apply_address_fixups(parsed_address)
+
+    # Building up kwargs lets us easily omit fields for which we have no data.
+    # In particular, many sites don't provide a zip code
+    address_kwargs = {
+        # "street1",
+        # "city",
+        # "state",
+        # "zip"
+    }
+    street_buffer: List[str] = []
+    while len(patched_address) > 0:
+        component, value = patched_address.popitem(last=False)
+        if component == "PlaceName":
+            address_kwargs["city"] = value
+        elif component == "StateName":
+            address_kwargs["state"] = value
+        elif component == "ZipCode":
+            address_kwargs["zip"] = value
         else:
-            return None
+            street_buffer.append(value)
+    address_kwargs["street1"] = " ".join(street_buffer)
 
-    # Look for a two-letter state postal abbreviation. If there are multiple matches,
-    # the state is more likely to be at the end of the string
-    state_re = re.compile(r"\b([A-Z]{2})\b")
+    result = schema.Address(**address_kwargs)
+    logger.info(f"Parsed address: {site['address']}")
+    logger.info(f"Normalized address:{pprint.pformat(result)}")
 
-    # Look for a ZIP code. Insist that it be at the end of the string, so that
-    # we don't match "19165 West Bluemound Road, Brookfield, WI, USA"
-    zip_re = re.compile(r"\b([0-9]{5}(?:-[0-9]{4})?)\b\s*$")
+    return result
 
-    return schema.Address(
-        state=maybe_last_match(state_re, site["address"]),
-        street1=site["address"],
-        zip=maybe_last_match(zip_re, site["address"]),
-    )
+
+def apply_address_fixups(address: OrderedDict[str, str]) -> OrderedDict[str, str]:
+    """Sometimes the usaddress parser makes mistakes. It's an imperfect world.
+    This function applies transformations to the parsed address to correct specific
+    known errors.
+    """
+    # Fixup: At least one address has "WI, USA" in the "StateName" component.
+    # Strip non-state components
+    address["StateName"] = address["StateName"].partition(",")[0]
+
+    # Fixup: (OrderedDict([('AddressNumber', '1019'),
+    #           ('StreetNamePreDirectional', 'S.'),
+    #           ('StreetName', 'Green Bay Road'),
+    #           ('StreetNamePostType', 'Mount'),
+    #           ('PlaceName', 'Pleasant'),
+    #           ('StateName', 'WI'),
+    #           ('ZipCode', '53406')]),
+    #        'Street Address'),
+    #
+    # The correct name of the town is "Mount Pleasant"
+    if (
+        address.get("StreetNamePostType") == "Mount"
+        and address.get("PlaceName") == "Pleasant"
+    ):
+        del address["StreetNamePostType"]
+        del address["PlaceName"]
+        address["PlaceName"] = "Mount Pleasant"
+
+    # Fixup:
+    #  (OrderedDict([('AddressNumber', '3111'),
+    #                ('StreetNamePreDirectional', 'S.'),
+    #                ('PlaceName', 'Chicago South Milwaukee'),
+    #                ('StateName', 'WI'),
+    #                ('ZipCode', '53172')]),
+    #  'Street Address'),
+    #
+    # 'Chicago' is a 'StreetName', located in the town of 'South Milwaukee'
+    if address.get("PlaceName") == "Chicago South Milwaukee":
+        del address["PlaceName"]
+        address["StreetName"] = "Chicago"
+        address["PlaceName"] = "South Milwaukee"
+
+    # Fixup:
+    # (OrderedDict([('AddressNumber', '2490'),
+    #               ('StreetName', 'Bushwood'),
+    #               ('PlaceName', 'Dr.Elgin'),
+    #               ('StateName', 'IL')]),
+    # 'Street Address'),
+    #
+    # 'Dr.Elgin' is a typographical error. Create a 'StreetNamePostType' of 'Dr.' and a new 'PlaceName' of 'Elgin'
+    if address.get("PlaceName") == "Dr.Elgin":
+        del address["PlaceName"]
+        address["StreetNamePostType"] = "Dr."
+        address["PlaceName"] = "Elgin"
+
+    return address
 
 
 def parse_vaccine(site: Site) -> Optional[List[schema.Vaccine]]:
