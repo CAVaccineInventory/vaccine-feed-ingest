@@ -2,6 +2,7 @@
 import pathlib
 from typing import Dict, Optional
 
+import diskcache
 import phonenumbers
 import pydantic
 from vaccine_feed_ingest_schema import location
@@ -18,15 +19,23 @@ logger = getLogger(__file__)
 PROVIDER_TAG = "_tag_provider"
 
 
-def enrich_locations(input_dir: pathlib.Path, output_dir: pathlib.Path) -> bool:
+def enrich_locations(
+    input_dir: pathlib.Path,
+    output_dir: pathlib.Path,
+    api_cache: Optional[diskcache.Cache] = None,
+) -> bool:
     """Enrich locations in normalized input_dir and write them to output_dir"""
     enriched_locations = []
 
+    processed_files = 0
+    processed_lines = 0
     for filepath in outputs.iter_data_paths(
         input_dir, suffix=STAGE_OUTPUT_SUFFIX[PipelineStage.NORMALIZE]
     ):
         with filepath.open() as src_file:
+            processed_files += 1
             for line in src_file:
+                processed_lines += 1
                 try:
                     normalized_location = location.NormalizedLocation.parse_raw(line)
                 except pydantic.ValidationError as e:
@@ -45,6 +54,11 @@ def enrich_locations(input_dir: pathlib.Path, output_dir: pathlib.Path) -> bool:
                 enriched_locations.append(enriched_location)
 
     if not enriched_locations:
+        logger.warning(
+            "Processed %d lines across %d file(s). Despite this, found no enriched locations.",
+            processed_lines,
+            processed_files,
+        )
         return False
 
     suffix = STAGE_OUTPUT_SUFFIX[PipelineStage.ENRICH]
@@ -71,9 +85,18 @@ def _process_location(
     _normalize_phone_format(enriched_location)
 
     if not _valid_address(enriched_location):
+        logger.warning(
+            "Skipping source location %s because its address could not be validated: %s",
+            normalized_location.id,
+            normalized_location.address,
+        )
         return None
 
     if not enriched_location.location:
+        logger.warning(
+            "Skipping source location %s because it does not have a location (lat/lng)",
+            normalized_location.id,
+        )
         return None
 
     return enriched_location

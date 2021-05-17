@@ -12,7 +12,7 @@ import click
 import dotenv
 import pathy
 
-from .stages import common, ingest, load, site
+from .stages import caching, common, ingest, load, site
 
 # Collect locations that are within .6 degrees = 66.6 km = 41 mi
 CANDIDATE_DEGREES_DISTANCE = 0.6
@@ -536,6 +536,55 @@ def pipeline(
             candidate_distance=candidate_distance,
             import_batch_size=import_batch_size,
         )
+
+
+@cli.command()
+@_sites_argument()
+@_exclude_sites_option()
+@_state_option()
+@_output_dir_option()
+def api_cache_remove(
+    sites: Optional[Sequence[str]],
+    exclude_sites: Optional[Collection[str]],
+    state: Optional[str],
+    output_dir: pathlib.Path,
+) -> None:
+    """Remove the api cache for specified sites."""
+    site_dirs = site.get_site_dirs(state, sites, exclude_sites)
+
+    for site_dir in site_dirs:
+        caching.remove_api_cache(
+            output_dir,
+            site_dir,
+            common.PipelineStage.ENRICH,
+        )
+
+
+@cli.command()
+@_sites_argument()
+@_exclude_sites_option()
+@_state_option()
+@_output_dir_option()
+@click.option("--cache-tag", "cache_tag", type=str)
+def api_cache_evict(
+    sites: Optional[Sequence[str]],
+    exclude_sites: Optional[Collection[str]],
+    state: Optional[str],
+    output_dir: pathlib.Path,
+    cache_tag: str,
+) -> None:
+    """Evict keys with tag from the api cache for specified sites."""
+    site_dirs = site.get_site_dirs(state, sites, exclude_sites)
+
+    for site_dir in site_dirs:
+        num_evicted_keys = caching.evict_api_cache(
+            output_dir,
+            site_dir,
+            common.PipelineStage.ENRICH,
+            cache_tag,
+        )
+        if num_evicted_keys > 0:
+            click.echo(f"Evicted {num_evicted_keys} keys from {site_dir}")
 
 
 @cli.command()
