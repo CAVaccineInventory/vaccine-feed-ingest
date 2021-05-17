@@ -7,7 +7,7 @@ import pathlib
 import re
 import subprocess
 import sys
-from typing import List, NamedTuple, Optional, Text
+from typing import Any, Dict, List, NamedTuple, Optional, Text
 
 from lxml import etree
 
@@ -24,6 +24,8 @@ input_dir = pathlib.Path(sys.argv[2])
 
 # Jefferson vaccine sites are listed in a PDF
 input_filepaths = input_dir.glob("*.pdf")
+
+metadata_filepath = input_dir.joinpath('metadata.ndjson')
 
 
 class Region(NamedTuple):
@@ -335,6 +337,19 @@ def main():
             )
             raise e
 
+        # Read the metadata JSON produced by the fetch step.
+        logger.info(
+            "Reading fetch metadata NDJSON from: %s",
+            metadata_filepath
+        )
+        fetched_from_uri: Optional[Text] = None
+        with open(metadata_filepath, "r") as metadata_file:
+            line = next(metadata_file, None)
+            if line:
+                metadata = json.loads(line)
+                if metadata:
+                    fetched_from_uri = metadata.get("fetched_from_uri", None)
+
         logger.info(
             "Parsing XML to NDJSON: %s => %s",
             xml_filepath,
@@ -376,6 +391,7 @@ def main():
                                 "provider": provider.number,
                                 "link": provider.link,
                                 "details": site,
+                                "fetched_from_uri": fetched_from_uri
                             },
                             fout,
                         )
