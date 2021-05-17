@@ -361,13 +361,13 @@ def _match_source_to_existing_locations(
             "MATCH: %s (%s) matched to %s (%s)",
             source.id,
             source.name,
-            match_candidate["properties"]["id"],
+            match_candidate["id"],
             match_candidate["properties"]["name"],
         )
         if enable_match:
             return load.ImportMatchAction(
                 action="existing",
-                id=match_candidate["properties"]["id"],
+                id=match_candidate["id"],
             )
         else:
             return None
@@ -378,9 +378,9 @@ def _match_source_to_existing_locations(
             source.id,
             source.name,
             len(candidates),
-            candidates[0]["properties"]["id"],
+            candidates[0]["id"],
             candidates[0]["properties"]["name"],
-            candidates[1]["properties"]["id"],
+            candidates[1]["id"],
             candidates[1]["properties"]["name"],
         )
     else:

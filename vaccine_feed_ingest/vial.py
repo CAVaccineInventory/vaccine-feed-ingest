@@ -73,6 +73,10 @@ def import_source_locations(
     import_batch_size: int = 500,
 ) -> None:
     """Import source locations"""
+    path_and_query = f"/api/importSourceLocations?import_run_id={import_run_id}"
+    logger.info("Contacting VIAL: POST %s", path_and_query)
+
+    batches = 0
     for import_locations_batch in misc.batch(import_locations, import_batch_size):
         encoded_ndjson = "\n".join(
             [loc.json(exclude_none=True) for loc in import_locations_batch]
@@ -80,7 +84,7 @@ def import_source_locations(
 
         rsp = vial_http.request(
             "POST",
-            f"/api/importSourceLocations?import_run_id={import_run_id}",
+            path_and_query,
             headers={**vial_http.headers, "Content-Type": "application/x-ndjson"},
             body=encoded_ndjson.encode("utf-8"),
         )
@@ -93,6 +97,16 @@ def import_source_locations(
                 dict(rsp.headers),
                 None,
             )
+
+        batches += 1
+        if batches % 5 == 0:
+            logger.info(
+                "Submitted %d batches of up to %d records to VIAL.",
+                batches,
+                import_batch_size,
+            )
+
+    logger.info("Submitted %d total batches to VIAL.", batches)
 
 
 def search_locations(
@@ -107,15 +121,23 @@ def search_locations(
 
     query = urllib.parse.urlencode(params)
 
-    resp = vial_http.request(
-        "GET", f"/api/searchLocations?{query}", preload_content=False
-    )
+    path_and_query = f"/api/searchLocations?{query}"
+    logger.info("Contacting VIAL: GET %s", path_and_query)
 
+    resp = vial_http.request("GET", path_and_query, preload_content=False)
+
+    lines = 0
     for line in resp:
         try:
             yield geojson.loads(line)
         except json.JSONDecodeError:
             logger.warning("Invalid json record in search response: %s", line)
+
+        lines += 1
+        if lines % 5000 == 0:
+            logger.info("Processed %d records from VIAL.", lines)
+
+    logger.info("Processed %d total records from VIAL.", lines)
 
     resp.release_conn()
 
@@ -129,7 +151,7 @@ def retrieve_existing_locations(
 
 def _generate_index_row(loc: dict) -> Tuple[int, tuple, dict]:
     """Generate a rtree index entry from geojson entry"""
-    loc_id = hash(loc["properties"]["id"])
+    loc_id = hash(loc["id"])
     loc_shape = shapely.geometry.shape(loc["geometry"])
     loc_bounds = loc_shape.bounds
 
@@ -169,16 +191,23 @@ def search_source_locations(
 
     query = urllib.parse.urlencode(params)
 
-    resp = vial_http.request(
-        "GET", f"/api/searchSourceLocations?{query}", preload_content=False
-    )
+    path_and_query = f"/api/searchSourceLocations?{query}"
+    logger.info("Contacting VIAL: GET %s", path_and_query)
 
+    resp = vial_http.request("GET", path_and_query, preload_content=False)
+
+    lines = 0
     for line in resp:
         try:
             yield geojson.loads(line)
         except json.JSONDecodeError:
             logger.warning("Invalid json record in search response: %s", line)
 
+        lines += 1
+        if lines % 5000 == 0:
+            logger.info("Processed %d records from VIAL.", lines)
+
+    logger.info("Processed %d total records from VIAL.", lines)
     resp.release_conn()
 
 
