@@ -77,8 +77,9 @@ def cache_from_archive(archive_path: pathlib.Path) -> Iterator[diskcache.Cache]:
 
         # If there is an existing archive file, then extract the diskcache from it.
         if archive_path.exists():
-            with tarfile.open(archive_path, mode="r|gz") as archive_file:
-                archive_file.extractall(tmp_diskcache_dir)
+            with archive_path.open(mode="rb") as archive_file:
+                with tarfile.open(fileobj=archive_file, mode="r|gz") as tar_archive:
+                    tar_archive.extractall(tmp_diskcache_dir)
 
         with diskcache.Cache(
             tmp_diskcache_dir,
