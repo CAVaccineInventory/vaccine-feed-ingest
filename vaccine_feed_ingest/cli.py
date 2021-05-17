@@ -165,6 +165,10 @@ def _match_ids_option() -> Callable:
     )
 
 
+def _api_cache_option() -> Callable:
+    return click.option("--api-cache/--no-api-cache", type=bool, default=True)
+
+
 def _create_ids_option() -> Callable:
     return click.option(
         "--create-ids",
@@ -366,19 +370,21 @@ def all_stages(
 @_state_option()
 @_output_dir_option()
 @_dry_run_option()
+@_api_cache_option()
 def enrich(
     sites: Optional[Sequence[str]],
     exclude_sites: Optional[Collection[str]],
     state: Optional[str],
     output_dir: pathlib.Path,
     dry_run: bool,
+    api_cache: bool,
 ) -> None:
     """Run enrich process for specified sites."""
     timestamp = _generate_run_timestamp()
     site_dirs = site.get_site_dirs(state, sites, exclude_sites)
 
     for site_dir in site_dirs:
-        ingest.run_enrich(site_dir, output_dir, timestamp, dry_run)
+        ingest.run_enrich(site_dir, output_dir, timestamp, dry_run, api_cache=api_cache)
 
 
 @cli.command()
@@ -455,6 +461,7 @@ def load_to_vial(
 @_candidate_distance_option()
 @_import_batch_size_option()
 @_fail_on_error_option()
+@_api_cache_option()
 def pipeline(
     sites: Optional[Sequence[str]],
     exclude_sites: Optional[Collection[str]],
@@ -472,6 +479,7 @@ def pipeline(
     candidate_distance: float,
     import_batch_size: int,
     fail_on_runner_error: bool,
+    api_cache: bool,
 ) -> None:
     """Run all stages in succession for specified sites."""
     timestamp = _generate_run_timestamp()
@@ -514,7 +522,9 @@ def pipeline(
                 continue
 
         if common.PipelineStage.ENRICH in stages:
-            enrich_success = ingest.run_enrich(site_dir, output_dir, timestamp)
+            enrich_success = ingest.run_enrich(
+                site_dir, output_dir, timestamp, api_cache=api_cache
+            )
 
             if not enrich_success:
                 continue
