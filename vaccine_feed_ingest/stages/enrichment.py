@@ -38,7 +38,7 @@ def enrich_locations(
         if api_cache is not None and placekey_apikey:
             placekey_api = PlacekeyAPI(api_cache, placekey_apikey)
         else:
-            logger.info("Skipping placekey because placekey api is not configured")
+            logger.error("Skipping placekey because placekey api is not configured")
 
     processed_files = 0
     processed_lines = 0
