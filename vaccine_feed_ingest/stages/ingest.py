@@ -303,6 +303,7 @@ def run_enrich(
     output_dir: pathlib.Path,
     timestamp: str,
     dry_run: bool = False,
+    api_cache: bool = True,
 ) -> bool:
     normalize_run_dir = outputs.find_latest_run_dir(
         output_dir, site_dir.parent.name, site_dir.name, PipelineStage.NORMALIZE
@@ -343,12 +344,16 @@ def run_enrich(
             enrich_output_dir,
         )
 
-        with caching.api_cache_for_stage(
-            output_dir, site_dir, PipelineStage.ENRICH
-        ) as api_cache:
-            success = enrichment.enrich_locations(
-                enrich_input_dir, enrich_output_dir, api_cache
-            )
+        success = None
+        if api_cache:
+            with caching.api_cache_for_stage(
+                output_dir, site_dir, PipelineStage.ENRICH
+            ) as api_cache:
+                success = enrichment.enrich_locations(
+                    enrich_input_dir, enrich_output_dir, api_cache
+                )
+        else:
+            success = enrichment.enrich_locations(enrich_input_dir, enrich_output_dir)
 
         if not success:
             logger.error(
