@@ -107,15 +107,23 @@ def search_locations(
 
     query = urllib.parse.urlencode(params)
 
-    resp = vial_http.request(
-        "GET", f"/api/searchLocations?{query}", preload_content=False
-    )
+    path_and_query = f"/api/searchLocations?{query}"
+    logger.info("Contacting VIAL: GET %s", path_and_query)
 
+    resp = vial_http.request("GET", path_and_query, preload_content=False)
+
+    lines = 0
     for line in resp:
         try:
             yield geojson.loads(line)
         except json.JSONDecodeError:
             logger.warning("Invalid json record in search response: %s", line)
+
+        lines += 1
+        if lines % 5000 == 0:
+            logger.info("Processed %d records from VIAL.", lines)
+
+    logger.info("Processed %d total records from VIAL.", lines)
 
     resp.release_conn()
 
