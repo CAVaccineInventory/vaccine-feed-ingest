@@ -302,8 +302,8 @@ def run_enrich(
     site_dir: pathlib.Path,
     output_dir: pathlib.Path,
     timestamp: str,
+    enable_apicache: bool = True,
     dry_run: bool = False,
-    api_cache: bool = True,
 ) -> bool:
     normalize_run_dir = outputs.find_latest_run_dir(
         output_dir, site_dir.parent.name, site_dir.name, PipelineStage.NORMALIZE
@@ -345,7 +345,7 @@ def run_enrich(
         )
 
         success = None
-        if api_cache:
+        if enable_apicache:
             with caching.api_cache_for_stage(
                 output_dir, site_dir, PipelineStage.ENRICH
             ) as api_cache:
