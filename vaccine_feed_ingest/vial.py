@@ -137,7 +137,7 @@ def retrieve_existing_locations(
 
 def _generate_index_row(loc: dict) -> Tuple[int, tuple, dict]:
     """Generate a rtree index entry from geojson entry"""
-    loc_id = hash(loc["properties"]["id"])
+    loc_id = hash(loc["id"])
     loc_shape = shapely.geometry.shape(loc["geometry"])
     loc_bounds = loc_shape.bounds
 

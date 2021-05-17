@@ -258,7 +258,7 @@ def is_phone_number_similar(
     except phonenumbers.NumberParseException:
         logger.warning(
             "Invalid candidate phone number for location %s: %s",
-            candidate_props["id"],
+            candidate.get("id", "No ID provided"),
             candidate_props["phone_number"],
         )
         return None
