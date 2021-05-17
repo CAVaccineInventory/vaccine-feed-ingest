@@ -348,7 +348,7 @@ def run_enrich(
         )
 
         success = None
-        if enable_apicache:
+        if enable_apicache and enrich_apis:
             with caching.api_cache_for_stage(
                 output_dir, site_dir, PipelineStage.ENRICH
             ) as api_cache:
