@@ -46,7 +46,11 @@ class PlacekeyAPI(CachedAPI):
         )
 
         cache_response = self.api_cache.get(cache_key)
+
         if cache_response:
+            if "error" in cache_response:
+                return None
+
             return cache_response.get("placekey")
 
         response = self._placekey_api.lookup_placekey(
