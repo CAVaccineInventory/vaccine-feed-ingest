@@ -6,6 +6,7 @@ from typing import List, Optional, Tuple
 
 import phonenumbers
 import url_normalize
+from vaccine_feed_ingest_schema import location as schema
 from vaccine_feed_ingest_schema.location import VaccineProvider
 
 from .log import getLogger
@@ -233,7 +234,7 @@ def normalize_url(url: Optional[str]) -> Optional[str]:
     return url_normalize.url_normalize(url)
 
 
-def normalize_phone(phone: Optional[str]) -> Optional[List[str]]:
+def normalize_phone(phone: Optional[str]) -> Optional[List[schema.Contact]]:
     if phone is None:
         return []
 
@@ -242,11 +243,22 @@ def normalize_phone(phone: Optional[str]) -> Optional[List[str]]:
     phone = phone.replace(" option ", " ext. ")
     phone = phone.replace(" press ", " ext. ")
 
-    phones = []
+    # The library doesn't match 311 etc; use a placeholder and then revert.
+    phone = re.sub(r"\b211\b", "(900) 211-0000", phone)
+    phone = re.sub(r"\b311\b", "(900) 311-0000", phone)
+
+    contacts = []
     for match in phonenumbers.PhoneNumberMatcher(phone, "US"):
-        phones.append(
-            phonenumbers.format_number(
-                match.number, phonenumbers.PhoneNumberFormat.NATIONAL
+        if match.number.national_number == 9002110000:
+            contacts.append(schema.Contact(other="Call 211."))
+        elif match.number.national_number == 9003110000:
+            contacts.append(schema.Contact(other="Call 311."))
+        else:
+            contacts.append(
+                schema.Contact(
+                    phone=phonenumbers.format_number(
+                        match.number, phonenumbers.PhoneNumberFormat.NATIONAL
+                    )
+                )
             )
-        )
-    return phones
+    return contacts
