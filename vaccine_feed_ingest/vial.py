@@ -3,18 +3,19 @@
 import contextlib
 import json
 import urllib.parse
-from typing import Any, Iterable, Iterator, Set, Tuple
+from typing import Any, Dict, Iterable, Iterator, NamedTuple, Set, Tuple
 from urllib.error import HTTPError
 
 import geojson
+import pydantic
 import rtree
 import shapely.geometry
 import urllib3
-from vaccine_feed_ingest_schema import load
+from vaccine_feed_ingest_schema import load, location
 
 from vaccine_feed_ingest.utils.log import getLogger
 
-from .utils import misc
+from .utils import misc, normalize
 
 logger = getLogger(__file__)
 
@@ -200,7 +201,7 @@ def search_source_locations(
     for line in resp:
         try:
             yield geojson.loads(line)
-        except json.JSONDecodeError:
+        except (json.JSONDecodeError, ValueError):
             logger.warning("Invalid json record in search response: %s", line)
 
         lines += 1
@@ -222,3 +223,54 @@ def retrieve_matched_source_location_ids(
         for loc in source_locations
         if "properties" in loc and "source_uid" in loc["properties"]
     }
+
+
+class SourceLocationHash(NamedTuple):
+    """Content hash and match state of source locations"""
+
+    content_hash: str
+    matched: bool
+
+
+def retrieve_source_location_hashes(
+    vial_http: urllib3.connectionpool.ConnectionPool,
+) -> Dict[str, SourceLocationHash]:
+    """Return content hash and match state of source locations keyed by source uid"""
+    source_locations = search_source_locations(vial_http, all=1)
+
+    results = {}
+
+    for loc in source_locations:
+        if "properties" not in loc:
+            continue
+
+        source_uid = loc["properties"].get("source_uid")
+        if not source_uid:
+            continue
+
+        import_json = loc["properties"].get("import_json")
+        if not import_json:
+            continue
+
+        try:
+            imported_location = location.NormalizedLocation.parse_obj(import_json)
+        except pydantic.ValidationError as e:
+            logger.warning(
+                "Ignoring existing source location because it is invalid: %s\n%s",
+                source_uid,
+                str(e),
+            )
+            continue
+
+        content_hash = normalize.calculate_content_hash(imported_location)
+
+        matched = False
+        matched_location = loc["properties"].get("matched_location")
+        if matched_location and matched_location.get("id"):
+            matched = True
+
+        results[source_uid] = SourceLocationHash(
+            content_hash=content_hash, matched=matched
+        )
+
+    return results
