@@ -239,6 +239,7 @@ def normalize_phone(phone: Optional[str]) -> Optional[List[schema.Contact]]:
         return []
 
     # Canonicalize various terms; lowercase to simplify.
+    phone = str(phone)  # nc/myspot_gov has some entries that are bare numbers.
     phone = phone.lower()
     phone = phone.replace(" option ", " ext. ")
     phone = phone.replace(" press ", " ext. ")
