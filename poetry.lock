@@ -158,6 +158,14 @@ optional = false
 python-versions = "*"
 
 [[package]]
+name = "backoff"
+version = "1.10.0"
+description = "Function decoration for backoff and retry"
+category = "main"
+optional = false
+python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*, !=3.4.*"
+
+[[package]]
 name = "beautifulsoup4"
 version = "4.9.3"
 description = "Screen-scraping library"
@@ -522,6 +530,19 @@ protobuf = ">=3.12.0"
 
 [package.extras]
 grpc = ["grpcio (>=1.0.0)"]
+
+[[package]]
+name = "h3"
+version = "3.7.2"
+description = "Hierarchical hexagonal geospatial indexing system"
+category = "main"
+optional = false
+python-versions = "*"
+
+[package.extras]
+all = ["numpy", "pytest", "pytest-cov", "flake8"]
+numpy = ["numpy"]
+test = ["pytest", "pytest-cov", "flake8"]
 
 [[package]]
 name = "html5lib"
@@ -1278,6 +1299,21 @@ optional = false
 python-versions = ">=3.6"
 
 [[package]]
+name = "placekey"
+version = "0.0.10"
+description = "Utilities for working with Placekeys"
+category = "main"
+optional = false
+python-versions = ">=3.6"
+
+[package.dependencies]
+backoff = "*"
+h3 = "*"
+ratelimit = "*"
+requests = "*"
+shapely = "*"
+
+[[package]]
 name = "pluggy"
 version = "0.13.1"
 description = "plugin and hook calling mechanisms for python"
@@ -1588,6 +1624,14 @@ python-versions = ">=3.6"
 [package.dependencies]
 cffi = {version = "*", markers = "implementation_name == \"pypy\""}
 py = {version = "*", markers = "implementation_name == \"pypy\""}
+
+[[package]]
+name = "ratelimit"
+version = "2.2.1"
+description = "API rate limit decorator"
+category = "main"
+optional = false
+python-versions = "*"
 
 [[package]]
 name = "regex"
@@ -2085,7 +2129,7 @@ test = ["pytest", "pytest-runner"]
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.9"
-content-hash = "66e80974c3ca89df49cc1461301082e884963684a391499af3fe845a655114b4"
+content-hash = "dc7cd196609a39c0e8a7766a3c91e2f32a3972611fe1c7bb46a3ea88bc262384"
 
 [metadata.files]
 aiohttp = [
@@ -2185,6 +2229,10 @@ babel = [
 backcall = [
     {file = "backcall-0.2.0-py2.py3-none-any.whl", hash = "sha256:fbbce6a29f263178a1f7915c1940bde0ec2b2a967566fe1c65c1dfb7422bd255"},
     {file = "backcall-0.2.0.tar.gz", hash = "sha256:5cbdbf27be5e7cfadb448baf0aa95508f91f2bbc6c6437cd9cd06e2a4c215e1e"},
+]
+backoff = [
+    {file = "backoff-1.10.0-py2.py3-none-any.whl", hash = "sha256:5e73e2cbe780e1915a204799dba0a01896f45f4385e636bcca7a0614d879d0cd"},
+    {file = "backoff-1.10.0.tar.gz", hash = "sha256:b8fba021fac74055ac05eb7c7bfce4723aedde6cd0a504e5326bcb0bdd6d19a4"},
 ]
 beautifulsoup4 = [
     {file = "beautifulsoup4-4.9.3-py2-none-any.whl", hash = "sha256:4c98143716ef1cb40bf7f39a8e3eec8f8b009509e74904ba3a7b315431577e35"},
@@ -2378,6 +2426,27 @@ google-resumable-media = [
 googleapis-common-protos = [
     {file = "googleapis-common-protos-1.53.0.tar.gz", hash = "sha256:a88ee8903aa0a81f6c3cec2d5cf62d3c8aa67c06439b0496b49048fb1854ebf4"},
     {file = "googleapis_common_protos-1.53.0-py2.py3-none-any.whl", hash = "sha256:f6d561ab8fb16b30020b940e2dd01cd80082f4762fa9f3ee670f4419b4b8dbd0"},
+]
+h3 = [
+    {file = "h3-3.7.2-cp27-cp27m-macosx_10_9_x86_64.whl", hash = "sha256:1b1e455525a222d487010835630e7951f84b9034c6d7b9cf5501fbd6a9559453"},
+    {file = "h3-3.7.2-cp27-cp27m-manylinux2010_x86_64.whl", hash = "sha256:93748d1ae0d2d73352165b92ea2f52c0bb1aecf1d2a7808f6092fe709ddd1449"},
+    {file = "h3-3.7.2-cp27-cp27mu-manylinux2010_x86_64.whl", hash = "sha256:c1d8c1d8b2f56c5d0ce73f62c6deba407c41ce87958f0909da35b7c29f40bc77"},
+    {file = "h3-3.7.2-cp35-cp35m-macosx_10_9_x86_64.whl", hash = "sha256:10496db335b748e32b219d388e0bf6503d47eb481281667789a4c84f9f368ea5"},
+    {file = "h3-3.7.2-cp35-cp35m-manylinux2010_x86_64.whl", hash = "sha256:31e539bff3b94b80b6eb77f5aa514f90a9d1e15972db4778e8af861e6f47edd1"},
+    {file = "h3-3.7.2-cp35-cp35m-win_amd64.whl", hash = "sha256:e9adde9f35187dcd3c031384d2968968f019c8eceea58e223a03723604abf7e0"},
+    {file = "h3-3.7.2-cp36-cp36m-macosx_10_9_x86_64.whl", hash = "sha256:3556ef201c8758839f84457abe76559cb5657f9ddf485a895f52032931657475"},
+    {file = "h3-3.7.2-cp36-cp36m-manylinux2010_x86_64.whl", hash = "sha256:6e455a033bd536405989f8263595e0c18912167140b0a444ba797978e65b8f6b"},
+    {file = "h3-3.7.2-cp36-cp36m-win_amd64.whl", hash = "sha256:cbf3ba462cf3f541cd8c1b4ed4dfff834307beb8a8bbb220a30931b2106e5c60"},
+    {file = "h3-3.7.2-cp37-cp37m-macosx_10_9_x86_64.whl", hash = "sha256:1d88cccf881fee97daf94623dc65269e8500f597daf542ff1bc2583e9edf04d1"},
+    {file = "h3-3.7.2-cp37-cp37m-manylinux2010_x86_64.whl", hash = "sha256:0f04a747dd3cccad055b5d44d9733454abfbc85e351a1cc186beced4697a650f"},
+    {file = "h3-3.7.2-cp37-cp37m-win_amd64.whl", hash = "sha256:808478e912dc81fa15cf8cd5e08ebe623386e81e3767c983ea83ebd4e859d743"},
+    {file = "h3-3.7.2-cp38-cp38-macosx_10_9_x86_64.whl", hash = "sha256:d7c5db66b69ce5cce3b4b8c49264a85c06b8c0bf6970bd779437aec705dcfdf4"},
+    {file = "h3-3.7.2-cp38-cp38-manylinux2010_x86_64.whl", hash = "sha256:bb205325abeed4deb64e1a82bc10e21f2d0e86c1c1ebf6aa12e1859a096f2063"},
+    {file = "h3-3.7.2-cp38-cp38-win_amd64.whl", hash = "sha256:6e38c92ec8572ac071fb8d92ce811665d80e6ee019ee6c33b6ea708fd978d19e"},
+    {file = "h3-3.7.2-cp39-cp39-macosx_10_9_x86_64.whl", hash = "sha256:8167e1389598a185d33c66cf5149d3a457780dbc7fb22f11ead1153cf1ac2fcb"},
+    {file = "h3-3.7.2-cp39-cp39-manylinux2010_x86_64.whl", hash = "sha256:a1e86a00e5ff5da3c9e278679364a8640fd36d0e0b88a22a29c8c49c05fe4145"},
+    {file = "h3-3.7.2-cp39-cp39-win_amd64.whl", hash = "sha256:2d3b6540a8b36032d57ab56d3db48d5c0ff936b60da28d8dfbf4c74be5f295f0"},
+    {file = "h3-3.7.2.tar.gz", hash = "sha256:3271168dcc7ed3f28301939ae8726003043adf10af8db67e38fcbb0960116154"},
 ]
 html5lib = [
     {file = "html5lib-1.1-py2.py3-none-any.whl", hash = "sha256:0d78f8fde1c230e99fe37986a60526d7049ed4bf8a9fadbad5f00e22e58e041d"},
@@ -2856,6 +2925,10 @@ pillow = [
     {file = "Pillow-8.2.0-pp37-pypy37_pp73-win32.whl", hash = "sha256:e98eca29a05913e82177b3ba3d198b1728e164869c613d76d0de4bde6768a50e"},
     {file = "Pillow-8.2.0.tar.gz", hash = "sha256:a787ab10d7bb5494e5f76536ac460741788f1fbce851068d73a87ca7c35fc3e1"},
 ]
+placekey = [
+    {file = "placekey-0.0.10-py3-none-any.whl", hash = "sha256:ba58486e53348474e6e5c23afa22ad96d1e0d5c956f07468ff5af1c49fc2b398"},
+    {file = "placekey-0.0.10.tar.gz", hash = "sha256:25235e7d5733ba229464fa4de0dacfeda84063b9fbb52041ac67d04c9c35d6be"},
+]
 pluggy = [
     {file = "pluggy-0.13.1-py2.py3-none-any.whl", hash = "sha256:966c145cd83c96502c3c3868f50408687b38434af77734af1e9ca461a4081d2d"},
     {file = "pluggy-0.13.1.tar.gz", hash = "sha256:15b2acde666561e1298d71b523007ed7364de07029219b604cf808bfa1c765b0"},
@@ -3134,6 +3207,9 @@ pyzmq = [
     {file = "pyzmq-22.0.3-pp37-pypy37_pp73-manylinux2010_x86_64.whl", hash = "sha256:13465c1ff969cab328bc92f7015ce3843f6e35f8871ad79d236e4fbc85dbe4cb"},
     {file = "pyzmq-22.0.3-pp37-pypy37_pp73-win32.whl", hash = "sha256:279cc9b51db48bec2db146f38e336049ac5a59e5f12fb3a8ad864e238c1c62e3"},
     {file = "pyzmq-22.0.3.tar.gz", hash = "sha256:f7f63ce127980d40f3e6a5fdb87abf17ce1a7c2bd8bf2c7560e1bbce8ab1f92d"},
+]
+ratelimit = [
+    {file = "ratelimit-2.2.1.tar.gz", hash = "sha256:af8a9b64b821529aca09ebaf6d8d279100d766f19e90b5059ac6a718ca6dee42"},
 ]
 regex = [
     {file = "regex-2021.4.4-cp36-cp36m-macosx_10_9_x86_64.whl", hash = "sha256:619d71c59a78b84d7f18891fe914446d07edd48dc8328c8e149cbe0929b4e000"},

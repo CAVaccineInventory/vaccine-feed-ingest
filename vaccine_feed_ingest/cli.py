@@ -89,6 +89,27 @@ def _stages_option() -> Callable:
     )
 
 
+def _enrich_apis_option() -> Callable:
+    return click.option(
+        "--enrich-apis",
+        "enrich_apis",
+        type=str,
+        default=lambda: os.environ.get("ENRICH_APIS", ""),
+        callback=lambda ctx, param, value: set(
+            [item.strip().lower() for item in value.split(",")]
+        ),
+    )
+
+
+def _placekey_apikey_option() -> Callable:
+    return click.option(
+        "--placekey-apikey",
+        "placekey_apikey",
+        type=str,
+        default=lambda: os.environ.get("PLACEKEY_APIKEY", ""),
+    )
+
+
 def _fail_on_error_option() -> Callable:
     return click.option(
         "--fail-on-runner-error/--no-fail-on-runner-error",
@@ -162,6 +183,15 @@ def _match_ids_option() -> Callable:
             if value
             else None
         ),
+    )
+
+
+def _api_cache_option() -> Callable:
+    return click.option(
+        "--api-cache/--no-api-cache",
+        "enable_apicache",
+        type=bool,
+        default=lambda: os.environ.get("ENABLE_APICACHE", "true").lower() == "true",
     )
 
 
@@ -365,12 +395,18 @@ def all_stages(
 @_exclude_sites_option()
 @_state_option()
 @_output_dir_option()
+@_api_cache_option()
+@_enrich_apis_option()
+@_placekey_apikey_option()
 @_dry_run_option()
 def enrich(
     sites: Optional[Sequence[str]],
     exclude_sites: Optional[Collection[str]],
     state: Optional[str],
     output_dir: pathlib.Path,
+    enable_apicache: bool,
+    enrich_apis: Optional[Collection[str]],
+    placekey_apikey: Optional[str],
     dry_run: bool,
 ) -> None:
     """Run enrich process for specified sites."""
@@ -378,7 +414,15 @@ def enrich(
     site_dirs = site.get_site_dirs(state, sites, exclude_sites)
 
     for site_dir in site_dirs:
-        ingest.run_enrich(site_dir, output_dir, timestamp, dry_run)
+        ingest.run_enrich(
+            site_dir,
+            output_dir,
+            timestamp,
+            enable_apicache=enable_apicache,
+            enrich_apis=enrich_apis,
+            placekey_apikey=placekey_apikey,
+            dry_run=dry_run,
+        )
 
 
 @cli.command()
@@ -445,6 +489,9 @@ def load_to_vial(
 @_output_dir_option()
 @_dry_run_option()
 @_stages_option()
+@_api_cache_option()
+@_enrich_apis_option()
+@_placekey_apikey_option()
 @_vial_server_option()
 @_vial_apikey_option()
 @_match_option()
@@ -462,8 +509,11 @@ def pipeline(
     output_dir: pathlib.Path,
     dry_run: bool,
     stages: Collection[common.PipelineStage],
-    vial_server: str,
-    vial_apikey: str,
+    enable_apicache: bool,
+    enrich_apis: Optional[Collection[str]],
+    placekey_apikey: Optional[str],
+    vial_server: Optional[str],
+    vial_apikey: Optional[str],
     enable_match: bool,
     enable_create: bool,
     enable_rematch: bool,
@@ -514,7 +564,14 @@ def pipeline(
                 continue
 
         if common.PipelineStage.ENRICH in stages:
-            enrich_success = ingest.run_enrich(site_dir, output_dir, timestamp)
+            enrich_success = ingest.run_enrich(
+                site_dir,
+                output_dir,
+                timestamp,
+                enable_apicache=enable_apicache,
+                enrich_apis=enrich_apis,
+                placekey_apikey=placekey_apikey,
+            )
 
             if not enrich_success:
                 continue
@@ -522,6 +579,12 @@ def pipeline(
         sites_to_load.append(site_dir)
 
     if common.PipelineStage.LOAD_TO_VIAL in stages and sites_to_load:
+        if not vial_server:
+            raise Exception("Must pass --vial-server for load-to-vial stage")
+
+        if not vial_apikey:
+            raise Exception("Must pass --vial-apikey for load-to-vial stage")
+
         load.load_sites_to_vial(
             sites_to_load,
             output_dir,
