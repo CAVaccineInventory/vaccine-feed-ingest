@@ -9,11 +9,6 @@ def test_normalize_phone():
     assert normalize_phone("1234") == []
     assert normalize_phone("1234567890") == []  # Not a valid phone-like number.
 
-    assert normalize_phone("211/311") == [
-        schema.Contact(other="Call 211."),
-        schema.Contact(other="Call 311."),
-    ]
-
     assert normalize_phone("212 555 1212") == [schema.Contact(phone="(212) 555-1212")]
     assert normalize_phone("(212) 555 1212") == [schema.Contact(phone="(212) 555-1212")]
 
@@ -31,6 +26,9 @@ def test_normalize_phone():
     ]
     assert normalize_phone("212 555 1212 PRESS 17") == [
         schema.Contact(phone="(212) 555-1212 ext. 17")
+    ]
+    assert normalize_phone("212 555 1212 press #18") == [
+        schema.Contact(phone="(212) 555-1212 ext. 18")
     ]
     assert normalize_phone("212 555 1212, press 17 to schedule") == [
         schema.Contact(phone="(212) 555-1212 ext. 17")

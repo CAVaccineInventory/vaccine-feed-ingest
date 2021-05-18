@@ -13,7 +13,7 @@ from vaccine_feed_ingest_schema import location as schema
 from vaccine_feed_ingest_schema.common import BaseModel
 
 from vaccine_feed_ingest.utils.log import getLogger
-from vaccine_feed_ingest.utils.normalize import normalize_zip
+from vaccine_feed_ingest.utils.normalize import normalize_phone, normalize_zip
 
 # Performance optimization: skip validation in our pydantic models.
 #
@@ -58,9 +58,9 @@ def _get_contacts(site: dict) -> Optional[List[schema.Contact]]:
 
     contacts = []
 
-    if phone := site["phoneNumber"]:
-        if len(phone) == 10:
-            contacts.append(schema.Contact.create(phone=phone))
+    if site["phoneNumber"]:
+        for phone in normalize_phone(site["phoneNumber"]):
+            contacts.append(phone)
 
     def cleanup_url(url):
         if not url or not url.strip():
