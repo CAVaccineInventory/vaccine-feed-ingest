@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+import datetime
 import json
 import logging
 import os
@@ -7,8 +8,9 @@ import pathlib
 import re
 import subprocess
 import sys
-from typing import Any, Dict, List, NamedTuple, Optional, Text
+from typing import List, NamedTuple, Optional, Text, Tuple
 
+import pytz
 from lxml import etree
 
 # Configure logger. Increase to DEBUG for verbose logging in this parser.
@@ -25,7 +27,7 @@ input_dir = pathlib.Path(sys.argv[2])
 # Jefferson vaccine sites are listed in a PDF
 input_filepaths = input_dir.glob("*.pdf")
 
-metadata_filepath = input_dir.joinpath('metadata.ndjson')
+metadata_filepath = input_dir.joinpath("metadata.ndjson")
 
 
 class Region(NamedTuple):
@@ -40,20 +42,29 @@ class Region(NamedTuple):
     y1: int
 
 
+class ParsedSite(List[Text]):
+    """Parsed content likely to be from a single vaccine site in Jefferson County.
+
+    This is a list of lines of text.
+    """
+
+
 class ParsedProvider(NamedTuple):
     """Parsed content for a single vaccine provider in Jefferson County.
 
     This consists of an index `number` on the page,
-    a list of nearby text lines holding details for each provider site,
-    and optionally a hyperlink that was detected within the text.
+    a list of provider sites,
+    optionally a hyperlink that was detected within the text, and
+    optionally an updated-at `date` that was detected within the text.
 
     In the PDF there is usually an image containing
     the provider name, but this is not parsed.
     """
 
     number: int
-    text: List[Text]
+    sites: List[ParsedSite]
     link: Optional[Text]
+    date: Optional[Text]
 
 
 class ParsedPage(NamedTuple):
@@ -120,7 +131,10 @@ def _parse_provider(number: int, text_tags: List[etree.Element]) -> ParsedProvid
             # This line is not primarily a hyperlink.
             # Record non-link text, trimming whitespace.
             text.append("".join(map(lambda t: t.strip(), text_tag.itertext())))
-    return ParsedProvider(number=number, text=text, link=link)
+
+    logger.info("Grouping site details for provider %d", number)
+    sites, date = _parse_sites(text)
+    return ParsedProvider(number=number, sites=sites, link=link, date=date)
 
 
 def _group_text_by_provider(page: etree.Element) -> List[List[etree.Element]]:
@@ -228,11 +242,11 @@ def _parse_page(page: etree.Element) -> ParsedPage:
         # skipped in production runs.
         if logger.isEnabledFor(logging.DEBUG):
             logger.debug(
-                "Provider: page %s, index %d, %d text tags, %d text lines, link %s",
+                "Provider: page %s, index %d, %d text tags, %d sites, link %s",
                 page_num,
                 i,
                 len(text_tags),
-                len(provider.text),
+                len(provider.sites),
                 provider.link,
             )
             logger.debug("Raw text tags:")
@@ -241,8 +255,10 @@ def _parse_page(page: etree.Element) -> ParsedPage:
                     "\t%s", etree.tostring(text_tag, method="text", encoding="utf-8")
                 )
             logger.debug("Parsed text lines:")
-            for text_line in provider.text:
-                logger.debug("\t%s", text_line)
+            for site in provider.sites:
+                logger.debug("Site with %d lines", len(site))
+                for line in site:
+                    logger.debug("\t%s", line)
     return ParsedPage(number=page_num, providers=parsed_providers)
 
 
@@ -260,44 +276,71 @@ _GENERIC_ENTRY_PREFIXES = [
     "VACCINE FAQ",
 ]
 _GENERIC_ENTRY_REGEX = re.compile("(" + "|".join(_GENERIC_ENTRY_PREFIXES) + ")")
+_UPDATED_DATE_REGEX = re.compile(r"UPDATED ([a-z]+\s+\d+, \d+)", re.IGNORECASE)
 
 
-def _is_valid_site(site: List[Text]) -> bool:
+def _is_valid_site(site: ParsedSite) -> bool:
     """Filters out entries in the Jefferson County document
     that are unlikely to contain vaccine provider site information,
     based on the contents of their first line."""
     return len(site) > 0 and re.match(_GENERIC_ENTRY_REGEX, site[0]) is None
 
 
-def _get_sites(provider: ParsedProvider, page: int) -> List[List[Text]]:
-    """Gets the list of vaccine site details for the given vaccine provider.
+def _get_updated_date(lines: List[Text]) -> Optional[Text]:
+    """If the first entry of `lines` contains a date stamp of the form
+    UPDATED <MONTH> dd, YYYY, then returns that date, localized to US/Central
+    for Alabama, and then converted to an ISO 8601 date string.
+    Otherwise returns None.
+    """
+    if lines:
+        match = re.match(_UPDATED_DATE_REGEX, lines[0])
+        if match is not None:
+            logger.info("Found updated date %s", lines[0])
+            # e.g. May 25, 2021
+            eastern = pytz.timezone("US/Central")
+            updated_date = eastern.localize(
+                datetime.datetime.strptime(match.group(1), "%B %d, %Y")
+            ).isoformat()
+            return updated_date
+    return None
 
-    Each entry is a list of lines of text.
+
+def _parse_sites(
+    lines: List[Text],
+) -> Tuple[List[ParsedSite], Optional[Text]]:
+    """Gets a pair (sites, date) where
+    `sites` is a list of vaccine site details for the given vaccine provider,
+    and `date` is an updated-at date detected in the text.
+
+    Each entry in `sites` is a list of lines of text.
     Each entry is intended to describe a single vaccine site,
     but there are some exceptions where a single entry will contain
     multiple addresses for different sites of the same provider.
     """
     sites = []
-    current_site: List[Text] = []
+    current_site: ParsedSite = ParsedSite()
     sites.append(current_site)
-    logger.info(
-        "Grouping site details for page %d, provider %d",
-        page,
-        provider.number,
-    )
     # Assume a blank line is used to separate different sites
     # for the same provider.
     # This assumption holds for most but not all providers.
     # When false, it will lead to a single site being reported
     # for the provider, with all the details joined together by newlines.
-    for line in provider.text:
+    for line in lines:
         if line:
             current_site.append(line)
         else:
-            current_site = []
+            current_site = ParsedSite()
             sites.append(current_site)
 
-    return list(filter(_is_valid_site, sites))
+    date = None
+    result = []
+    for site in sites:
+        date = date or _get_updated_date(site)
+        if _is_valid_site(site):
+            result.append(site)
+        else:
+            logger.debug("Not valid site: %s", site)
+    return result, date
 
 
 def main():
@@ -338,10 +381,7 @@ def main():
             raise e
 
         # Read the metadata JSON produced by the fetch step.
-        logger.info(
-            "Reading fetch metadata NDJSON from: %s",
-            metadata_filepath
-        )
+        logger.info("Reading fetch metadata NDJSON from: %s", metadata_filepath)
         fetched_from_uri: Optional[Text] = None
         with open(metadata_filepath, "r") as metadata_file:
             line = next(metadata_file, None)
@@ -374,11 +414,14 @@ def main():
             parsed_page = _parse_page(page_tag)
             parsed_pages.append(parsed_page)
 
+        dates = (provider.date for page in parsed_pages for provider in page.providers)
+        date = next(filter(None, dates), None)
+
         # Write output file.
         with output_filepath.open("w") as fout:
             for page in parsed_pages:
                 for provider in page.providers:
-                    for site in _get_sites(provider, page.number):
+                    for site in provider.sites:
                         # Known limitations:
                         # - The provider names, e.g. Walgreens, are in header images
                         #   so this code can't read them.
@@ -391,7 +434,8 @@ def main():
                                 "provider": provider.number,
                                 "link": provider.link,
                                 "details": site,
-                                "fetched_from_uri": fetched_from_uri
+                                "fetched_from_uri": fetched_from_uri,
+                                "published_at": date,
                             },
                             fout,
                         )
