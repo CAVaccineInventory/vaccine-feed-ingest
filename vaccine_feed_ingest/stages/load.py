@@ -36,6 +36,7 @@ def load_sites_to_vial(
     enable_match: bool,
     enable_create: bool,
     enable_rematch: bool,
+    enable_reimport: bool,
     match_ids: Optional[Dict[str, str]],
     create_ids: Optional[Collection[str]],
     candidate_distance: float,
@@ -52,8 +53,8 @@ def load_sites_to_vial(
             logger.info("Loading existing location from VIAL")
             locations = vial.retrieve_existing_locations_as_index(vial_http)
 
-            # Skip loading already matched if re-matching
-            if not enable_rematch:
+            # Skip loading already matched if re-matching and re-importing
+            if not enable_rematch and not enable_reimport:
                 logger.info("Loading already matched source locations from VIAL")
                 source_locations = vial.retrieve_source_location_hashes(vial_http)
 
@@ -69,6 +70,7 @@ def load_sites_to_vial(
                 enable_match=enable_match,
                 enable_create=enable_create,
                 enable_rematch=enable_rematch,
+                enable_reimport=enable_reimport,
                 match_ids=match_ids,
                 create_ids=create_ids,
                 candidate_distance=candidate_distance,
@@ -99,6 +101,7 @@ def run_load_to_vial(
     enable_match: bool = True,
     enable_create: bool = False,
     enable_rematch: bool = False,
+    enable_reimport: bool = False,
     match_ids: Optional[Dict[str, str]] = None,
     create_ids: Optional[Collection[str]] = None,
     candidate_distance: float = 0.6,
@@ -148,7 +151,7 @@ def run_load_to_vial(
                 if source_locations:
                     source_loc = source_locations.get(normalized_location.id)
 
-                    if source_loc:
+                    if not enable_reimport and source_loc:
                         incoming_hash = normalize.calculate_content_hash(
                             normalized_location
                         )
