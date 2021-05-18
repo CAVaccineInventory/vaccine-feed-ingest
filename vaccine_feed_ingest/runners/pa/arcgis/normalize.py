@@ -11,6 +11,7 @@ from typing import List, Optional
 from vaccine_feed_ingest_schema import location as schema
 
 from vaccine_feed_ingest.utils.log import getLogger
+from vaccine_feed_ingest.utils.normalize import normalize_phone
 
 logger = getLogger(__file__)
 
@@ -60,11 +61,8 @@ def _get_website(site: dict) -> Optional[schema.Contact]:
 def _get_contacts(site: dict) -> Optional[List[schema.Contact]]:
     contacts = []
     if site["attributes"]["Phone_Number"]:
-        sourcePhone = re.sub("[^0-9]", "", site["attributes"]["Phone_Number"])
-        if len(sourcePhone) == 11:
-            sourcePhone = sourcePhone[1:]
-        phone = f"({sourcePhone[0:3]}) {sourcePhone[3:6]}-{sourcePhone[6:]}"
-        contacts.append(schema.Contact(phone=phone))
+        for phone in normalize_phone(site["attributes"]["Phone_Number"]):
+            contacts.append(phone)
 
     # if site["attributes"]["publicEmail"]:
     #     contacts.append(schema.Contact(email=site["attributes"]["publicEmail"]))

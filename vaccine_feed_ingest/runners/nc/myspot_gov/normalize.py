@@ -9,7 +9,7 @@ import sys
 from vaccine_feed_ingest_schema import location as schema
 
 from vaccine_feed_ingest.utils.log import getLogger
-from vaccine_feed_ingest.utils.normalize import normalize_url
+from vaccine_feed_ingest.utils.normalize import normalize_phone, normalize_url
 
 logger = getLogger(__file__)
 
@@ -44,8 +44,9 @@ def _get_location(site: dict):
 
 def _get_contacts(site: dict):
     ret = []
-    if site["Appointment Phone"] != "":
-        ret.extend(_parse_phone_numbers(site["Appointment Phone"]))
+    if site["Appointment Phone"]:
+        for phone in normalize_phone(site["Appointment Phone"]):
+            ret.append(phone)
 
     url = site["Web Address"]
     # Some URLs have multiple schemes.
@@ -69,29 +70,6 @@ def _get_contacts(site: dict):
     else:
         logger.warning(f"Unknown, invalid URL: {url}")
 
-    return ret
-
-
-phone_number_parser = re.compile(
-    r"^(?:(?:\+?1\s*(?:[.-]\s*)?)?(?:\(?([0-9]{3})\)?)\s*(?:[.-]\s*)?)?([0-9]{3})\s*(?:[.-]\s*)?([0-9]{4})\s*(?:\([A-Z]{4}\))?,?(?:\s*(?:\#|x\.?|ext\.?|extension|OPTION|Option|option|Ext)\s*(\d+))?"  # noqa: E501
-)
-
-
-def _parse_phone_numbers(raw_phone: str) -> list[schema.Contact]:
-    if type(raw_phone) == float:
-        raw_phone = f"{raw_phone:.0f}"
-    else:
-        raw_phone = str(raw_phone)
-    raw_phone = raw_phone.strip()
-
-    matches = phone_number_parser.findall(raw_phone)
-    ret = []
-    for match in matches:
-        if match[3] != "":
-            phone = f"({match[0]}) {match[1]}-{match[2]} ext. {match[3]}"
-        else:
-            phone = f"({match[0]}) {match[1]}-{match[2]}"
-        ret.append(schema.Contact(phone=phone))
     return ret
 
 

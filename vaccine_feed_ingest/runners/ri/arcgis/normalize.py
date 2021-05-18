@@ -4,14 +4,13 @@ import datetime
 import json
 import os
 import pathlib
-import re
 import sys
 from typing import List, Optional
 
 from vaccine_feed_ingest_schema import location as schema
 
 from vaccine_feed_ingest.utils.log import getLogger
-from vaccine_feed_ingest.utils.normalize import normalize_url
+from vaccine_feed_ingest.utils.normalize import normalize_phone, normalize_url
 
 logger = getLogger(__file__)
 
@@ -65,12 +64,8 @@ def _get_inventory(site: dict) -> Optional[List[schema.Vaccine]]:
 def _get_contacts(site: dict) -> Optional[List[schema.Contact]]:
     contacts = []
     if site["attributes"]["USER_Scheduling_by_Phone"]:
-        sourcePhone = re.sub(
-            "[^0-9]", "", site["attributes"]["USER_Scheduling_by_Phone"]
-        )
-        if len(sourcePhone) == 10:
-            phone = f"({sourcePhone[0:3]}) {sourcePhone[3:6]}-{sourcePhone[6:]}"
-            contacts.append(schema.Contact(phone=phone))
+        for phone in normalize_phone(site["attributes"]["USER_Scheduling_by_Phone"]):
+            contacts.append(phone)
 
     if site["attributes"]["USER_Link_to_Sign_Up"]:
         url = site["attributes"]["USER_Link_to_Sign_Up"].strip()

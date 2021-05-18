@@ -10,6 +10,8 @@ from typing import List
 
 from vaccine_feed_ingest_schema import location as schema
 
+from vaccine_feed_ingest.utils.normalize import normalize_phone
+
 
 def _get_source(site: dict, timestamp: str) -> schema.Source:
     return schema.Source(
@@ -54,36 +56,13 @@ def _get_address(site: dict) -> schema.Address:
         )
 
 
-def _get_contact(site: dict) -> schema.Contact:
-    PHONE_RE = re.compile(r"(?<=o: )(.*)(?= <)")
-    PHONE_FORMAT_RE = re.compile(r"([0-9]{3}).{0,1}([0-9]{3}).{0,1}([0-9]{4})")
-
-    raw_address = site["Description"]
-    sections = raw_address.split("\r\n")
-
-    contact_section = sections[-1]
-    phone_num_search = PHONE_RE.search(contact_section)
-
-    if phone_num_search is None:
-        return None
-
-    # sometimes the numbers come formatted in some way - the replacement is undoing that formatting
-    phone_num_string = (
-        phone_num_search.group(1)
-        .replace("(", "")
-        .replace(")", "")
-        .replace("\xa0", " ")
-        .replace(" ", "-")
-    )
-    phone_num_format = PHONE_FORMAT_RE.search(phone_num_string)
-
-    # less than 10 digit number
-    if phone_num_format is None:
-        return None
-
-    phone_num = f"({phone_num_format.group(1)}) {phone_num_format.group(2)}-{phone_num_format.group(3)}"
-
-    return [schema.Contact(contact_type="general", phone=phone_num)]
+def _get_contact(site: dict) -> List[schema.Contact]:
+    contacts = []
+    for phone in normalize_phone(site["Description"], "general"):
+        contacts.append(phone)
+    if contacts:
+        return contacts
+    return None
 
 
 def _get_inventory(site: dict) -> List[schema.Vaccine]:
