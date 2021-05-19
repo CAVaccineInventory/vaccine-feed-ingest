@@ -38,6 +38,9 @@ _APPOINTMENTS_REGEX = re.compile(r"Make an appointment here.*")
 _IGNORE_PREFIXES = [
     r"Alabama Department of Public Health \(ADPH\)",
     r"Centers for Disease Control \(CDC\)",
+    # Assume a site with this line is covered by another entry
+    # titled "Make an appointment"
+    r"Find a location near you",
 ]
 _IGNORE_REGEX = re.compile(r"(" + "|".join(_IGNORE_PREFIXES) + r"):?")
 # Regex matching text that should not be used as the site name,
