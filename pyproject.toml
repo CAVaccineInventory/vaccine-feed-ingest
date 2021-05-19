@@ -45,6 +45,7 @@ pyproj = "^3.0.1"
 ndjson = "^0.3.1"
 orjson = "^3.5.2"
 diskcache = "^5.2.1"
+placekey = "^0.0.10"
 
 [tool.poetry.dev-dependencies]
 tox = "^3.23.1"
