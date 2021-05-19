@@ -33,7 +33,7 @@ jobs:
       - name: apt-get dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install libbz2-dev liblzma-dev libreadline-dev libsqlite3-dev
+          sudo apt-get install libbz2-dev liblzma-dev libreadline-dev libsqlite3-dev pdftohtml
 
       - uses: actions/checkout@v2.3.4
         with:
@@ -93,7 +93,7 @@ jobs:
       - name: apt-get dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install libbz2-dev liblzma-dev libreadline-dev libsqlite3-dev
+          sudo apt-get install libbz2-dev liblzma-dev libreadline-dev libsqlite3-dev pdftohtml
 
       - uses: actions/checkout@v2.3.4
         with:

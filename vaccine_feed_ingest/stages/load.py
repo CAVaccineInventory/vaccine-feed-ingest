@@ -13,6 +13,7 @@ from vaccine_feed_ingest_schema import load, location
 from vaccine_feed_ingest.utils.log import getLogger
 
 from .. import vial
+from ..utils import normalize
 from ..utils.match import (
     is_address_similar,
     is_concordance_similar,
@@ -35,6 +36,7 @@ def load_sites_to_vial(
     enable_match: bool,
     enable_create: bool,
     enable_rematch: bool,
+    enable_reimport: bool,
     match_ids: Optional[Dict[str, str]],
     create_ids: Optional[Collection[str]],
     candidate_distance: float,
@@ -45,16 +47,16 @@ def load_sites_to_vial(
         import_run_id = vial.start_import_run(vial_http)
 
         locations = None
-        matched_ids = None
+        source_locations = None
 
         if enable_match or enable_create:
             logger.info("Loading existing location from VIAL")
             locations = vial.retrieve_existing_locations_as_index(vial_http)
 
-            # Skip loading already matched if re-matching
-            if not enable_rematch:
+            # Skip loading already matched if re-matching and re-importing
+            if not enable_rematch and not enable_reimport:
                 logger.info("Loading already matched source locations from VIAL")
-                matched_ids = vial.retrieve_matched_source_location_ids(vial_http)
+                source_locations = vial.retrieve_source_location_hashes(vial_http)
 
         for site_dir in site_dirs:
             imported_locations = run_load_to_vial(
@@ -64,10 +66,11 @@ def load_sites_to_vial(
                 vial_http=vial_http,
                 import_run_id=import_run_id,
                 locations=locations,
-                matched_ids=matched_ids,
+                source_locations=source_locations,
                 enable_match=enable_match,
                 enable_create=enable_create,
                 enable_rematch=enable_rematch,
+                enable_reimport=enable_reimport,
                 match_ids=match_ids,
                 create_ids=create_ids,
                 candidate_distance=candidate_distance,
@@ -94,10 +97,11 @@ def run_load_to_vial(
     vial_http: urllib3.connectionpool.ConnectionPool,
     import_run_id: str,
     locations: Optional[rtree.index.Index],
-    matched_ids: Optional[Collection[str]],
+    source_locations: Optional[Dict[str, vial.SourceLocationHash]],
     enable_match: bool = True,
     enable_create: bool = False,
     enable_rematch: bool = False,
+    enable_reimport: bool = False,
     match_ids: Optional[Dict[str, str]] = None,
     create_ids: Optional[Collection[str]] = None,
     candidate_distance: float = 0.6,
@@ -124,6 +128,7 @@ def run_load_to_vial(
     num_new_locations = 0
     num_match_locations = 0
     num_already_matched_locations = 0
+    num_already_imported_locations = 0
 
     for filepath in outputs.iter_data_paths(
         ennrich_run_dir, suffix=STAGE_OUTPUT_SUFFIX[PipelineStage.ENRICH]
@@ -141,6 +146,20 @@ def run_load_to_vial(
                     )
                     continue
 
+                # Skip source locations that haven't changed since last load
+                source_loc = None
+                if source_locations:
+                    source_loc = source_locations.get(normalized_location.id)
+
+                    if not enable_reimport and source_loc:
+                        incoming_hash = normalize.calculate_content_hash(
+                            normalized_location
+                        )
+
+                        if incoming_hash == source_loc.content_hash:
+                            num_already_imported_locations += 1
+                            continue
+
                 match_action = None
                 if match_ids and normalized_location.id in match_ids:
                     match_action = load.ImportMatchAction(
@@ -154,9 +173,7 @@ def run_load_to_vial(
                 elif (enable_match or enable_create) and locations is not None:
                     # Match source locations if we are re-matching, or if we
                     # haven't matched this source location yet
-                    if enable_rematch or (
-                        matched_ids and normalized_location.id not in matched_ids
-                    ):
+                    if enable_rematch or not source_loc or not source_loc.matched:
                         match_action = _match_source_to_existing_locations(
                             normalized_location,
                             locations,
@@ -198,7 +215,9 @@ def run_load_to_vial(
                 )
             except HTTPError as e:
                 logger.warning(
-                    "Failed to import some source locations for %s in %s. Because this is action spans multiple remote calls, some locations may have been imported: %s",
+                    "Failed to import some source locations for %s in %s. "
+                    "Because this is action spans multiple remote calls, "
+                    "some locations may have been imported: %s",
                     filepath.name,
                     site_dir.name,
                     e,
@@ -215,23 +234,26 @@ def run_load_to_vial(
 
     if enable_rematch:
         logger.info(
-            "Imported %d source locations for %s (%d new, %d matched, %d unknown)",
+            "Imported %d source locations for %s "
+            "(%d new, %d matched, %d unknown) and skipped %d",
             num_imported_locations,
             site_dir.name,
             num_new_locations,
             num_match_locations,
             num_unknown_locations,
+            num_already_imported_locations,
         )
     else:
         logger.info(
             "Imported %d source locations for %s "
-            "(%d new, %d matched, %d unknown, %d had existing match)",
+            "(%d new, %d matched, %d unknown, %d had existing match) and skipped %d",
             num_imported_locations,
             site_dir.name,
             num_new_locations,
             num_match_locations,
             num_unknown_locations,
             num_already_matched_locations,
+            num_already_imported_locations,
         )
 
     return import_locations

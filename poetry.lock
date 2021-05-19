@@ -1300,7 +1300,7 @@ python-versions = ">=3.6"
 
 [[package]]
 name = "placekey"
-version = "0.0.10"
+version = "0.0.11"
 description = "Utilities for working with Placekeys"
 category = "main"
 optional = false
@@ -2129,7 +2129,7 @@ test = ["pytest", "pytest-runner"]
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.9"
-content-hash = "dc7cd196609a39c0e8a7766a3c91e2f32a3972611fe1c7bb46a3ea88bc262384"
+content-hash = "311bc107b24d9059a191cbaf5e12a5ff53669d29bab6f9e2c31ecbec8832db52"
 
 [metadata.files]
 aiohttp = [
@@ -2926,8 +2926,8 @@ pillow = [
     {file = "Pillow-8.2.0.tar.gz", hash = "sha256:a787ab10d7bb5494e5f76536ac460741788f1fbce851068d73a87ca7c35fc3e1"},
 ]
 placekey = [
-    {file = "placekey-0.0.10-py3-none-any.whl", hash = "sha256:ba58486e53348474e6e5c23afa22ad96d1e0d5c956f07468ff5af1c49fc2b398"},
-    {file = "placekey-0.0.10.tar.gz", hash = "sha256:25235e7d5733ba229464fa4de0dacfeda84063b9fbb52041ac67d04c9c35d6be"},
+    {file = "placekey-0.0.11-py3-none-any.whl", hash = "sha256:de41143a2ce0ad3b2a1981ca66dc1d2cb46327ef70bcb7f0baf0008510e67c6e"},
+    {file = "placekey-0.0.11.tar.gz", hash = "sha256:39bf744a26795f25b6a953fa97eef0d9e070b1af350e061e99550735951f5549"},
 ]
 pluggy = [
     {file = "pluggy-0.13.1-py2.py3-none-any.whl", hash = "sha256:966c145cd83c96502c3c3868f50408687b38434af77734af1e9ca461a4081d2d"},

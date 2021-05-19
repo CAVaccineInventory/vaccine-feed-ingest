@@ -1,12 +1,13 @@
 """
 Various tricks for matching source locations to product locations from VIAL
 """
+import hashlib
 import re
 from typing import List, Optional, Tuple
 
 import phonenumbers
 import url_normalize
-from vaccine_feed_ingest_schema import location as schema
+from vaccine_feed_ingest_schema import location
 from vaccine_feed_ingest_schema.location import VaccineProvider
 
 from .log import getLogger
@@ -236,7 +237,7 @@ def normalize_url(url: Optional[str]) -> Optional[str]:
 
 def normalize_phone(
     phone: Optional[str], contact_type: Optional[str] = None
-) -> Optional[List[schema.Contact]]:
+) -> List[location.Contact]:
     if phone is None:
         return []
 
@@ -250,7 +251,7 @@ def normalize_phone(
     contacts = []
     for match in phonenumbers.PhoneNumberMatcher(phone, "US"):
         contacts.append(
-            schema.Contact(
+            location.Contact(
                 contact_type=contact_type,
                 phone=phonenumbers.format_number(
                     match.number, phonenumbers.PhoneNumberFormat.NATIONAL
@@ -258,3 +259,9 @@ def normalize_phone(
             )
         )
     return contacts
+
+
+def calculate_content_hash(loc: location.NormalizedLocation) -> str:
+    """Calculate a hash from the normalized content of a location without source data"""
+    loc_json = loc.json(exclude={"source"}, sort_keys=True)
+    return hashlib.md5(loc_json.encode()).hexdigest()

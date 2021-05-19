@@ -1,0 +1,6 @@
+---
+state: tx
+arcgis:
+- id: 3c70075b524c4fddbd709eac877ca5a8
+  layer_names:
+  - HCPH_Public_COVID_VDU_Locations
