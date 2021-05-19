@@ -166,6 +166,15 @@ def _rematch_option() -> Callable:
     )
 
 
+def _reimport_option() -> Callable:
+    return click.option(
+        "--reimport/--no-reimport",
+        "enable_reimport",
+        type=bool,
+        default=lambda: os.environ.get("ENABLE_REIMPORT", "false").lower() == "true",
+    )
+
+
 def _match_ids_option() -> Callable:
     return click.option(
         "--match-ids",
@@ -436,6 +445,7 @@ def enrich(
 @_match_option()
 @_create_option()
 @_rematch_option()
+@_reimport_option()
 @_match_ids_option()
 @_create_ids_option()
 @_candidate_distance_option()
@@ -451,6 +461,7 @@ def load_to_vial(
     enable_match: bool,
     enable_create: bool,
     enable_rematch: bool,
+    enable_reimport: bool,
     match_ids: Optional[Dict[str, str]],
     create_ids: Optional[Collection[str]],
     candidate_distance: float,
@@ -475,6 +486,7 @@ def load_to_vial(
         enable_match=enable_match,
         enable_create=enable_create,
         enable_rematch=enable_rematch,
+        enable_reimport=enable_reimport,
         match_ids=match_ids,
         create_ids=create_ids,
         candidate_distance=candidate_distance,
@@ -497,6 +509,7 @@ def load_to_vial(
 @_match_option()
 @_create_option()
 @_rematch_option()
+@_reimport_option()
 @_match_ids_option()
 @_create_ids_option()
 @_candidate_distance_option()
@@ -517,6 +530,7 @@ def pipeline(
     enable_match: bool,
     enable_create: bool,
     enable_rematch: bool,
+    enable_reimport: bool,
     match_ids: Optional[Dict[str, str]],
     create_ids: Optional[Collection[str]],
     candidate_distance: float,
@@ -594,6 +608,7 @@ def pipeline(
             enable_match=enable_match,
             enable_create=enable_create,
             enable_rematch=enable_rematch,
+            enable_reimport=enable_reimport,
             match_ids=match_ids,
             create_ids=create_ids,
             candidate_distance=candidate_distance,
