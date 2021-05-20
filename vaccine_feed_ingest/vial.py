@@ -3,20 +3,19 @@
 import contextlib
 import json
 import urllib.parse
-from typing import Any, Dict, Iterable, Iterator, NamedTuple, Set, Tuple
+from typing import Any, Dict, Iterable, Iterator, NamedTuple, Optional, Tuple
 from urllib.error import HTTPError
 
 import geojson
 import orjson
-import pydantic
 import rtree
 import shapely.geometry
 import urllib3
-from vaccine_feed_ingest_schema import load, location
+from vaccine_feed_ingest_schema import load
 
 from vaccine_feed_ingest.utils.log import getLogger
 
-from .utils import misc, normalize
+from .utils import misc
 
 logger = getLogger(__file__)
 
@@ -223,7 +222,7 @@ def update_existing_locations(
                 locations.insert(_generate_index_row(loc))
 
 
-def search_source_locations(
+def search_source_locations_as_geojson(
     vial_http: urllib3.connectionpool.ConnectionPool,
     **kwds: Any,
 ) -> Iterator[geojson.Feature]:
@@ -268,65 +267,62 @@ def search_source_locations(
     resp.release_conn()
 
 
-def retrieve_matched_source_location_ids(
-    vial_http: urllib3.connectionpool.ConnectionPool,
-) -> Set[str]:
-    """Return all matched source location ids in VIAL"""
-    source_locations = search_source_locations(vial_http, all=1, matched=1)
-
-    return {
-        loc["properties"]["source_uid"]
-        for loc in source_locations
-        if "properties" in loc and "source_uid" in loc["properties"]
-    }
-
-
-class SourceLocationHash(NamedTuple):
+class SourceLocationSummary(NamedTuple):
     """Content hash and match state of source locations"""
 
-    content_hash: str
+    source_uid: str
+    content_hash: Optional[str]
     matched: bool
 
 
-def retrieve_source_location_hashes(
+def search_source_locations_as_summary(
     vial_http: urllib3.connectionpool.ConnectionPool,
-) -> Dict[str, SourceLocationHash]:
-    """Return content hash and match state of source locations keyed by source uid"""
-    source_locations = search_source_locations(vial_http, all=1)
+    **kwds: Any,
+) -> Iterator[SourceLocationSummary]:
+    """Wrapper around search source locations api. Returns summary objects."""
+    params = {
+        **kwds,
+        "format": "summary",
+    }
 
-    results = {}
+    query = urllib.parse.urlencode(params)
 
-    for loc in source_locations:
-        if "properties" not in loc:
-            continue
+    path_and_query = f"/api/searchSourceLocations?{query}"
+    logger.info("Contacting VIAL: GET %s", path_and_query)
 
-        source_uid = loc["properties"].get("source_uid")
-        if not source_uid:
-            continue
+    resp = vial_http.request("GET", path_and_query, preload_content=False)
 
-        import_json = loc["properties"].get("import_json")
-        if not import_json:
-            continue
+    for line_num, line in enumerate(resp):
+        if line_num % 5000 == 0:
+            logger.info("Processed %d source location records from VIAL.", line_num)
 
         try:
-            imported_location = location.NormalizedLocation.parse_obj(import_json)
-        except pydantic.ValidationError as e:
+            record = orjson.loads(line)
+        except json.JSONDecodeError as e:
             logger.warning(
-                "Ignoring existing source location because it is invalid: %s\n%s",
-                source_uid,
-                str(e),
+                "Invalid json record in source search response: %s\n%s", line, str(e)
             )
             continue
 
-        content_hash = normalize.calculate_content_hash(imported_location)
+        if not record.get("source_uid"):
+            continue
 
-        matched = False
-        matched_location = loc["properties"].get("matched_location")
-        if matched_location and matched_location.get("id"):
-            matched = True
-
-        results[source_uid] = SourceLocationHash(
-            content_hash=content_hash, matched=matched
+        summary = SourceLocationSummary(
+            source_uid=record["source_uid"],
+            content_hash=record.get("content_hash"),
+            matched=bool(record.get("matched")),
         )
 
-    return results
+        yield summary
+
+    logger.info("Processed %d total source location records from VIAL.", line_num)
+    resp.release_conn()
+
+
+def retrieve_source_summaries(
+    vial_http: urllib3.connectionpool.ConnectionPool,
+) -> Dict[str, SourceLocationSummary]:
+    """Return content hash and match state of source locations keyed by source uid"""
+    source_summaries = search_source_locations_as_summary(vial_http, all=1)
+
+    return {entry.source_uid: entry for entry in source_summaries}
