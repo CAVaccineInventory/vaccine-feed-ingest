@@ -48,6 +48,7 @@ def enrich_locations(
         )
     ):
         with filepath.open(mode="rb") as src_file:
+            line_num = 0
             for line_num, line in enumerate(src_file):
                 try:
                     loc_dict = orjson.loads(line)
