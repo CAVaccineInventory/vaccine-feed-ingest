@@ -1,8 +1,10 @@
+import json
 import pathlib
 from typing import Collection, Dict, Iterable, Iterator, List, Optional
 from urllib.error import HTTPError
 
 import jellyfish
+import orjson
 import pydantic
 import rtree
 import shapely.geometry
@@ -134,10 +136,22 @@ def run_load_to_vial(
         ennrich_run_dir, suffix=STAGE_OUTPUT_SUFFIX[PipelineStage.ENRICH]
     ):
         import_locations = []
-        with filepath.open() as src_file:
+        with filepath.open(mode="rb") as src_file:
             for line in src_file:
                 try:
-                    normalized_location = location.NormalizedLocation.parse_raw(line)
+                    loc_dict = orjson.loads(line)
+                except json.JSONDecodeError as e:
+                    logger.warning(
+                        "Skipping source location because it is invalid json: %s\n%s",
+                        line,
+                        str(e),
+                    )
+                    continue
+
+                try:
+                    normalized_location = location.NormalizedLocation.parse_obj(
+                        loc_dict
+                    )
                 except pydantic.ValidationError as e:
                     logger.warning(
                         "Skipping source location because it is invalid: %s\n%s",
