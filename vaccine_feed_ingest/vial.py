@@ -114,6 +114,27 @@ def import_source_locations(
     logger.info("Submitted %d total batches to VIAL.", batches)
 
 
+def _clean_geojson_record(record: dict) -> None:
+    """VIAL returns invalid geometries so we need to remove them before processing"""
+    if not record.get("geometry"):
+        return
+
+    # If geometry is missing type, then clear it and return
+    if not record["geometry"].get("type"):
+        record["geometry"] = None
+        return
+
+    # If geometry is missing coordinates, then clear it and return
+    if not record["geometry"].get("coordinates"):
+        record["geometry"] = None
+        return
+
+    # If geometry has None for coordinates, then clear it and return
+    if any([coord is None for coord in record["geometry"]["coordinates"]]):
+        record["geometry"] = None
+        return
+
+
 def search_locations(
     vial_http: urllib3.connectionpool.ConnectionPool,
     **kwds: Any,
@@ -142,6 +163,8 @@ def search_locations(
                 "Invalid json record in search response: %s\n%s", line, str(e)
             )
             continue
+
+        _clean_geojson_record(record)
 
         try:
             feature = geojson.Feature(**record)
@@ -228,6 +251,8 @@ def search_source_locations(
                 "Invalid json record in source search response: %s\n%s", line, str(e)
             )
             continue
+
+        _clean_geojson_record(record)
 
         try:
             feature = geojson.Feature(**record)
