@@ -42,6 +42,9 @@ def _get_inventory(site: dict) -> Optional[List[schema.Vaccine]]:
         "janssen (johnson & johnson) covid-19 vaccine": schema.Vaccine(
             vaccine="johnson_johnson_janssen"
         ),
+        "johnson & johnson (janssen) covid-19 vaccine": schema.Vaccine(
+            vaccine="johnson_johnson_janssen"
+        ),
         "varies": None,
     }
 
