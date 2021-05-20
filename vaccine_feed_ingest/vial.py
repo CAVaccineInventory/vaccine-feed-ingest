@@ -310,7 +310,7 @@ def search_source_locations_as_summary(
         summary = SourceLocationSummary(
             source_uid=record["source_uid"],
             content_hash=record.get("content_hash"),
-            matched=bool(record.get("matched")),
+            matched=bool(record.get("matched_location_id")),
         )
 
         yield summary
