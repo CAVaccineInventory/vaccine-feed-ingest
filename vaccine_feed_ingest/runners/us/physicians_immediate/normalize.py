@@ -3,9 +3,8 @@
 import datetime
 import json
 import pathlib
-import pprint
 import sys
-from typing import Dict, List, Optional, OrderedDict
+from typing import Dict, List, Optional, OrderedDict, Tuple
 
 import usaddress
 from vaccine_feed_ingest_schema import location as schema
@@ -17,8 +16,20 @@ logger = getLogger(__file__)
 Site = Dict[str, str]
 
 
-def get_site_id(site: Site) -> str:
-    return f"us_physicians_immediate:{site['table_id']}_{site['row_id']}"
+def _get_site_id_parts(site: Site) -> Tuple[str, str]:
+    """Returns a tuple consisting of the global label 'us_physicians_immediate' followed by a generated
+    identifier for an individual site. Callers can decide to join the pieces with a colon to make a normalized
+    location id or to just look at the right side of the tuple to find the source location ID.
+    """
+    return ("us_physicians_immediate", f"{site['table_id']}_{site['row_id']}")
+
+
+def get_normalized_location_id(site: Site) -> str:
+    return ":".join(_get_site_id_parts(site))
+
+
+def get_source_location_id(site: Site) -> str:
+    return _get_site_id_parts(site)[1]
 
 
 def infer_address(site: Site) -> schema.Address:
@@ -29,9 +40,10 @@ def infer_address(site: Site) -> schema.Address:
     """
 
     parsed_address, address_type = usaddress.tag(site["address"])
-    assert (
-        address_type == "Street Address"
-    ), f"Invariant: address normalization only works for addresses of type 'Street Address', not {address_type}"
+    if address_type != "Street Address":
+        raise NotImplementedError(
+            f"Address normalization is only implemented for 'Street Address', not {address_type}"
+        )
     patched_address = apply_address_fixups(parsed_address)
 
     # Building up kwargs lets us easily omit fields for which we have no data.
@@ -55,11 +67,7 @@ def infer_address(site: Site) -> schema.Address:
             street_buffer.append(value)
     address_kwargs["street1"] = " ".join(street_buffer)
 
-    result = schema.Address(**address_kwargs)
-    logger.info(f"Parsed address: {site['address']}")
-    logger.info(f"Normalized address:{pprint.pformat(result)}")
-
-    return result
+    return schema.Address(**address_kwargs)
 
 
 def apply_address_fixups(address: OrderedDict[str, str]) -> OrderedDict[str, str]:
@@ -147,13 +155,13 @@ def parse_vaccine(site: Site) -> Optional[List[schema.Vaccine]]:
 
 def normalize(site: Site, timestamp: str) -> schema.NormalizedLocation:
     return schema.NormalizedLocation(
-        id=get_site_id(site),
+        id=get_normalized_location_id(site),
         name=site["clinic"],
         address=infer_address(site),
         inventory=parse_vaccine(site),
         source=schema.Source(
             source="us_physicians_immediate",
-            id=site["row_id"],
+            id=get_source_location_id(site),
             fetched_from_uri="https://physiciansimmediatecare.com/covid-19-vaccination-locations/",
             fetched_at=timestamp,
             data=site,
@@ -169,13 +177,16 @@ if __name__ == "__main__":
     for ingest_path in input_dir.glob("*.ndjson"):
         output_path = output_dir / (ingest_path.with_suffix(".normalized.ndjson").name)
 
-        logger.info("Reading site data from %s", ingest_path.name)
         with ingest_path.open("r") as ingest_file:
             with output_path.open("w") as output_file:
                 for site_json in ingest_file:
                     parsed_site = json.loads(site_json)
 
-                    normalized_site = normalize(parsed_site, processing_timestamp)
-
-                    json.dump(normalized_site.dict(), output_file)
-                    output_file.write("\n")
+                    try:
+                        normalized_site = normalize(parsed_site, processing_timestamp)
+                        json.dump(normalized_site.dict(), output_file)
+                        output_file.write("\n")
+                    except Exception as e:
+                        logger.warn(
+                            f"Failed to normalize site. Error: {e}\nsite JSON: {site_json}"
+                        )
