@@ -42,6 +42,7 @@ def enrich_locations(
         else:
             logger.error("Skipping placekey because placekey api is not configured")
 
+    file_num = 0
     for file_num, filepath in enumerate(
         outputs.iter_data_paths(
             input_dir, suffix=STAGE_OUTPUT_SUFFIX[PipelineStage.NORMALIZE]
