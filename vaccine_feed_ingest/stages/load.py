@@ -49,7 +49,7 @@ def load_sites_to_vial(
         import_run_id = vial.start_import_run(vial_http)
 
         locations = None
-        source_locations = None
+        source_summaries = None
 
         if enable_match or enable_create:
             logger.info("Retrieving existing locations from VIAL")
@@ -58,14 +58,14 @@ def load_sites_to_vial(
                 "Retrieved %d valid existing locations from VIAL", locations.get_size()
             )
 
-            # Skip loading already matched if re-matching and re-importing
-            if not enable_rematch and not enable_reimport:
-                logger.info("Retrieving source locations from VIAL")
-                source_locations = vial.retrieve_source_location_hashes(vial_http)
-                logger.info(
-                    "Retrieved %d valid source locations from VIAL",
-                    len(source_locations),
-                )
+        # Skip loading already matched if re-matching and re-importing
+        if not enable_rematch or not enable_reimport:
+            logger.info("Retrieving source locations from VIAL")
+            source_summaries = vial.retrieve_source_summaries(vial_http)
+            logger.info(
+                "Retrieved %d valid source summaries from VIAL",
+                len(source_summaries),
+            )
 
         for site_dir in site_dirs:
             imported_locations = run_load_to_vial(
@@ -75,7 +75,7 @@ def load_sites_to_vial(
                 vial_http=vial_http,
                 import_run_id=import_run_id,
                 locations=locations,
-                source_locations=source_locations,
+                source_summaries=source_summaries,
                 enable_match=enable_match,
                 enable_create=enable_create,
                 enable_rematch=enable_rematch,
@@ -106,7 +106,7 @@ def run_load_to_vial(
     vial_http: urllib3.connectionpool.ConnectionPool,
     import_run_id: str,
     locations: Optional[rtree.index.Index],
-    source_locations: Optional[Dict[str, vial.SourceLocationHash]],
+    source_summaries: Optional[Dict[str, vial.SourceLocationSummary]],
     enable_match: bool = True,
     enable_create: bool = False,
     enable_rematch: bool = False,
@@ -168,16 +168,20 @@ def run_load_to_vial(
                     continue
 
                 # Skip source locations that haven't changed since last load
-                source_loc = None
-                if source_locations:
-                    source_loc = source_locations.get(normalized_location.id)
+                source_summary = None
+                if source_summaries:
+                    source_summary = source_summaries.get(normalized_location.id)
 
-                    if not enable_reimport and source_loc:
+                    if (
+                        not enable_reimport
+                        and source_summary
+                        and source_summary.content_hash
+                    ):
                         incoming_hash = normalize.calculate_content_hash(
                             normalized_location
                         )
 
-                        if incoming_hash == source_loc.content_hash:
+                        if incoming_hash == source_summary.content_hash:
                             num_already_imported_locations += 1
                             continue
 
@@ -194,7 +198,11 @@ def run_load_to_vial(
                 elif (enable_match or enable_create) and locations is not None:
                     # Match source locations if we are re-matching, or if we
                     # haven't matched this source location yet
-                    if enable_rematch or not source_loc or not source_loc.matched:
+                    if (
+                        enable_rematch
+                        or not source_summary
+                        or not source_summary.matched
+                    ):
                         match_action = _match_source_to_existing_locations(
                             normalized_location,
                             locations,
@@ -443,6 +451,7 @@ def _create_import_location(
         source_uid=normalized_record.id,
         source_name=normalized_record.source.source,
         import_json=normalized_record,
+        content_hash=normalize.calculate_content_hash(normalized_record),
     )
 
     if normalized_record.name:
