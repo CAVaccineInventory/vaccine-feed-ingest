@@ -46,11 +46,12 @@ def enrich_locations(
     for file_num, filepath in enumerate(
         outputs.iter_data_paths(
             input_dir, suffix=STAGE_OUTPUT_SUFFIX[PipelineStage.NORMALIZE]
-        )
+        ),
+        start=1,
     ):
         with filepath.open(mode="rb") as src_file:
             line_num = 0
-            for line_num, line in enumerate(src_file):
+            for line_num, line in enumerate(src_file, start=1):
                 try:
                     loc_dict = orjson.loads(line)
                 except json.JSONDecodeError as e:
