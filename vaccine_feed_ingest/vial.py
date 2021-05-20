@@ -152,7 +152,7 @@ def search_locations(
     resp = vial_http.request("GET", path_and_query, preload_content=False)
 
     line_num = 0
-    for line_num, line in enumerate(resp):
+    for line_num, line in enumerate(resp, start=1):
         if line_num % 5000 == 0:
             logger.info("Processed %d location records from VIAL.", line_num)
 
@@ -241,7 +241,7 @@ def search_source_locations_as_geojson(
     resp = vial_http.request("GET", path_and_query, preload_content=False)
 
     line_num = 0
-    for line_num, line in enumerate(resp):
+    for line_num, line in enumerate(resp, start=1):
         if line_num % 5000 == 0:
             logger.info("Processed %d source location records from VIAL.", line_num)
 
@@ -295,7 +295,7 @@ def search_source_locations_as_summary(
     resp = vial_http.request("GET", path_and_query, preload_content=False)
 
     line_num = 0
-    for line_num, line in enumerate(resp):
+    for line_num, line in enumerate(resp, start=1):
         if line_num % 5000 == 0:
             logger.info("Processed %d source location records from VIAL.", line_num)
 

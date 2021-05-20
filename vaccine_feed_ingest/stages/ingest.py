@@ -393,7 +393,7 @@ def _validate_parsed(output_dir: pathlib.Path) -> bool:
         output_dir, suffix=STAGE_OUTPUT_SUFFIX[PipelineStage.PARSE]
     ):
         with filepath.open(mode="rb") as ndjson_file:
-            for line_no, content in enumerate(ndjson_file):
+            for line_no, content in enumerate(ndjson_file, start=1):
                 try:
                     orjson.loads(content)
                 except json.JSONDecodeError:
@@ -414,7 +414,7 @@ def _validate_normalized(output_dir: pathlib.Path) -> bool:
         output_dir, suffix=STAGE_OUTPUT_SUFFIX[PipelineStage.NORMALIZE]
     ):
         with filepath.open(mode="rb") as ndjson_file:
-            for line_no, content in enumerate(ndjson_file):
+            for line_no, content in enumerate(ndjson_file, start=1):
                 if len(content) > MAX_NORMALIZED_RECORD_SIZE:
                     logger.warning(
                         "Source location too large to process in %s at line %d: %s",
