@@ -1,8 +1,10 @@
+import json
 import pathlib
 from typing import Collection, Dict, Iterable, Iterator, List, Optional
 from urllib.error import HTTPError
 
 import jellyfish
+import orjson
 import pydantic
 import rtree
 import shapely.geometry
@@ -50,13 +52,20 @@ def load_sites_to_vial(
         source_locations = None
 
         if enable_match or enable_create:
-            logger.info("Loading existing location from VIAL")
+            logger.info("Retrieving existing locations from VIAL")
             locations = vial.retrieve_existing_locations_as_index(vial_http)
+            logger.info(
+                "Retrieved %d valid existing locations from VIAL", locations.get_size()
+            )
 
             # Skip loading already matched if re-matching and re-importing
             if not enable_rematch and not enable_reimport:
-                logger.info("Loading already matched source locations from VIAL")
+                logger.info("Retrieving source locations from VIAL")
                 source_locations = vial.retrieve_source_location_hashes(vial_http)
+                logger.info(
+                    "Retrieved %d valid source locations from VIAL",
+                    len(source_locations),
+                )
 
         for site_dir in site_dirs:
             imported_locations = run_load_to_vial(
@@ -134,10 +143,22 @@ def run_load_to_vial(
         ennrich_run_dir, suffix=STAGE_OUTPUT_SUFFIX[PipelineStage.ENRICH]
     ):
         import_locations = []
-        with filepath.open() as src_file:
+        with filepath.open(mode="rb") as src_file:
             for line in src_file:
                 try:
-                    normalized_location = location.NormalizedLocation.parse_raw(line)
+                    loc_dict = orjson.loads(line)
+                except json.JSONDecodeError as e:
+                    logger.warning(
+                        "Skipping source location because it is invalid json: %s\n%s",
+                        line,
+                        str(e),
+                    )
+                    continue
+
+                try:
+                    normalized_location = location.NormalizedLocation.parse_obj(
+                        loc_dict
+                    )
                 except pydantic.ValidationError as e:
                     logger.warning(
                         "Skipping source location because it is invalid: %s\n%s",

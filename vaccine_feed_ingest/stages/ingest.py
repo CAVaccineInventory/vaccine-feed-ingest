@@ -7,6 +7,7 @@ import tempfile
 from subprocess import CalledProcessError
 from typing import Collection, Optional
 
+import orjson
 import pydantic
 from vaccine_feed_ingest_schema import location
 
@@ -391,10 +392,10 @@ def _validate_parsed(output_dir: pathlib.Path) -> bool:
     for filepath in outputs.iter_data_paths(
         output_dir, suffix=STAGE_OUTPUT_SUFFIX[PipelineStage.PARSE]
     ):
-        with filepath.open() as ndjson_file:
+        with filepath.open(mode="rb") as ndjson_file:
             for line_no, content in enumerate(ndjson_file):
                 try:
-                    json.loads(content)
+                    orjson.loads(content)
                 except json.JSONDecodeError:
                     logger.warning(
                         "Invalid json record in %s at line %d: %s",
@@ -412,7 +413,7 @@ def _validate_normalized(output_dir: pathlib.Path) -> bool:
     for filepath in outputs.iter_data_paths(
         output_dir, suffix=STAGE_OUTPUT_SUFFIX[PipelineStage.NORMALIZE]
     ):
-        with filepath.open() as ndjson_file:
+        with filepath.open(mode="rb") as ndjson_file:
             for line_no, content in enumerate(ndjson_file):
                 if len(content) > MAX_NORMALIZED_RECORD_SIZE:
                     logger.warning(
@@ -424,7 +425,20 @@ def _validate_normalized(output_dir: pathlib.Path) -> bool:
                     return False
 
                 try:
-                    normalized_location = location.NormalizedLocation.parse_raw(content)
+                    content_dict = orjson.loads(content)
+                except json.JSONDecodeError:
+                    logger.warning(
+                        "Invalid json record in %s at line %d: %s",
+                        filepath,
+                        line_no,
+                        content,
+                    )
+                    return False
+
+                try:
+                    normalized_location = location.NormalizedLocation.parse_obj(
+                        content_dict
+                    )
                 except pydantic.ValidationError as e:
                     logger.warning(
                         "Invalid source location in %s at line %d: %s\n%s",

@@ -1,8 +1,10 @@
 """Method for enriching location records after that are normalized"""
+import json
 import pathlib
 from typing import Collection, Dict, Optional
 
 import diskcache
+import orjson
 import phonenumbers
 import pydantic
 from vaccine_feed_ingest_schema import location
@@ -40,18 +42,27 @@ def enrich_locations(
         else:
             logger.error("Skipping placekey because placekey api is not configured")
 
-    processed_files = 0
-    processed_lines = 0
-
-    for filepath in outputs.iter_data_paths(
-        input_dir, suffix=STAGE_OUTPUT_SUFFIX[PipelineStage.NORMALIZE]
+    for file_num, filepath in enumerate(
+        outputs.iter_data_paths(
+            input_dir, suffix=STAGE_OUTPUT_SUFFIX[PipelineStage.NORMALIZE]
+        )
     ):
-        with filepath.open() as src_file:
-            processed_files += 1
-            for line in src_file:
-                processed_lines += 1
+        with filepath.open(mode="rb") as src_file:
+            for line_num, line in enumerate(src_file):
                 try:
-                    normalized_location = location.NormalizedLocation.parse_raw(line)
+                    loc_dict = orjson.loads(line)
+                except json.JSONDecodeError as e:
+                    logger.warning(
+                        "Skipping source location because it is invalid json: %s\n%s",
+                        line,
+                        str(e),
+                    )
+                    continue
+
+                try:
+                    normalized_location = location.NormalizedLocation.parse_obj(
+                        loc_dict
+                    )
                 except pydantic.ValidationError as e:
                     logger.warning(
                         "Skipping source location because it is invalid: %s\n%s",
@@ -73,18 +84,21 @@ def enrich_locations(
     if not enriched_locations:
         logger.warning(
             "Processed %d lines across %d file(s). Despite this, found no enriched locations.",
-            processed_lines,
-            processed_files,
+            line_num,
+            file_num,
         )
         return False
 
     suffix = STAGE_OUTPUT_SUFFIX[PipelineStage.ENRICH]
     dst_filepath = output_dir / f"locations{suffix}"
 
-    with dst_filepath.open("w") as dst_file:
+    with dst_filepath.open("wb") as dst_file:
         for loc in enriched_locations:
-            dst_file.write(loc.json())
-            dst_file.write("\n")
+            loc_dict = loc.dict(exclude_none=True)
+            loc_json = orjson.dumps(loc_dict)
+
+            dst_file.write(loc_json)
+            dst_file.write(b"\n")
 
     return True
 

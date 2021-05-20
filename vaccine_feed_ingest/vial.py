@@ -7,6 +7,7 @@ from typing import Any, Dict, Iterable, Iterator, NamedTuple, Set, Tuple
 from urllib.error import HTTPError
 
 import geojson
+import orjson
 import pydantic
 import rtree
 import shapely.geometry
@@ -58,7 +59,7 @@ def start_import_run(vial_http: urllib3.connectionpool.ConnectionPool) -> str:
     if import_resp.status != 200:
         raise Exception(f"Failed to start import run {import_resp.data}")
 
-    import_data = json.loads(import_resp.data.decode("utf-8"))
+    import_data = orjson.loads(import_resp.data)
     import_run_id = import_data.get("import_run_id")
 
     if not import_run_id:
@@ -79,15 +80,18 @@ def import_source_locations(
 
     batches = 0
     for import_locations_batch in misc.batch(import_locations, import_batch_size):
-        encoded_ndjson = "\n".join(
-            [loc.json(exclude_none=True) for loc in import_locations_batch]
+        encoded_ndjson = b"\n".join(
+            [
+                orjson.dumps(loc.dict(exclude_none=True))
+                for loc in import_locations_batch
+            ]
         )
 
         rsp = vial_http.request(
             "POST",
             path_and_query,
             headers={**vial_http.headers, "Content-Type": "application/x-ndjson"},
-            body=encoded_ndjson.encode("utf-8"),
+            body=encoded_ndjson,
         )
 
         if rsp.status != 200:
@@ -110,10 +114,31 @@ def import_source_locations(
     logger.info("Submitted %d total batches to VIAL.", batches)
 
 
+def _clean_geojson_record(record: dict) -> None:
+    """VIAL returns invalid geometries so we need to remove them before processing"""
+    if not record.get("geometry"):
+        return
+
+    # If geometry is missing type, then clear it and return
+    if not record["geometry"].get("type"):
+        record["geometry"] = None
+        return
+
+    # If geometry is missing coordinates, then clear it and return
+    if not record["geometry"].get("coordinates"):
+        record["geometry"] = None
+        return
+
+    # If geometry has None for coordinates, then clear it and return
+    if any([coord is None for coord in record["geometry"]["coordinates"]]):
+        record["geometry"] = None
+        return
+
+
 def search_locations(
     vial_http: urllib3.connectionpool.ConnectionPool,
     **kwds: Any,
-) -> Iterator[dict]:
+) -> Iterator[geojson.Feature]:
     """Wrapper around search locations api. Returns geojson."""
     params = {
         **kwds,
@@ -127,30 +152,43 @@ def search_locations(
 
     resp = vial_http.request("GET", path_and_query, preload_content=False)
 
-    lines = 0
-    for line in resp:
+    for line_num, line in enumerate(resp):
+        if line_num % 5000 == 0:
+            logger.info("Processed %d location records from VIAL.", line_num)
+
         try:
-            yield geojson.loads(line)
-        except json.JSONDecodeError:
-            logger.warning("Invalid json record in search response: %s", line)
+            record = orjson.loads(line)
+        except json.JSONDecodeError as e:
+            logger.warning(
+                "Invalid json record in search response: %s\n%s", line, str(e)
+            )
+            continue
 
-        lines += 1
-        if lines % 5000 == 0:
-            logger.info("Processed %d records from VIAL.", lines)
+        _clean_geojson_record(record)
 
-    logger.info("Processed %d total records from VIAL.", lines)
+        try:
+            feature = geojson.Feature(**record)
+        except ValueError as e:
+            logger.warning(
+                "Invalid geojson record in search response: %s\n%s", line, str(e)
+            )
+            continue
+
+        yield feature
+
+    logger.info("Processed %d total location records from VIAL.", line_num)
 
     resp.release_conn()
 
 
 def retrieve_existing_locations(
     vial_http: urllib3.connectionpool.ConnectionPool,
-) -> Iterator[dict]:
+) -> Iterator[geojson.Feature]:
     """Return all existing locations in VIAL as geojson"""
     return search_locations(vial_http, all=1)
 
 
-def _generate_index_row(loc: dict) -> Tuple[int, tuple, dict]:
+def _generate_index_row(loc: geojson.Feature) -> Tuple[int, tuple, dict]:
     """Generate a rtree index entry from geojson entry"""
     loc_id = hash(loc["id"])
     loc_shape = shapely.geometry.shape(loc["geometry"])
@@ -164,7 +202,11 @@ def retrieve_existing_locations_as_index(
 ) -> rtree.index.Index:
     """Return all existing locations in VIAL as rtree indexed geojson"""
     locations = retrieve_existing_locations(vial_http)
-    return rtree.index.Index(_generate_index_row(loc) for loc in locations)
+    return rtree.index.Index(
+        _generate_index_row(loc)
+        for loc in locations
+        if loc.is_valid and loc.get("geometry")
+    )
 
 
 def update_existing_locations(
@@ -177,13 +219,14 @@ def update_existing_locations(
         updated_locations = search_locations(vial_http, idref=list(chunked_ids))
 
         for loc in updated_locations:
-            locations.insert(_generate_index_row(loc))
+            if loc.is_valid and loc.get("geometry"):
+                locations.insert(_generate_index_row(loc))
 
 
 def search_source_locations(
     vial_http: urllib3.connectionpool.ConnectionPool,
     **kwds: Any,
-) -> Iterator[dict]:
+) -> Iterator[geojson.Feature]:
     """Wrapper around search source locations api. Returns geojson."""
     params = {
         **kwds,
@@ -197,18 +240,31 @@ def search_source_locations(
 
     resp = vial_http.request("GET", path_and_query, preload_content=False)
 
-    lines = 0
-    for line in resp:
+    for line_num, line in enumerate(resp):
+        if line_num % 5000 == 0:
+            logger.info("Processed %d source location records from VIAL.", line_num)
+
         try:
-            yield geojson.loads(line)
-        except (json.JSONDecodeError, ValueError):
-            logger.warning("Invalid json record in search response: %s", line)
+            record = orjson.loads(line)
+        except json.JSONDecodeError as e:
+            logger.warning(
+                "Invalid json record in source search response: %s\n%s", line, str(e)
+            )
+            continue
 
-        lines += 1
-        if lines % 5000 == 0:
-            logger.info("Processed %d records from VIAL.", lines)
+        _clean_geojson_record(record)
 
-    logger.info("Processed %d total records from VIAL.", lines)
+        try:
+            feature = geojson.Feature(**record)
+        except ValueError as e:
+            logger.warning(
+                "Invalid geojson record in source search response: %s\n%s", line, str(e)
+            )
+            continue
+
+        yield feature
+
+    logger.info("Processed %d total source location records from VIAL.", line_num)
     resp.release_conn()
 
 
