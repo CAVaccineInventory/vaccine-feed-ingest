@@ -443,6 +443,7 @@ def _create_import_location(
         source_uid=normalized_record.id,
         source_name=normalized_record.source.source,
         import_json=normalized_record,
+        content_hash=normalize.calculate_content_hash(normalized_record),
     )
 
     if normalized_record.name:
