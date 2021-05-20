@@ -5,6 +5,7 @@ import hashlib
 import re
 from typing import List, Optional, Tuple
 
+import orjson
 import phonenumbers
 import url_normalize
 from vaccine_feed_ingest_schema import location
@@ -263,5 +264,6 @@ def normalize_phone(
 
 def calculate_content_hash(loc: location.NormalizedLocation) -> str:
     """Calculate a hash from the normalized content of a location without source data"""
-    loc_json = loc.json(exclude={"source"}, sort_keys=True)
-    return hashlib.md5(loc_json.encode()).hexdigest()
+    loc_dict = loc.dict(exclude_none=True, exclude={"source"})
+    loc_json = orjson.dumps(loc_dict, option=orjson.OPT_SORT_KEYS)
+    return hashlib.md5(loc_json).hexdigest()
