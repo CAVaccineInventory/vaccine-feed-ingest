@@ -74,18 +74,22 @@ def enrich_locations(
                     )
                     continue
 
-                enriched_location = _process_location(normalized_location)
+                _process_location(normalized_location)
 
-                if not enriched_location:
-                    continue
+                enriched_locations.append(normalized_location)
 
-                enriched_locations.append(enriched_location)
+    _bulk_process_locations(
+        enriched_locations,
+        placekey_api=placekey_api,
+    )
 
-    _bulk_add_placekey_link(enriched_locations, placekey_api)
+    enriched_locations = [
+        loc for loc in enriched_locations if _is_loadable_location(loc)
+    ]
 
     if not enriched_locations:
         logger.warning(
-            "Processed %d lines across %d file(s). Despite this, found no enriched locations.",
+            "Processed %d lines across %d file(s) and foun no loadable locations.",
             line_num,
             file_num,
         )
@@ -105,34 +109,42 @@ def enrich_locations(
     return True
 
 
-def _process_location(
-    normalized_location: location.NormalizedLocation,
-) -> Optional[location.NormalizedLocation]:
+def _process_location(loc: location.NormalizedLocation) -> None:
     """Run through all of the methods to enrich the location"""
-    enriched_location = normalized_location.copy()
+    _add_provider_from_name(loc)
+    _add_source_link(loc)
+    _add_provider_tag(loc)
 
-    _add_provider_from_name(enriched_location)
-    _add_source_link(enriched_location)
-    _add_provider_tag(enriched_location)
+    _normalize_phone_format(loc)
 
-    _normalize_phone_format(enriched_location)
 
-    if not _valid_address(enriched_location):
+def _bulk_process_locations(
+    locs: Collection[location.NormalizedLocation],
+    placekey_api: Optional[PlacekeyAPI] = None,
+) -> None:
+    """Process locations all at once. Use for external apis with bulk apis"""
+    _bulk_add_placekey_link(locs, placekey_api)
+
+
+def _is_loadable_location(loc: location.NormalizedLocation) -> bool:
+    """Validate that the location is loadable after being enriched"""
+
+    if not _valid_address(loc):
         logger.warning(
             "Skipping source location %s because its address could not be validated: %s",
-            normalized_location.id,
-            normalized_location.address,
+            loc.id,
+            loc.address,
         )
-        return None
+        return False
 
-    if not enriched_location.location:
+    if not loc.location:
         logger.warning(
             "Skipping source location %s because it does not have a location (lat/lng)",
-            normalized_location.id,
+            loc.id,
         )
-        return None
+        return False
 
-    return enriched_location
+    return True
 
 
 def _generate_link_map(loc: location.NormalizedLocation) -> Dict[str, str]:
