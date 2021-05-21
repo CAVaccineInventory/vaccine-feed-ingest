@@ -101,6 +101,15 @@ def _enrich_apis_option() -> Callable:
     )
 
 
+def _geocodio_apikey_option() -> Callable:
+    return click.option(
+        "--geocodio-apikey",
+        "geocodio_apikey",
+        type=str,
+        default=lambda: os.environ.get("GEOCODIO_APIKEY", ""),
+    )
+
+
 def _placekey_apikey_option() -> Callable:
     return click.option(
         "--placekey-apikey",
@@ -406,6 +415,7 @@ def all_stages(
 @_output_dir_option()
 @_api_cache_option()
 @_enrich_apis_option()
+@_geocodio_apikey_option()
 @_placekey_apikey_option()
 @_dry_run_option()
 def enrich(
@@ -415,6 +425,7 @@ def enrich(
     output_dir: pathlib.Path,
     enable_apicache: bool,
     enrich_apis: Optional[Collection[str]],
+    geocodio_apikey: Optional[str],
     placekey_apikey: Optional[str],
     dry_run: bool,
 ) -> None:
@@ -429,6 +440,7 @@ def enrich(
             timestamp,
             enable_apicache=enable_apicache,
             enrich_apis=enrich_apis,
+            geocodio_apikey=geocodio_apikey,
             placekey_apikey=placekey_apikey,
             dry_run=dry_run,
         )
@@ -503,6 +515,7 @@ def load_to_vial(
 @_stages_option()
 @_api_cache_option()
 @_enrich_apis_option()
+@_geocodio_apikey_option()
 @_placekey_apikey_option()
 @_vial_server_option()
 @_vial_apikey_option()
@@ -524,6 +537,7 @@ def pipeline(
     stages: Collection[common.PipelineStage],
     enable_apicache: bool,
     enrich_apis: Optional[Collection[str]],
+    geocodio_apikey: Optional[str],
     placekey_apikey: Optional[str],
     vial_server: Optional[str],
     vial_apikey: Optional[str],
@@ -584,6 +598,7 @@ def pipeline(
                 timestamp,
                 enable_apicache=enable_apicache,
                 enrich_apis=enrich_apis,
+                geocodio_apikey=geocodio_apikey,
                 placekey_apikey=placekey_apikey,
             )
 
