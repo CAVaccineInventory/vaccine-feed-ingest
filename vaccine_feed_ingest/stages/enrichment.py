@@ -302,14 +302,38 @@ def _bulk_geocode(
         if not place_results:
             continue
 
-        # Just look at the first address that is returned
+        # Only trust the result if exactly one is returned
+        if len(place_results) != 1:
+            continue
+
         place_result = place_results[0]
 
-        if geocode_location := place_result.get("location"):
-            loc.location = location.LatLng(
-                latitude=geocode_location["lat"],
-                longitude=geocode_location["lng"],
-            )
+        if "location" not in place_result:
+            continue
+
+        address_components = place_result.get("address_components")
+
+        if not address_components:
+            continue
+
+        if "formatted_street" not in address_components:
+            continue
+
+        if "city" not in address_components:
+            continue
+
+        if "state" not in address_components:
+            continue
+
+        if "zip" not in address_components:
+            continue
+
+        geocode_location = place_result["location"]
+
+        loc.location = location.LatLng(
+            latitude=geocode_location["lat"],
+            longitude=geocode_location["lng"],
+        )
 
         if address_components := place_result.get("address_components"):
             street2 = None
