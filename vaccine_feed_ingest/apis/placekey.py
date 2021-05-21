@@ -54,8 +54,8 @@ class PlacekeyAPI(CachedAPI):
         records: Dict[str, dict],
         strict_address_match: bool = False,
         strict_name_match: bool = False,
-    ) -> Dict[str, Optional[str]]:
-        result: Dict[str, Optional[str]] = {}
+    ) -> Dict[str, str]:
+        result: Dict[str, str] = {}
 
         places = []
         cache_keys = {}
@@ -63,20 +63,28 @@ class PlacekeyAPI(CachedAPI):
         # Load valid records from cache
         for record_id, record in records.items():
             if not (latitude := record.get("latitude")):
+                logger.warning("Record for placekey is missing latitutde")
                 continue
             if not (longitude := record.get("longitude")):
+                logger.warning("Record for placekey is missing longitude")
                 continue
             if not (location_name := record.get("location_name")):
+                logger.warning("Record for placekey is missing location_name")
                 continue
             if not (street_address := record.get("street_address")):
+                logger.warning("Record for placekey is missing street_address")
                 continue
             if not (city := record.get("city")):
+                logger.warning("Record for placekey is missing city")
                 continue
             if not (region := record.get("region")):
+                logger.warning("Record for placekey is missing region")
                 continue
             if not (postal_code := record.get("postal_code")):
+                logger.warning("Record for placekey is missing postal_code")
                 continue
             if not (iso_country_code := record.get("iso_country_code", "US")):
+                logger.warning("Record for placekey has empty iso_country_code")
                 continue
 
             cache_keys[record_id] = calculate_cache_key(
@@ -127,12 +135,20 @@ class PlacekeyAPI(CachedAPI):
         )
 
         if not responses:
+            logger.info(
+                "No responses from placekey bulk lookup call with %d places",
+                len(places),
+            )
             return result
 
         for response in responses:
             record_id = response.pop("query_id")
+            if not record_id:
+                logger.error("Placekey didn't round-trip the record id as query_id")
+                continue
 
             if not response:
+                logger.info("No data in response for record %s", record_id)
                 continue
 
             if "error" in response:
