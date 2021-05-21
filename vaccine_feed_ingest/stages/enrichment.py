@@ -12,6 +12,7 @@ from vaccine_feed_ingest_schema import location
 from vaccine_feed_ingest.utils.log import getLogger
 
 from ..apis.placekey import PlacekeyAPI
+from ..apis.geocodio import GeocodioAPI
 from ..utils import normalize
 from . import outputs
 from .common import STAGE_OUTPUT_SUFFIX, PipelineStage
@@ -27,6 +28,7 @@ def enrich_locations(
     output_dir: pathlib.Path,
     api_cache: Optional[diskcache.Cache] = None,
     enrich_apis: Optional[Collection[str]] = None,
+    geocodio_apikey: Optional[str] = None,
     placekey_apikey: Optional[str] = None,
 ) -> bool:
     """Enrich locations in normalized input_dir and write them to output_dir"""
@@ -34,6 +36,13 @@ def enrich_locations(
 
     if enrich_apis is None:
         enrich_apis = set()
+
+    geocodio_api = None
+    if "geocodio" in enrich_apis:
+        if api_cache is not None and geocodio_apikey:
+            geocodio_api = GeocodioAPI(api_cache, geocodio_apikey)
+        else:
+            logger.error("Skipping placekey because placekey api is not configured")
 
     placekey_api = None
     if "placekey" in enrich_apis:
@@ -80,6 +89,7 @@ def enrich_locations(
 
     _bulk_process_locations(
         enriched_locations,
+        geocodio_api=geocodio_api,
         placekey_api=placekey_api,
     )
 
@@ -120,9 +130,11 @@ def _process_location(loc: location.NormalizedLocation) -> None:
 
 def _bulk_process_locations(
     locs: Collection[location.NormalizedLocation],
+    geocodio_api: Optional[GeocodioAPI] = None,
     placekey_api: Optional[PlacekeyAPI] = None,
 ) -> None:
     """Process locations all at once. Use for external apis with bulk apis"""
+    _bulk_geocode(locs, geocodio_api)
     _bulk_add_placekey_link(locs, placekey_api)
 
 
@@ -244,6 +256,81 @@ def _add_provider_tag(loc: location.NormalizedLocation) -> None:
         *(loc.links or []),
         location.Link(authority=PROVIDER_TAG, id=provider_id),
     ]
+
+
+def _bulk_geocode(
+    locs: Collection[location.NormalizedLocation],
+    geocodio_api: Optional[GeocodioAPI],
+) -> None:
+    """Geocode and fix addreses if missing"""
+    if geocodio_api is None:
+        return
+
+    def _full_address(loc: location.NormalizedLocation) -> Optional[str]:
+        # Only process if something is missig
+        if loc.location and _valid_address(loc):
+            return None
+
+        combined_address = []
+        if loc.address.street1:
+            combined_address.append(loc.address.street1)
+        if loc.address.street2:
+            combined_address.append(loc.address.street2)
+        if loc.address.city:
+            combined_address.append(loc.address.city)
+        if loc.address.state:
+            combined_address.append(loc.address.state)
+        if loc.address.zip:
+            combined_address.append(loc.address.zip)
+
+        return ", ".join(combined_address)
+
+    records = {}
+    for loc in locs:
+        full_address = _full_address(loc)
+        if full_address:
+            records[loc.id] = full_address
+
+    places = geocodio_api.batch_geocode(records)
+
+    if not places:
+        return
+
+    for loc in locs:
+        place_results = places.get(loc.id)
+
+        if not place_results:
+            continue
+
+        # Just look at the first address that is returned
+        place_result = place_results[0]
+
+        if geocode_location := place_result.get("location"):
+            loc.location = location.LatLng(
+                latitude=geocode_location["lat"],
+                longitude=geocode_location["lng"],
+            )
+
+        if address_components := place_result.get("address_components"):
+            street2 = None
+            if (
+                "secondaryunit" in address_components
+                and "secondarynumber" in address_components
+            ):
+                street2 = " ".join(
+                    [
+                        address_components["secondaryunit"],
+                        address_components["secondarynumber"],
+                    ]
+                )
+
+            loc.address = location.Address(
+                street1=address_components.get("formatted_street"),
+                street2=street2,
+                city=address_components.get("city"),
+                state=address_components.get("state"),
+                zip=address_components.get("zip"),
+            )
 
 
 def _bulk_add_placekey_link(
