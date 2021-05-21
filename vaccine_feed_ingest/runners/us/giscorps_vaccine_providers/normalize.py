@@ -5,12 +5,14 @@ import json
 import os
 import pathlib
 import sys
+import string
 from typing import List, Optional
 
 from vaccine_feed_ingest_schema import location as schema
 
 from vaccine_feed_ingest.utils.log import getLogger
 from vaccine_feed_ingest.utils.normalize import normalize_phone
+import usaddress
 
 logger = getLogger(__file__)
 
@@ -175,29 +177,58 @@ def try_get_lat_long(site):
     return location
 
 
+def _get_address(site):
+    # addrsplit = 
+    addrDict, addr_type = None, None
+    try:
+        addrDict, addr_type = usaddress.tag(site["attributes"]["fulladdr"])
+    except Exception:
+        return None
+
+    street = (addrDict.get('AddressNumber') or "") + " " + (addrDict.get('StreetName') or "") + " " + (addrDict.get('StreetNamePostType') or "")
+    place = addrDict.get('PlaceName')
+    state = addrDict.get('Statename')
+    zipcode = addrDict.get('ZipCode')
+
+    if zipcode is not None and len(zipcode) < 5:
+        zipcode = None
+
+    if zipcode is not None and zipcode.isalnum() and not zipcode.isnumeric():
+        zipcode = ''.join(ch for ch in zipcode if ch.isnumeric() or ch == "-")
+
+    if zipcode is not None and len(zipcode) < 10:
+        zipcode = None
+
+    if zipcode is not None and len(zipcode.split("-")) > 2:
+        zipcode = None 
+
+    # zip = site["attributes"]["fulladdr"][-5:]
+    # zip = zip if zip.isnumeric() else None
+
+    # city_state_zip = addrsplit[1].split(" ") if try_get_list(addrsplit, 1) else None
+
+    # state = site["attributes"]["State"] or None
+    # state = state.strip() if state is not None else None
+    if addr_type == "Street Address":
+        return schema.Address(
+            street1=street,
+            street2=None,
+            city=place,
+            state=state,
+            zip=zipcode,
+        )
+    else:
+        print(addr_type)
+        print(addrDict)
+
+        return None
+
 def _get_normalized_location(site: dict, timestamp: str) -> schema.NormalizedLocation:
-
-    addrsplit = site["attributes"]["fulladdr"].split(", ")
-
-    zip = site["attributes"]["fulladdr"][-5:]
-    zip = zip if zip.isnumeric() else None
-
-    city_state_zip = addrsplit[1].split(" ") if try_get_list(addrsplit, 1) else None
-
-    state = site["attributes"]["State"] or None
-    state = state.strip() if state is not None else None
 
     return schema.NormalizedLocation(
         id=f"{SOURCE_NAME}:{_get_id(site)}",
         name=site["attributes"]["name"],
-        address=schema.Address(
-            street1=addrsplit[0],
-            street2=None,
-            city=site["attributes"]["municipality"]
-            or try_get_list(city_state_zip, -3, default=""),
-            state=state,
-            zip=zip,
-        ),
+        address=_get_address(site),
         location=try_get_lat_long(site),
         contact=_get_contacts(site),
         languages=None,
