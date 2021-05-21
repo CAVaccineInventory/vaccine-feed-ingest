@@ -11,7 +11,7 @@ import usaddress
 from vaccine_feed_ingest_schema import location as schema
 
 from vaccine_feed_ingest.utils.log import getLogger
-from vaccine_feed_ingest.utils.normalize import normalize_phone
+from vaccine_feed_ingest.utils.normalize import normalize_phone, normalize_zip
 
 logger = getLogger(__file__)
 
@@ -195,25 +195,8 @@ def _get_address(site):
     state = addrDict.get("Statename")
     zipcode = addrDict.get("ZipCode")
 
-    if zipcode is not None and len(zipcode) < 5:
-        zipcode = None
+    zipcode = normalize_zip(zipcode)
 
-    if zipcode is not None and zipcode.isalnum() and not zipcode.isnumeric():
-        zipcode = "".join(ch for ch in zipcode if ch.isnumeric() or ch == "-")
-
-    if zipcode is not None and len(zipcode) < 10:
-        zipcode = None
-
-    if zipcode is not None and len(zipcode.split("-")) > 2:
-        zipcode = None
-
-    # zip = site["attributes"]["fulladdr"][-5:]
-    # zip = zip if zip.isnumeric() else None
-
-    # city_state_zip = addrsplit[1].split(" ") if try_get_list(addrsplit, 1) else None
-
-    # state = site["attributes"]["State"] or None
-    # state = state.strip() if state is not None else None
     if addr_type == "Street Address":
         return schema.Address(
             street1=street,
