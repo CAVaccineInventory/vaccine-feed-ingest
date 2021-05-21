@@ -743,6 +743,17 @@ python-versions = "*"
 dev = ["hypothesis"]
 
 [[package]]
+name = "jsonify-opening-hours"
+version = "0.3.1"
+description = "Parses opening hours from various human-readable strings into a standard JSON format"
+category = "main"
+optional = false
+python-versions = "*"
+
+[package.dependencies]
+pyparsing = "*"
+
+[[package]]
 name = "jsonschema"
 version = "3.2.0"
 description = "An implementation of JSON Schema validation for Python"
