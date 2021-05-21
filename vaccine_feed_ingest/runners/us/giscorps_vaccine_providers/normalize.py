@@ -5,14 +5,13 @@ import json
 import os
 import pathlib
 import sys
-import string
 from typing import List, Optional
 
+import usaddress
 from vaccine_feed_ingest_schema import location as schema
 
 from vaccine_feed_ingest.utils.log import getLogger
 from vaccine_feed_ingest.utils.normalize import normalize_phone
-import usaddress
 
 logger = getLogger(__file__)
 
@@ -178,29 +177,35 @@ def try_get_lat_long(site):
 
 
 def _get_address(site):
-    # addrsplit = 
+    # addrsplit =
     addrDict, addr_type = None, None
     try:
         addrDict, addr_type = usaddress.tag(site["attributes"]["fulladdr"])
     except Exception:
         return None
 
-    street = (addrDict.get('AddressNumber') or "") + " " + (addrDict.get('StreetName') or "") + " " + (addrDict.get('StreetNamePostType') or "")
-    place = addrDict.get('PlaceName')
-    state = addrDict.get('Statename')
-    zipcode = addrDict.get('ZipCode')
+    street = (
+        (addrDict.get("AddressNumber") or "")
+        + " "
+        + (addrDict.get("StreetName") or "")
+        + " "
+        + (addrDict.get("StreetNamePostType") or "")
+    )
+    place = addrDict.get("PlaceName")
+    state = addrDict.get("Statename")
+    zipcode = addrDict.get("ZipCode")
 
     if zipcode is not None and len(zipcode) < 5:
         zipcode = None
 
     if zipcode is not None and zipcode.isalnum() and not zipcode.isnumeric():
-        zipcode = ''.join(ch for ch in zipcode if ch.isnumeric() or ch == "-")
+        zipcode = "".join(ch for ch in zipcode if ch.isnumeric() or ch == "-")
 
     if zipcode is not None and len(zipcode) < 10:
         zipcode = None
 
     if zipcode is not None and len(zipcode.split("-")) > 2:
-        zipcode = None 
+        zipcode = None
 
     # zip = site["attributes"]["fulladdr"][-5:]
     # zip = zip if zip.isnumeric() else None
@@ -222,6 +227,7 @@ def _get_address(site):
         print(addrDict)
 
         return None
+
 
 def _get_normalized_location(site: dict, timestamp: str) -> schema.NormalizedLocation:
 
