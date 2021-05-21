@@ -57,6 +57,10 @@ class PlacekeyAPI(CachedAPI):
     ) -> Dict[str, Optional[str]]:
         result: Dict[str, Optional[str]] = {}
 
+        places = []
+        cache_keys = {}
+
+        # Load valid records from cache
         for record_id, record in records.items():
             if not (latitude := record.get("latitude")):
                 continue
@@ -75,7 +79,7 @@ class PlacekeyAPI(CachedAPI):
             if not (iso_country_code := record.get("iso_country_code", "US")):
                 continue
 
-            cache_key = calculate_cache_key(
+            cache_keys[record_id] = calculate_cache_key(
                 "placekey",
                 [
                     f"{latitude:.5f}",
@@ -91,43 +95,58 @@ class PlacekeyAPI(CachedAPI):
                 ],
             )
 
-            cache_response = self.api_cache.get(cache_key)
+            cache_response = self.api_cache.get(cache_keys[record_id])
 
             if cache_response:
-                if "error" in cache_response:
-                    result[record_id] = None
-                    continue
-
-                result[record_id] = cache_response.get("placekey")
+                if "error" not in cache_response and "placekey" in cache_response:
+                    result[record_id] = cache_response["placekey"]
                 continue
 
-            response = self._placekey_api.lookup_placekey(
-                latitude=latitude,
-                longitude=longitude,
-                location_name=location_name,
-                street_address=street_address,
-                city=city,
-                region=region,
-                postal_code=postal_code,
-                iso_country_code=iso_country_code,
-                strict_address_match=strict_address_match,
-                strict_name_match=strict_name_match,
+            places.append(
+                {
+                    "query_id": record_id,
+                    "latitude": latitude,
+                    "longitude": longitude,
+                    "location_name": location_name,
+                    "street_address": street_address,
+                    "city": city,
+                    "region": region,
+                    "postal_code": postal_code,
+                    "iso_country_code": iso_country_code,
+                }
             )
 
+        # Bulk load remaining places from API
+        if not places:
+            return result
+
+        responses = self._placekey_api.lookup_placekeys(
+            places,
+            strict_address_match=strict_address_match,
+            strict_name_match=strict_name_match,
+        )
+
+        if not responses:
+            return result
+
+        for response in responses:
+            record_id = response.pop("query_id")
+
             if not response:
-                result[record_id] = None
                 continue
 
             if "error" in response:
                 logger.info("Failed to add placekey because: %s", response["error"])
-                self.set_with_expire(cache_key, {"error": response["error"]})
-                result[record_id] = None
+                self.set_with_expire(
+                    cache_keys[record_id], {"error": response["error"]}
+                )
                 continue
 
             placekey_id = response.get("placekey")
 
-            self.set_with_expire(cache_key, {"placekey": placekey_id})
+            self.set_with_expire(cache_keys[record_id], {"placekey": placekey_id})
 
-            result[record_id] = placekey_id
+            if placekey_id:
+                result[record_id] = placekey_id
 
         return result
