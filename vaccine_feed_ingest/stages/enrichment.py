@@ -74,15 +74,14 @@ def enrich_locations(
                     )
                     continue
 
-                enriched_location = _process_location(
-                    normalized_location,
-                    placekey_api=placekey_api,
-                )
+                enriched_location = _process_location(normalized_location)
 
                 if not enriched_location:
                     continue
 
                 enriched_locations.append(enriched_location)
+
+    _bulk_add_placekey_link(enriched_locations, placekey_api)
 
     if not enriched_locations:
         logger.warning(
@@ -108,7 +107,6 @@ def enrich_locations(
 
 def _process_location(
     normalized_location: location.NormalizedLocation,
-    placekey_api: Optional[PlacekeyAPI] = None,
 ) -> Optional[location.NormalizedLocation]:
     """Run through all of the methods to enrich the location"""
     enriched_location = normalized_location.copy()
@@ -118,8 +116,6 @@ def _process_location(
     _add_provider_tag(enriched_location)
 
     _normalize_phone_format(enriched_location)
-
-    _add_placekey_link(enriched_location, placekey_api)
 
     if not _valid_address(enriched_location):
         logger.warning(
@@ -238,45 +234,61 @@ def _add_provider_tag(loc: location.NormalizedLocation) -> None:
     ]
 
 
-def _add_placekey_link(
-    loc: location.NormalizedLocation,
+def _bulk_add_placekey_link(
+    locs: Collection[location.NormalizedLocation],
     placekey_api: Optional[PlacekeyAPI],
 ) -> None:
     """Add placekey concordance to location if we can"""
     if placekey_api is None:
         return
 
-    if not loc.location:
+    def _placekey_record(loc: location.NormalizedLocation) -> Optional[dict]:
+        if not loc.location:
+            return None
+
+        if not _valid_address(loc):
+            return None
+
+        street_address = [loc.address.street1]
+        if loc.address.street2:
+            street_address.append(loc.address.street2)
+
+        return {
+            "latitude": loc.location.latitude,
+            "longitude": loc.location.longitude,
+            "location_name": loc.name,
+            "street_address": ", ".join(street_address),
+            "city": loc.address.city,
+            "region": loc.address.state,
+            "postal_code": loc.address.zip,
+            "iso_country_code": "US",
+        }
+
+    records = {}
+    for loc in locs:
+        record = _placekey_record(loc)
+        if record:
+            records[loc.id] = record
+
+    placekeys = placekey_api.lookup_placekeys(records)
+
+    if not placekeys:
         return
 
-    if not _valid_address(loc):
-        return
+    for loc in locs:
+        placekey_id = placekeys.get(loc.id)
 
-    street_address = [loc.address.street1]
-    if loc.address.street2:
-        street_address.append(loc.address.street2)
+        if not placekey_id:
+            continue
 
-    loc_placekey = placekey_api.lookup_placekey(
-        loc.location.latitude,
-        loc.location.longitude,
-        loc.name,
-        ", ".join(street_address),
-        loc.address.city,
-        loc.address.state,
-        loc.address.zip,
-    )
+        # Verify "what" part of placekey is specified or else placekey isn't specific enough
+        if "@" not in placekey_id or placekey_id.startswith("@"):
+            continue
 
-    if not loc_placekey:
-        return
-
-    # Verify "what" part of placekey is specified or else placekey isn't specific enough
-    if "@" not in loc_placekey or loc_placekey.startswith("@"):
-        return
-
-    loc.links = [
-        *(loc.links or []),
-        location.Link(authority="placekey", id=loc_placekey),
-    ]
+        loc.links = [
+            *(loc.links or []),
+            location.Link(authority="placekey", id=placekey_id),
+        ]
 
 
 def _valid_address(loc: location.NormalizedLocation) -> bool:
