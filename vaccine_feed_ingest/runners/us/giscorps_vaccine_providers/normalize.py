@@ -105,7 +105,7 @@ def _get_opening_hours(site):
             # store the notes back in the dict so the notes function can grab it later
             site["opening_hours_notes"] = "Hours: " + oh
     else:
-        return None        
+        return None
 
 
 def _get_active(site: dict) -> Optional[bool]:
@@ -223,7 +223,9 @@ def _get_normalized_location(site: dict, timestamp: str) -> schema.NormalizedLoc
         contact=_get_contacts(site),
         languages=None,
         opening_dates=None,
-        opening_hours=_get_opening_hours(site),  # TODO: the format for this probably needs some mega-parsing as it looks like this -> "operhours": "Monday - Friday 8:00 am - 2:00 pm Saturdays 9:00 am - 12:00 pm",
+        opening_hours=_get_opening_hours(
+            site
+        ),  # TODO: the format for this probably needs some mega-parsing as it looks like this -> "operhours": "Monday - Friday 8:00 am - 2:00 pm Saturdays 9:00 am - 12:00 pm",
         availability=_get_availability(site),
         inventory=None,
         access=_get_access(site),
