@@ -1,4 +1,4 @@
-from typing import Dict, Optional
+from typing import Dict
 
 import diskcache
 import geocodio
@@ -29,6 +29,7 @@ class GeocodioAPI(CachedAPI):
         # Load valid records from cache
         for record_id, address in records.items():
             if not address:
+                logger.warning("Passed an empty address to geocode")
                 continue
 
             address = address.lower()
@@ -51,16 +52,22 @@ class GeocodioAPI(CachedAPI):
         responses: Dict[str, dict] = self._geocodio_client.batch_geocode(addresses)
 
         if not responses:
+            logger.info(
+                "No response from geocodio bulk lookup call when passed %d addresses",
+                len(addresses),
+            )
             return batch_result
 
         for record_id, response in responses.items():
             if not response:
+                logger.warning("Empty geocode response for %s", record_id)
                 continue
 
             if "error" in response:
-                logger.info("Failed to process address because: %s", response["error"])
-                self.set_with_expire(
-                    cache_keys[record_id], {"error": response["error"]}
+                logger.info(
+                    "Failed to process address %s because: %s",
+                    response.get("input", ""),
+                    response["error"],
                 )
                 continue
 

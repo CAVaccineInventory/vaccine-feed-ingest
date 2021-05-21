@@ -11,8 +11,8 @@ from vaccine_feed_ingest_schema import location
 
 from vaccine_feed_ingest.utils.log import getLogger
 
-from ..apis.placekey import PlacekeyAPI
 from ..apis.geocodio import GeocodioAPI
+from ..apis.placekey import PlacekeyAPI
 from ..utils import normalize
 from . import outputs
 from .common import STAGE_OUTPUT_SUFFIX, PipelineStage
@@ -42,7 +42,7 @@ def enrich_locations(
         if api_cache is not None and geocodio_apikey:
             geocodio_api = GeocodioAPI(api_cache, geocodio_apikey)
         else:
-            logger.error("Skipping placekey because placekey api is not configured")
+            logger.error("Skipping geocodio because geocodio api is not configured")
 
     placekey_api = None
     if "placekey" in enrich_apis:
@@ -99,7 +99,7 @@ def enrich_locations(
 
     if not enriched_locations:
         logger.warning(
-            "Processed %d lines across %d file(s) and foun no loadable locations.",
+            "Processed %d lines across %d file(s) and found no loadable locations.",
             line_num,
             file_num,
         )
@@ -291,9 +291,13 @@ def _bulk_geocode(
         if full_address:
             records[loc.id] = full_address
 
+    if not records:
+        return
+
     places = geocodio_api.batch_geocode(records)
 
     if not places:
+        logger.info("No places returned from geocode for %s records", len(records))
         return
 
     for loc in locs:
@@ -303,29 +307,57 @@ def _bulk_geocode(
             continue
 
         # Only trust the result if exactly one is returned
-        if len(place_results) != 1:
+        if len(place_results) > 1:
+            logger.info(
+                "More than one geocode result returned for %s. Skipping geocoding.",
+                loc.id,
+            )
             continue
 
         place_result = place_results[0]
 
         if "location" not in place_result:
+            logger.warning(
+                "No lat-lng returned from geocode for %s. Skipping geocoding.",
+                loc.id,
+            )
             continue
 
         address_components = place_result.get("address_components")
 
         if not address_components:
+            logger.warning(
+                "No address components returned from geocode for %s. Skipping geocoding.",
+                loc.id,
+            )
             continue
 
         if "formatted_street" not in address_components:
+            logger.warning(
+                "No formatted_street returned from geocode for %s. Skipping geocoding.",
+                loc.id,
+            )
             continue
 
         if "city" not in address_components:
+            logger.warning(
+                "No city returned from geocode for %s. Skipping geocoding.",
+                loc.id,
+            )
             continue
 
         if "state" not in address_components:
+            logger.warning(
+                "No state returned from geocode for %s. Skipping geocoding.",
+                loc.id,
+            )
             continue
 
         if "zip" not in address_components:
+            logger.warning(
+                "No zip returned from geocode for %s. Skipping geocoding.",
+                loc.id,
+            )
             continue
 
         geocode_location = place_result["location"]
