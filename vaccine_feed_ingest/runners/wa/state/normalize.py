@@ -193,7 +193,7 @@ def normalize(site: dict, timestamp: str) -> schema.NormalizedLocation:
         source=schema.Source(
             source=source_name,
             id=site["locationId"],
-            fetched_from_uri="https://floridahealthcovid19.gov/vaccines/vaccine-locator/",
+            fetched_from_uri="https://apim-vaccs-prod.azure-api.net/web/graphql",
             fetched_at=timestamp,
             published_at=site["updatedAt"],
             data=site,
