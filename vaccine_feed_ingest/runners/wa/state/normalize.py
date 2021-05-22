@@ -3,7 +3,7 @@ import datetime
 import json
 import pathlib
 import sys
-from typing import List
+from typing import List, Optional
 
 from pydantic import ValidationError
 from vaccine_feed_ingest_schema import location as schema
@@ -11,6 +11,7 @@ from vaccine_feed_ingest_schema import location as schema
 from vaccine_feed_ingest.utils.log import getLogger
 
 logger = getLogger(__file__)
+SOURCE_NAME = "wa_state"
 
 
 def _get_id(site: dict) -> str:
@@ -125,8 +126,32 @@ def _is_good_zip(zip):
     return True
 
 
+def _get_state(site: dict) -> Optional[str]:
+    state_long_name = site.get("state")
+    if not state_long_name:
+        logger.warning(
+            "%s:%s has no state in the parsed data", SOURCE_NAME, site["locationId"]
+        )
+        return None
+
+    if state_long_name == "Hawai'i":
+        state_long_name = "HAWAII"
+
+    try:
+        return schema.State[state_long_name.strip().upper().replace(" ", "_")].value
+    except KeyError:
+        logger.warning(
+            "%s:%s state '%s' could not be parsed to a valid enum. Using %s.",
+            SOURCE_NAME,
+            site["locationId"],
+            state_long_name,
+            state_long_name,
+        )
+        return state_long_name
+
+
 def normalize(site: dict, timestamp: str) -> schema.NormalizedLocation:
-    source_name = "wa_state"
+    source_name = SOURCE_NAME
 
     # NOTE: we use `get` where the field is optional in our data source, and
     # ["key'] access where it is not.
@@ -137,7 +162,7 @@ def normalize(site: dict, timestamp: str) -> schema.NormalizedLocation:
             street1=site.get("addressLine1"),
             street2=site.get("addressLine2"),
             city=site.get("city"),
-            state="WA",
+            state=_get_state(site),
             zip=site["zipcode"] if _is_good_zip(site["zipcode"]) else None,
         ),
         location=schema.LatLng(latitude=site["latitude"], longitude=site["longitude"]),
