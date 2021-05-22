@@ -118,12 +118,21 @@ def _get_vaccine_type(type_string):
     return None
 
 
-def _is_good_zip(zip):
+def _get_good_zip(site: dict) -> Optional[str]:
+    zip = site["zipcode"]
     if len(zip) != 5:
-        logger.warning(f"Bad zip {zip}")
-        return False
+        if zip[0:2] == "PR" and len(zip) == 7:
+            return zip[2:]
 
-    return True
+        logger.warning(
+            "%s:%s has invalid zip value %s. Using None",
+            SOURCE_NAME,
+            site["locationId"],
+            zip,
+        )
+        return None
+
+    return zip
 
 
 def _get_state(site: dict) -> Optional[str]:
@@ -163,7 +172,7 @@ def normalize(site: dict, timestamp: str) -> schema.NormalizedLocation:
             street2=site.get("addressLine2"),
             city=site.get("city"),
             state=_get_state(site),
-            zip=site["zipcode"] if _is_good_zip(site["zipcode"]) else None,
+            zip=_get_good_zip(site),
         ),
         location=schema.LatLng(latitude=site["latitude"], longitude=site["longitude"]),
         contact=_get_contacts(site),
