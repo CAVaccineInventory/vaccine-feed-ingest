@@ -267,8 +267,12 @@ def _bulk_geocode(
         return
 
     def _full_address(loc: location.NormalizedLocation) -> Optional[str]:
-        # Only process if something is missig
+        # Only process if something is missing
         if loc.location and _valid_address(loc):
+            return None
+
+        # Skip if there is no partial address to work from
+        if not loc.address:
             return None
 
         combined_address = []
