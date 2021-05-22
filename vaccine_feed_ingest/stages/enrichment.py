@@ -11,6 +11,7 @@ from vaccine_feed_ingest_schema import location
 
 from vaccine_feed_ingest.utils.log import getLogger
 
+from ..apis.geocodio import GeocodioAPI
 from ..apis.placekey import PlacekeyAPI
 from ..utils import normalize
 from . import outputs
@@ -27,6 +28,7 @@ def enrich_locations(
     output_dir: pathlib.Path,
     api_cache: Optional[diskcache.Cache] = None,
     enrich_apis: Optional[Collection[str]] = None,
+    geocodio_apikey: Optional[str] = None,
     placekey_apikey: Optional[str] = None,
 ) -> bool:
     """Enrich locations in normalized input_dir and write them to output_dir"""
@@ -34,6 +36,13 @@ def enrich_locations(
 
     if enrich_apis is None:
         enrich_apis = set()
+
+    geocodio_api = None
+    if "geocodio" in enrich_apis:
+        if api_cache is not None and geocodio_apikey:
+            geocodio_api = GeocodioAPI(api_cache, geocodio_apikey)
+        else:
+            logger.error("Skipping geocodio because geocodio api is not configured")
 
     placekey_api = None
     if "placekey" in enrich_apis:
@@ -74,18 +83,23 @@ def enrich_locations(
                     )
                     continue
 
-                enriched_location = _process_location(normalized_location)
+                _process_location(normalized_location)
 
-                if not enriched_location:
-                    continue
+                enriched_locations.append(normalized_location)
 
-                enriched_locations.append(enriched_location)
+    _bulk_process_locations(
+        enriched_locations,
+        geocodio_api=geocodio_api,
+        placekey_api=placekey_api,
+    )
 
-    _bulk_add_placekey_link(enriched_locations, placekey_api)
+    enriched_locations = [
+        loc for loc in enriched_locations if _is_loadable_location(loc)
+    ]
 
     if not enriched_locations:
         logger.warning(
-            "Processed %d lines across %d file(s). Despite this, found no enriched locations.",
+            "Processed %d lines across %d file(s) and found no loadable locations.",
             line_num,
             file_num,
         )
@@ -105,34 +119,44 @@ def enrich_locations(
     return True
 
 
-def _process_location(
-    normalized_location: location.NormalizedLocation,
-) -> Optional[location.NormalizedLocation]:
+def _process_location(loc: location.NormalizedLocation) -> None:
     """Run through all of the methods to enrich the location"""
-    enriched_location = normalized_location.copy()
+    _add_provider_from_name(loc)
+    _add_source_link(loc)
+    _add_provider_tag(loc)
 
-    _add_provider_from_name(enriched_location)
-    _add_source_link(enriched_location)
-    _add_provider_tag(enriched_location)
+    _normalize_phone_format(loc)
 
-    _normalize_phone_format(enriched_location)
 
-    if not _valid_address(enriched_location):
+def _bulk_process_locations(
+    locs: Collection[location.NormalizedLocation],
+    geocodio_api: Optional[GeocodioAPI] = None,
+    placekey_api: Optional[PlacekeyAPI] = None,
+) -> None:
+    """Process locations all at once. Use for external apis with bulk apis"""
+    _bulk_geocode(locs, geocodio_api)
+    _bulk_add_placekey_link(locs, placekey_api)
+
+
+def _is_loadable_location(loc: location.NormalizedLocation) -> bool:
+    """Validate that the location is loadable after being enriched"""
+
+    if not _valid_address(loc):
         logger.warning(
             "Skipping source location %s because its address could not be validated: %s",
-            normalized_location.id,
-            normalized_location.address,
+            loc.id,
+            loc.address,
         )
-        return None
+        return False
 
-    if not enriched_location.location:
+    if not loc.location:
         logger.warning(
             "Skipping source location %s because it does not have a location (lat/lng)",
-            normalized_location.id,
+            loc.id,
         )
-        return None
+        return False
 
-    return enriched_location
+    return True
 
 
 def _generate_link_map(loc: location.NormalizedLocation) -> Dict[str, str]:
@@ -232,6 +256,137 @@ def _add_provider_tag(loc: location.NormalizedLocation) -> None:
         *(loc.links or []),
         location.Link(authority=PROVIDER_TAG, id=provider_id),
     ]
+
+
+def _bulk_geocode(
+    locs: Collection[location.NormalizedLocation],
+    geocodio_api: Optional[GeocodioAPI],
+) -> None:
+    """Geocode and fix addreses if missing"""
+    if geocodio_api is None:
+        return
+
+    def _full_address(loc: location.NormalizedLocation) -> Optional[str]:
+        # Only process if something is missig
+        if loc.location and _valid_address(loc):
+            return None
+
+        combined_address = []
+        if loc.address.street1:
+            combined_address.append(loc.address.street1)
+        if loc.address.street2:
+            combined_address.append(loc.address.street2)
+        if loc.address.city:
+            combined_address.append(loc.address.city)
+        if loc.address.state:
+            combined_address.append(loc.address.state)
+        if loc.address.zip:
+            combined_address.append(loc.address.zip)
+
+        return ", ".join(combined_address)
+
+    records = {}
+    for loc in locs:
+        full_address = _full_address(loc)
+        if full_address:
+            records[loc.id] = full_address
+
+    if not records:
+        return
+
+    places = geocodio_api.batch_geocode(records)
+
+    if not places:
+        logger.info("No places returned from geocode for %s records", len(records))
+        return
+
+    for loc in locs:
+        place_results = places.get(loc.id)
+
+        if not place_results:
+            continue
+
+        # Only trust the result if exactly one is returned
+        if len(place_results) > 1:
+            logger.info(
+                "More than one geocode result returned for %s. Skipping geocoding.",
+                loc.id,
+            )
+            continue
+
+        place_result = place_results[0]
+
+        if "location" not in place_result:
+            logger.warning(
+                "No lat-lng returned from geocode for %s. Skipping geocoding.",
+                loc.id,
+            )
+            continue
+
+        address_components = place_result.get("address_components")
+
+        if not address_components:
+            logger.warning(
+                "No address components returned from geocode for %s. Skipping geocoding.",
+                loc.id,
+            )
+            continue
+
+        if "formatted_street" not in address_components:
+            logger.warning(
+                "No formatted_street returned from geocode for %s. Skipping geocoding.",
+                loc.id,
+            )
+            continue
+
+        if "city" not in address_components:
+            logger.warning(
+                "No city returned from geocode for %s. Skipping geocoding.",
+                loc.id,
+            )
+            continue
+
+        if "state" not in address_components:
+            logger.warning(
+                "No state returned from geocode for %s. Skipping geocoding.",
+                loc.id,
+            )
+            continue
+
+        if "zip" not in address_components:
+            logger.warning(
+                "No zip returned from geocode for %s. Skipping geocoding.",
+                loc.id,
+            )
+            continue
+
+        geocode_location = place_result["location"]
+
+        loc.location = location.LatLng(
+            latitude=geocode_location["lat"],
+            longitude=geocode_location["lng"],
+        )
+
+        if address_components := place_result.get("address_components"):
+            street2 = None
+            if (
+                "secondaryunit" in address_components
+                and "secondarynumber" in address_components
+            ):
+                street2 = " ".join(
+                    [
+                        address_components["secondaryunit"],
+                        address_components["secondarynumber"],
+                    ]
+                )
+
+            loc.address = location.Address(
+                street1=address_components.get("formatted_street"),
+                street2=street2,
+                city=address_components.get("city"),
+                state=address_components.get("state"),
+                zip=address_components.get("zip"),
+            )
 
 
 def _bulk_add_placekey_link(

@@ -306,6 +306,7 @@ def run_enrich(
     timestamp: str,
     enable_apicache: bool = True,
     enrich_apis: Optional[Collection[str]] = None,
+    geocodio_apikey: Optional[str] = None,
     placekey_apikey: Optional[str] = None,
     dry_run: bool = False,
 ) -> bool:
@@ -358,6 +359,7 @@ def run_enrich(
                     enrich_output_dir,
                     api_cache=api_cache,
                     enrich_apis=enrich_apis,
+                    geocodio_apikey=geocodio_apikey,
                     placekey_apikey=placekey_apikey,
                 )
         else:
