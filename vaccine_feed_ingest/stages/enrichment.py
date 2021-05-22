@@ -13,7 +13,7 @@ from vaccine_feed_ingest.utils.log import getLogger
 
 from ..apis.geocodio import GeocodioAPI
 from ..apis.placekey import PlacekeyAPI
-from ..utils import normalize
+from ..utils import misc, normalize
 from . import outputs
 from .common import STAGE_OUTPUT_SUFFIX, PipelineStage
 
@@ -298,99 +298,103 @@ def _bulk_geocode(
     if not records:
         return
 
-    places = geocodio_api.batch_geocode(records)
+    for chunked_records in misc.dict_batch(records, 5000):
+        logger.info("attempting to geocode %d locations", len(chunked_records))
+        places = geocodio_api.batch_geocode(chunked_records)
 
-    if not places:
-        logger.info("No places returned from geocode for %s records", len(records))
-        return
-
-    for loc in locs:
-        place_results = places.get(loc.id)
-
-        if not place_results:
-            continue
-
-        # Only trust the result if exactly one is returned
-        if len(place_results) > 1:
+        if not places:
             logger.info(
-                "More than one geocode result returned for %s. Skipping geocoding.",
-                loc.id,
+                "No places returned from geocode for %s records", len(chunked_records)
             )
             continue
 
-        place_result = place_results[0]
+        for loc in locs:
+            place_results = places.get(loc.id)
 
-        if "location" not in place_result:
-            logger.warning(
-                "No lat-lng returned from geocode for %s. Skipping geocoding.",
-                loc.id,
-            )
-            continue
+            if not place_results:
+                continue
 
-        address_components = place_result.get("address_components")
-
-        if not address_components:
-            logger.warning(
-                "No address components returned from geocode for %s. Skipping geocoding.",
-                loc.id,
-            )
-            continue
-
-        if "formatted_street" not in address_components:
-            logger.warning(
-                "No formatted_street returned from geocode for %s. Skipping geocoding.",
-                loc.id,
-            )
-            continue
-
-        if "city" not in address_components:
-            logger.warning(
-                "No city returned from geocode for %s. Skipping geocoding.",
-                loc.id,
-            )
-            continue
-
-        if "state" not in address_components:
-            logger.warning(
-                "No state returned from geocode for %s. Skipping geocoding.",
-                loc.id,
-            )
-            continue
-
-        if "zip" not in address_components:
-            logger.warning(
-                "No zip returned from geocode for %s. Skipping geocoding.",
-                loc.id,
-            )
-            continue
-
-        geocode_location = place_result["location"]
-
-        loc.location = location.LatLng(
-            latitude=geocode_location["lat"],
-            longitude=geocode_location["lng"],
-        )
-
-        if address_components := place_result.get("address_components"):
-            street2 = None
-            if (
-                "secondaryunit" in address_components
-                and "secondarynumber" in address_components
-            ):
-                street2 = " ".join(
-                    [
-                        address_components["secondaryunit"],
-                        address_components["secondarynumber"],
-                    ]
+            # Only trust the result if exactly one is returned
+            if len(place_results) > 1:
+                logger.info(
+                    "More than one geocode result returned for %s. Skipping geocoding.",
+                    loc.id,
                 )
+                continue
 
-            loc.address = location.Address(
-                street1=address_components.get("formatted_street"),
-                street2=street2,
-                city=address_components.get("city"),
-                state=address_components.get("state"),
-                zip=address_components.get("zip"),
+            place_result = place_results[0]
+
+            if "location" not in place_result:
+                logger.warning(
+                    "No lat-lng returned from geocode for %s. Skipping geocoding.",
+                    loc.id,
+                )
+                continue
+
+            address_components = place_result.get("address_components")
+
+            if not address_components:
+                logger.warning(
+                    "No address components returned from geocode for %s. Skipping geocoding.",
+                    loc.id,
+                )
+                continue
+
+            if "formatted_street" not in address_components:
+                logger.warning(
+                    "No formatted_street returned from geocode for %s. Skipping geocoding.",
+                    loc.id,
+                )
+                continue
+
+            if "city" not in address_components:
+                logger.warning(
+                    "No city returned from geocode for %s. Skipping geocoding.",
+                    loc.id,
+                )
+                continue
+
+            if "state" not in address_components:
+                logger.warning(
+                    "No state returned from geocode for %s. Skipping geocoding.",
+                    loc.id,
+                )
+                continue
+
+            if "zip" not in address_components:
+                logger.warning(
+                    "No zip returned from geocode for %s. Skipping geocoding.",
+                    loc.id,
+                )
+                continue
+
+            geocode_location = place_result["location"]
+
+            loc.location = location.LatLng(
+                latitude=geocode_location["lat"],
+                longitude=geocode_location["lng"],
             )
+
+            if address_components := place_result.get("address_components"):
+                street2 = None
+                if (
+                    "secondaryunit" in address_components
+                    and "secondarynumber" in address_components
+                ):
+                    street2 = " ".join(
+                        [
+                            address_components["secondaryunit"],
+                            address_components["secondarynumber"],
+                        ]
+                    )
+
+                loc.address = location.Address(
+                    street1=address_components.get("formatted_street"),
+                    street2=street2,
+                    city=address_components.get("city"),
+                    state=address_components.get("state"),
+                    zip=address_components.get("zip"),
+                )
 
 
 def _bulk_add_placekey_link(
