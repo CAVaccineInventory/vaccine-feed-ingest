@@ -73,12 +73,13 @@ def sanitize_url(url):
         return url
     return None
 
+
 def _get_notes(site: dict) -> Optional[List[str]]:
 
     notes = []
     # if site["attributes"]["operationalHoursSpecialInstructions"]:
     notes.append(site["attributes"]["operationalHoursSpecialInstructions"])
-    
+
     addtl = site["attributes"].get("additionalInfo")
     if addtl:
         notes.append(addtl)
@@ -91,11 +92,7 @@ def _get_active(site: dict) -> Optional[bool]:
 
     status = site["attributes"]["operatingStatus"].get("code")
 
-    status_options = {
-        "NORMAL": True,
-        "LIMITED": True,
-        "NOTICE": False
-    }
+    status_options = {"NORMAL": True, "LIMITED": True, "NOTICE": False}
 
     return try_lookup(status_options, status, None, name="active status lookup")
 
@@ -190,9 +187,9 @@ def _get_normalized_location(site: dict, timestamp: str) -> schema.NormalizedLoc
         languages=None,
         opening_dates=None,
         opening_hours=None,  # TODO: the format for this probably needs some mega-parsing as it looks like this -> "operhours": "Monday - Friday 8:00 am - 2:00 pm Saturdays 9:00 am - 12:00 pm",
-        availability=None,#_get_availability(site),
+        availability=None,  # _get_availability(site),
         inventory=None,
-        access=None,#_get_access(site),
+        access=None,  # _get_access(site),
         parent_organization=None,
         links=None,  # TODO
         notes=_get_notes(site),
