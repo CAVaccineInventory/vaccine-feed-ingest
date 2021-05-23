@@ -3,7 +3,7 @@ import datetime
 import json
 import pathlib
 import sys
-from typing import List
+from typing import List, Optional
 
 from pydantic import ValidationError
 from vaccine_feed_ingest_schema import location as schema
@@ -11,6 +11,7 @@ from vaccine_feed_ingest_schema import location as schema
 from vaccine_feed_ingest.utils.log import getLogger
 
 logger = getLogger(__file__)
+SOURCE_NAME = "wa_state"
 
 
 def _get_id(site: dict) -> str:
@@ -117,16 +118,49 @@ def _get_vaccine_type(type_string):
     return None
 
 
-def _is_good_zip(zip):
+def _get_good_zip(site: dict) -> Optional[str]:
+    zip = site["zipcode"]
     if len(zip) != 5:
-        logger.warning(f"Bad zip {zip}")
-        return False
+        if zip[0:2] == "PR" and len(zip) == 7:
+            return zip[2:]
 
-    return True
+        logger.warning(
+            "%s:%s has invalid zip value %s. Using None",
+            SOURCE_NAME,
+            site["locationId"],
+            zip,
+        )
+        return None
+
+    return zip
+
+
+def _get_state(site: dict) -> Optional[str]:
+    state_long_name = site.get("state")
+    if not state_long_name:
+        logger.warning(
+            "%s:%s has no state in the parsed data", SOURCE_NAME, site["locationId"]
+        )
+        return None
+
+    if state_long_name == "Hawai'i":
+        state_long_name = "HAWAII"
+
+    try:
+        return schema.State[state_long_name.strip().upper().replace(" ", "_")].value
+    except KeyError:
+        logger.warning(
+            "%s:%s state '%s' could not be parsed to a valid enum. Using %s.",
+            SOURCE_NAME,
+            site["locationId"],
+            state_long_name,
+            state_long_name,
+        )
+        return state_long_name
 
 
 def normalize(site: dict, timestamp: str) -> schema.NormalizedLocation:
-    source_name = "wa_state"
+    source_name = SOURCE_NAME
 
     # NOTE: we use `get` where the field is optional in our data source, and
     # ["key'] access where it is not.
@@ -137,8 +171,8 @@ def normalize(site: dict, timestamp: str) -> schema.NormalizedLocation:
             street1=site.get("addressLine1"),
             street2=site.get("addressLine2"),
             city=site.get("city"),
-            state="WA",
-            zip=site["zipcode"] if _is_good_zip(site["zipcode"]) else None,
+            state=_get_state(site),
+            zip=_get_good_zip(site),
         ),
         location=schema.LatLng(latitude=site["latitude"], longitude=site["longitude"]),
         contact=_get_contacts(site),
@@ -168,7 +202,7 @@ def normalize(site: dict, timestamp: str) -> schema.NormalizedLocation:
         source=schema.Source(
             source=source_name,
             id=site["locationId"],
-            fetched_from_uri="https://floridahealthcovid19.gov/vaccines/vaccine-locator/",
+            fetched_from_uri="https://apim-vaccs-prod.azure-api.net/web/graphql",
             fetched_at=timestamp,
             published_at=site["updatedAt"],
             data=site,

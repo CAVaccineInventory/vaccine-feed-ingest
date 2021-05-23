@@ -1,0 +1,6 @@
+---
+state: us
+site: va_gov
+parser: json_list
+path:
+- data
