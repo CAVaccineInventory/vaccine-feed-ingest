@@ -89,6 +89,8 @@ def _get_active(site: dict) -> Optional[bool]:
 
     status_options = {
         "NORMAL": True,
+        "LIMITED": True,
+        "NOTICE": False
     }
 
     return try_lookup(status_options, status, None, name="active status lookup")
