@@ -73,12 +73,16 @@ def sanitize_url(url):
         return url
     return None
 
-
 def _get_notes(site: dict) -> Optional[List[str]]:
-    if site["attributes"]["operationalHoursSpecialInstructions"]:
-        return [site["attributes"]["operationalHoursSpecialInstructions"]]
 
-    return None
+    notes = []
+    # if site["attributes"]["operationalHoursSpecialInstructions"]:
+    notes.append(site["attributes"]["operationalHoursSpecialInstructions"])
+    
+    addtl = site["attributes"].get("additionalInfo")
+    if addtl:
+        notes.append(addtl)
+    # return None
 
 
 def _get_active(site: dict) -> Optional[bool]:
