@@ -167,7 +167,6 @@ def try_get_lat_long(site):
 
 def _get_normalized_location(site: dict, timestamp: str) -> schema.NormalizedLocation:
 
-    print(site)
     address = site["attributes"]["address"]["physical"]
 
     return schema.NormalizedLocation(
