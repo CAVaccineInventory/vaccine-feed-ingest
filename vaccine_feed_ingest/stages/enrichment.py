@@ -388,8 +388,17 @@ def _bulk_geocode(
                         ]
                     )
 
+                street1 = address_components["formatted_street"]
+                if "number" in address_components:
+                    street1 = " ".join(
+                        [
+                            address_components["number"],
+                            street1,
+                        ]
+                    )
+
                 loc.address = location.Address(
-                    street1=address_components.get("formatted_street"),
+                    street1=street1,
                     street2=street2,
                     city=address_components.get("city"),
                     state=address_components.get("state"),
