@@ -13,7 +13,18 @@ from vaccine_feed_ingest_schema import location as schema
 from vaccine_feed_ingest.utils.log import getLogger
 
 logger = getLogger(__file__)
-ADDRESS_RE = re.compile(r"(.*)(?:,|\\n)([a-zA-Z. ]+),\s?(?:IL|Illinois)?\s+(\d{5})")
+
+ADDRESS_RE = re.compile(r"(.*)(?:,|\n)([a-zA-Z. ]+),\s?(?:IL|Illinois)?\s+(\d{5})")
+
+# Rewrites for addresses that don't quite fit the regex.
+ADDRESS_FIXES = {
+    "3401 N Knox Ave Chicago, IL 60641": "3401 N Knox Ave\nChicago, IL 60641",
+    "2674 N Halsted St Chicago IL 60614\n": "2674 N Halsted St\nChicago, IL 60614",
+    "701 W North Ave, Melrose Park, IL": "701 W North Ave, Melrose Park, IL 60160",
+    ".": "2751 W Winona St, Chicago, IL 60625",  # Swedish Hospital, Chicago
+    "2000 5th Ave River Grove, IL 60171": "2000 5th Ave\nRiver Grove, IL 60171",
+    "3128 Voyager Lane\nJoliet, IL": "3128 Voyager Lane\nJoliet, IL 60431",
+}
 
 
 def _get_notes(site: dict) -> Optional[List[str]]:
@@ -37,6 +48,10 @@ def _normalize_address(site: dict) -> Optional[schema.Address]:
     if not address:
         logger.warning(f"No address for {site}")
         return None
+
+    # Rewrite slightly-broken addresses.
+    if a := ADDRESS_FIXES.get(address):
+        address = a
 
     street1 = None
     city = None
