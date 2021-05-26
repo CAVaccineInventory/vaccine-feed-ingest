@@ -13,8 +13,7 @@ from vaccine_feed_ingest.utils.parse import location_id_from_name
 
 def tableau_item_to_parsed_site(tableau_entry):
     """Put the tableau entry in something closer to the normalized format."""
-    main_data, extra_data = tableau_entry
-
+    main_data = tableau_entry
     name = main_data["Name-value"]
     address = main_data["Address-value"]
 
@@ -58,17 +57,7 @@ def parse_tableau(file_contents):
             zip, zip(itertools.repeat(data_dict.keys()), zip(*data_dict.values()))
         ),
     )
-    # Data contains at least one bad value; filter it out. See https://github.com/CAVaccineInventory/vaccine-feed-ingest/issues/621
-    filtered_transposed_data = (
-        row for row in transposed_data  # if row["Site-value"] != "%null%"
-    )
-    # Adjacent rows are actually duplicates; some have map, some have website. Combine into one.
-    doubled_filtered_transposed_data = zip(
-        filtered_transposed_data, filtered_transposed_data
-    )
-    return (
-        tableau_item_to_parsed_site(entry) for entry in doubled_filtered_transposed_data
-    )
+    return (tableau_item_to_parsed_site(entry) for entry in transposed_data)
 
 
 output_dir = pathlib.Path(sys.argv[1])
