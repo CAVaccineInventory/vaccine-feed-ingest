@@ -21,7 +21,6 @@ ADDRESS_FIXES = {
     "3401 N Knox Ave Chicago, IL 60641": "3401 N Knox Ave\nChicago, IL 60641",
     "2674 N Halsted St Chicago IL 60614\n": "2674 N Halsted St\nChicago, IL 60614",
     "701 W North Ave, Melrose Park, IL": "701 W North Ave, Melrose Park, IL 60160",
-    ".": "2751 W Winona St, Chicago, IL 60625",  # Swedish Hospital, Chicago
     "2000 5th Ave River Grove, IL 60171": "2000 5th Ave\nRiver Grove, IL 60171",
     "3128 Voyager Lane\nJoliet, IL": "3128 Voyager Lane\nJoliet, IL 60431",
 }
@@ -34,13 +33,7 @@ def _get_notes(site: dict) -> Optional[List[str]]:
 
 
 def _get_source_id(site: dict) -> str:
-    if site.get("source"):
-        return site["source"]["id"]
-    elif site.get("source1"):
-        return site["source1"]["id"]
-    else:
-        logger.error(f"No source found for {site}")
-        return "unknown"
+    return site["id"].split(":")[1]
 
 
 def _normalize_address(site: dict) -> Optional[schema.Address]:
