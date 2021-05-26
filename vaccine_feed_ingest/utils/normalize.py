@@ -3,11 +3,12 @@ Various tricks for matching source locations to product locations from VIAL
 """
 import hashlib
 import re
-from typing import List, Optional, Tuple
+from typing import List, Optional, OrderedDict, Tuple
 
 import orjson
 import phonenumbers
 import url_normalize
+import usaddress
 from vaccine_feed_ingest_schema import location
 from vaccine_feed_ingest_schema.location import VaccineProvider
 
@@ -260,6 +261,67 @@ def normalize_phone(
             )
         )
     return contacts
+
+
+def parse_address(address: str) -> OrderedDict[str, str]:
+    """Parse address, but may require subsequent cleaning depending on dataset."""
+
+    address = address.replace("\n", ", ")
+
+    parsed_address, address_type = usaddress.tag(address)
+    if address_type != "Street Address":
+        logger.warning(
+            f"Couldn't normalize address '{address}' of type {address_type}; best guess: {parsed_address}"
+        )
+
+    # Fixup: At least one address has "WI, USA" in the "StateName" component.
+    # Strip non-state components
+    if parsed_address.get("StateName"):
+        parsed_address["StateName"] = parsed_address["StateName"].partition(",")[0]
+
+    return parsed_address
+
+
+def normalize_address(patched_address: OrderedDict[str, str]) -> location.Address:
+    """Normalize a usaddress-parsed (and possibly -patched) address.
+
+    Calling convention:
+
+        parsed_address, address_type = parse_address("1600 Pennsylvania Ave NW, Washington DC 20500")
+        patched_address = apply_local_fixes(parsed_address)
+        address = normalize_address(patched_address)
+
+
+    where apply_local_fixes does any cleanup fixes needed for the dataset.
+    """
+
+    address_kwargs = {
+        # "street1",
+        # "city",
+        # "state",
+        # "zip"
+    }
+    street_buffer: List[str] = []
+    suite_buffer: List[str] = []
+    while len(patched_address) > 0:
+        component, value = patched_address.popitem(last=False)
+        if component == "PlaceName":
+            address_kwargs["city"] = value
+        elif component == "StateName":
+            address_kwargs["state"] = value
+        elif component == "ZipCode":
+            address_kwargs["zip"] = value
+        elif component == "OccupancyType":
+            suite_buffer.append(value)
+        elif component == "OccupancyIdentifier":
+            suite_buffer.append(value)
+        else:
+            street_buffer.append(value)
+    address_kwargs["street1"] = " ".join(street_buffer)
+    if len(suite_buffer) > 0:
+        address_kwargs["street2"] = " ".join(suite_buffer)
+
+    return location.Address(**address_kwargs)
 
 
 def calculate_content_hash(loc: location.NormalizedLocation) -> str:
