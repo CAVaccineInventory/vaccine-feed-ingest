@@ -206,8 +206,8 @@ def _get_address(site):
             zip=zipcode,
         )
     else:
-        print(addr_type)
-        print(addrDict)
+        # print(addr_type)
+        # print(addrDict)
 
         return None
 
