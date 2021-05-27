@@ -76,8 +76,21 @@ def test_add_provider_tag(full_location):
 
 
 def test_process_location_minimal(minimal_location):
-    assert enrichment._process_location(minimal_location) is None
+    enrichment._process_location(minimal_location)
+    assert minimal_location
 
 
 def test_process_location(full_location):
-    assert enrichment._process_location(full_location)
+    enrichment._process_location(full_location)
+    assert full_location
+
+
+def test_bulk_process_locations(full_location, minimal_location):
+    locations = [full_location, minimal_location]
+    enrichment._bulk_process_locations(locations)
+    assert locations
+
+
+def test_is_loadable_location(full_location, minimal_location):
+    assert enrichment._is_loadable_location(full_location) is True
+    assert enrichment._is_loadable_location(minimal_location) is False
