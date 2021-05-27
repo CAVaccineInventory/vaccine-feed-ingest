@@ -743,17 +743,6 @@ python-versions = "*"
 dev = ["hypothesis"]
 
 [[package]]
-name = "jsonify-opening-hours"
-version = "0.3.1"
-description = "Parses opening hours from various human-readable strings into a standard JSON format"
-category = "main"
-optional = false
-python-versions = "*"
-
-[package.dependencies]
-pyparsing = "*"
-
-[[package]]
 name = "jsonschema"
 version = "3.2.0"
 description = "An implementation of JSON Schema validation for Python"
@@ -1234,6 +1223,17 @@ description = "Utilities for writing pandoc filters in python"
 category = "main"
 optional = false
 python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*"
+
+[[package]]
+name = "parse-opening-hours"
+version = "0.4.0"
+description = "Parses opening hours from various human-readable strings into a standard JSON format"
+category = "main"
+optional = false
+python-versions = "*"
+
+[package.dependencies]
+pyparsing = "*"
 
 [[package]]
 name = "parso"
@@ -2140,7 +2140,7 @@ test = ["pytest", "pytest-runner"]
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.9"
-content-hash = "9311fc6339d5f6fd1f7dcf5ac8e12683450fb22c46b47763a492010595004650"
+content-hash = "bae763569136329f2902ccd6383b1c376a2f8be8149865e131be8bc462155e3f"
 
 [metadata.files]
 aiohttp = [
@@ -2514,10 +2514,6 @@ json5 = [
     {file = "json5-0.9.5-py2.py3-none-any.whl", hash = "sha256:af1a1b9a2850c7f62c23fde18be4749b3599fd302f494eebf957e2ada6b9e42c"},
     {file = "json5-0.9.5.tar.gz", hash = "sha256:703cfee540790576b56a92e1c6aaa6c4b0d98971dc358ead83812aa4d06bdb96"},
 ]
-jsonify-opening-hours = [
-    {file = "jsonify-opening-hours-0.3.1.tar.gz", hash = "sha256:75a97e0eb519b24f3e59a7063ecf1ad465bb220d973a62d991b2601f6487ab80"},
-    {file = "jsonify_opening_hours-0.3.1-py3-none-any.whl", hash = "sha256:8e6e5270dbea813b02f2135d170666886ffb203cbe7a5a57140934488377f3d8"},
-]
 jsonschema = [
     {file = "jsonschema-3.2.0-py2.py3-none-any.whl", hash = "sha256:4e5b3cf8216f577bee9ce139cbe72eca3ea4f292ec60928ff24758ce626cd163"},
     {file = "jsonschema-3.2.0.tar.gz", hash = "sha256:c8a85b28d377cc7737e46e2d9f2b4f44ee3c0e1deac6bf46ddefc7187d30797a"},
@@ -2890,6 +2886,10 @@ pandas = [
 ]
 pandocfilters = [
     {file = "pandocfilters-1.4.3.tar.gz", hash = "sha256:bc63fbb50534b4b1f8ebe1860889289e8af94a23bff7445259592df25a3906eb"},
+]
+parse-opening-hours = [
+    {file = "parse-opening-hours-0.4.0.tar.gz", hash = "sha256:aaf88cc19fbe856b0c917efff4c524d03a06d1bfddfb1a240d2cafd240728ea5"},
+    {file = "parse_opening_hours-0.4.0-py3-none-any.whl", hash = "sha256:0d2ed338a61da984ec63ec1aa0e3e59e2a0ab0d79e36b96746eead0a1112e9c8"},
 ]
 parso = [
     {file = "parso-0.8.2-py2.py3-none-any.whl", hash = "sha256:a8c4922db71e4fdb90e0d0bc6e50f9b273d3397925e5e60a717e719201778d22"},

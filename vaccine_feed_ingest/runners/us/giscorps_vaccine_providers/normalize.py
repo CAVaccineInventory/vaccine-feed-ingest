@@ -7,11 +7,7 @@ import pathlib
 import sys
 from typing import List, Optional
 
-try:
-    from opening_hours import OpeningHours
-except Exception:
-    from parse_opening_hours import OpeningHours
-
+from opening_hours import OpeningHours
 from vaccine_feed_ingest_schema import location as schema
 
 from vaccine_feed_ingest.utils.log import getLogger
