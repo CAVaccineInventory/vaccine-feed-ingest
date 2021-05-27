@@ -1,9 +1,5 @@
 #!/usr/bin/env bash
 
-# exit when a command fails instead of blindly blundering forward
-set -e
-# treat unset variables as an error and exit immediately
-set -u
 # don't hide exit codes when pipeline output to another command
 set -o pipefail
 
@@ -16,7 +12,12 @@ maybe_install() {
         echo ""
         echo "Hit Control-C if you don't want me to install $2 for you"
         read -r
+        echo "About to run $3"
         $3
+        if [ "$?" -ne 0 ]; then 
+            echo "error previous command failed"
+            exit 10 
+        fi
     else
         echo "Found your $2 install"
     fi
@@ -26,7 +27,8 @@ setup_macos() {
 
     echo "I think you're running macOS. So we'll use homebrew"
     #shellcheck disable=SC2016
-    maybe_install "brew" "Homebrew" '/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"'
+    #Not using maybe_install because something was eating the parenthisis
+    brew update 2>/dev/null || /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
 
     maybe_install "python3.9" "Python 3.9" "brew install python@3.9"
     maybe_install "poetry" "Poetry" "brew install poetry"
