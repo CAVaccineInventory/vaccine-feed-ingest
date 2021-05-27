@@ -46,9 +46,9 @@ ndjson = "^0.3.1"
 orjson = "^3.5.2"
 diskcache = "^5.2.1"
 placekey = "^0.0.11"
-parse-opening-hours = "^0.4.0"
 pygeocodio = "^1.0.0"
 usaddress = "^0.5.10"
+parse-opening-hours = "^0.4.0"
 
 [tool.poetry.dev-dependencies]
 tox = "^3.23.1"
