@@ -254,13 +254,22 @@ def normalize_state_name(name: str) -> str:
 
     return name.upper()
 
+
+def apply_address_fixups(address: OrderedDict[str, str]) -> OrderedDict[str, str]:
+    return address
+
+
 def _get_address(site):
+    try:
+        parsed = parse_address(site["attributes"]["fulladdr"])
 
-    parsed = parse_address(site["attributes"]["fulladdr"])
+        parsed = apply_address_fixups(parsed)
 
-    normalized = normalize_address(parsed)
+        normalized = normalize_address(parsed)
 
-    return normalized
+        return normalized
+    except usaddress.RepeatedLabelError:
+        return None
 
 
 def _get_normalized_location(site: dict, timestamp: str) -> schema.NormalizedLocation:
