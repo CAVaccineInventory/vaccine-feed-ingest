@@ -7,11 +7,10 @@ import pathlib
 import sys
 from typing import List, Optional
 
-import usaddress
 from vaccine_feed_ingest_schema import location as schema
 
 from vaccine_feed_ingest.utils.log import getLogger
-from vaccine_feed_ingest.utils.normalize import normalize_phone, normalize_zip
+from vaccine_feed_ingest.utils.normalize import normalize_phone, parse_address, normalize_zip, normalize_address
 
 logger = getLogger(__file__)
 
@@ -177,39 +176,12 @@ def try_get_lat_long(site):
 
 
 def _get_address(site):
-    # addrsplit =
-    addrDict, addr_type = None, None
-    try:
-        addrDict, addr_type = usaddress.tag(site["attributes"]["fulladdr"])
-    except Exception:
-        return None
 
-    street = (
-        (addrDict.get("AddressNumber") or "")
-        + " "
-        + (addrDict.get("StreetName") or "")
-        + " "
-        + (addrDict.get("StreetNamePostType") or "")
-    )
-    place = addrDict.get("PlaceName")
-    state = addrDict.get("Statename")
-    zipcode = addrDict.get("ZipCode")
+    parsed = parse_address(site["attributes"]["fulladdr"])
 
-    zipcode = normalize_zip(zipcode)
+    normalized = normalize_address(parsed)
 
-    if addr_type == "Street Address":
-        return schema.Address(
-            street1=street,
-            street2=None,
-            city=place,
-            state=state,
-            zip=zipcode,
-        )
-    else:
-        # print(addr_type)
-        # print(addrDict)
-
-        return None
+    return normalized
 
 
 def _get_normalized_location(site: dict, timestamp: str) -> schema.NormalizedLocation:
