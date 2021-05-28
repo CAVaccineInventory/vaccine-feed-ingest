@@ -58,7 +58,7 @@ jobs:
 
       - name: load poetry install from cache
         id: cached-poetry-dependencies
-        uses: actions/cache@v2.1.5
+        uses: actions/cache@v2.1.6
         with:
           path: vaccine-feed-ingest/.venv
           key: venv-${{ runner.os }}-${{ hashFiles('**/poetry.lock') }}
@@ -69,7 +69,7 @@ jobs:
 
       - name: load .tox from cache
         id: cached-tox-dependencies
-        uses: actions/cache@v2.1.5
+        uses: actions/cache@v2.1.6
         with:
           path: vaccine-feed-ingest/.tox
           key: venv-${{ runner.os }}-${{ hashFiles('**/poetry.lock') }}
@@ -119,7 +119,7 @@ jobs:
 
       - name: load poetry install from cache
         id: cached-poetry-dependencies
-        uses: actions/cache@v2.1.5
+        uses: actions/cache@v2.1.6
         with:
           path: vaccine-feed-ingest/.venv
           key: venv-${{ runner.os }}-${{ hashFiles('**/poetry.lock') }}
