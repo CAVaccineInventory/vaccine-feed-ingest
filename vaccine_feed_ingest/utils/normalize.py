@@ -271,7 +271,7 @@ def parse_address(address: str) -> OrderedDict[str, str]:
     parsed_address, address_type = usaddress.tag(address)
     if address_type != "Street Address":
         logger.warning(
-            f"Couldn't normalize address '{address}' of type {address_type}; best guess: {parsed_address}"
+            f"Couldn't parse address '{address}' of type {address_type}; best guess: {parsed_address}"
         )
 
     # Fixup: At least one address has "WI, USA" in the "StateName" component.
@@ -287,7 +287,7 @@ def normalize_address(patched_address: OrderedDict[str, str]) -> location.Addres
 
     Calling convention:
 
-        parsed_address, address_type = parse_address("1600 Pennsylvania Ave NW, Washington DC 20500")
+        parsed_address = parse_address("1600 Pennsylvania Ave NW, Washington DC 20500")
         patched_address = apply_local_fixes(parsed_address)
         address = normalize_address(patched_address)
 

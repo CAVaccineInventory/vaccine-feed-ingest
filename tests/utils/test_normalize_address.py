@@ -45,7 +45,7 @@ def test_normalize_address():
         parse_address("Yosemite Falls\nYosemite Village, CA\n95389\n")
     ) == schema.Address(
         street1="Yosemite Falls",
-        street2=None,  # This is a weird artifact.
+        street2=None,  # This is a weird (but OK) artifact.
         city="Yosemite Village",
         state="CA",
         zip="95389",
