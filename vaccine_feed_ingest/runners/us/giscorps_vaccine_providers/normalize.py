@@ -261,10 +261,46 @@ def normalize_state_name(name: str) -> str:
 
 
 def apply_address_fixups(address: OrderedDict[str, str]) -> OrderedDict[str, str]:
+
+    if "PlaceName" in address and "StateName" in address:
+        problem_dakotas = ["Valley City, North", "Williston North", "Belle Fourche, South"]
+        if address["PlaceName"] in problem_dakotas and address["StateName"] == "Dakota":
+            pl_old = address["PlaceName"]
+            address["PlaceName"] = pl_old[:-5].strip()
+            address["StateName"] = pl_old[-5:] + " Dakota"
+
     if "StateName" in address:
         state = address["StateName"]
+
+        if state == "ND North Dakota":
+            state = "North Dakota"
+        elif state == "Mich.":
+            state = "Michigan"
+        elif state == "SR":
+            raise CustomBailError()
+
+        if state in ["Bay Arkansas", "Palestine Arkansas"]:
+            spl = state.split(" ")
+            state = spl[1]
+            address["PlaceName"] = (address.get("PlaceName") or "" + " " + spl[0]).strip()
+
         address["StateName"] = normalize_state_name(state)
 
+        if len(address["StateName"]) == 1:
+            del address["StateName"]
+
+        if address.get("StateName") in ["ANCHORAGE", "LAGOON", "C2", "IN SPRINGFIELD", "BAY", "JUNCTION", "JERSEY", "CAROLINA", "FE", "MEXICO", "OAKS", "GUAYAMA", "ISABELA", "HATILLO", "BAYAMÓN", "CAGUAS", "FAJARDO", "PONCE", "MAYAGÜEZ", "ISLANDS", "LIMA", "CLAYTON", "", "", "", ""]:
+
+            address["PlaceName"] = (address.get("PlaceName") or "" + " " + address["StateName"].lower()).strip()
+
+            del address["StateName"]
+
+        if address.get("StateName") == "ALA":
+            address["StateName"] = "AL"
+
+        if address.get("StateName") == "PA15068":
+            address["StateName"] = "PA"
+            address["ZipCode"] = "15068"
 
     if "ZipCode" in address:
         normalzip = normalize_zip(address["ZipCode"])
