@@ -256,6 +256,13 @@ def normalize_state_name(name: str) -> str:
 
 
 def apply_address_fixups(address: OrderedDict[str, str]) -> OrderedDict[str, str]:
+    if "ZipCode" in address:
+        normalzip = normalize_zip(address["ZipCode"])
+        if normalzip:
+            address["ZipCode"] = normalzip
+        else:
+            del address["ZipCode"]
+
     return address
 
 
