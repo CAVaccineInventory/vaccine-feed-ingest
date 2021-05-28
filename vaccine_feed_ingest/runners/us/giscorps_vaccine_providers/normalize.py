@@ -256,6 +256,11 @@ def normalize_state_name(name: str) -> str:
 
 
 def apply_address_fixups(address: OrderedDict[str, str]) -> OrderedDict[str, str]:
+    if "StateName" in address:
+        state = address["StateName"]
+        address["StateName"] = normalize_state_name(state)
+
+
     if "ZipCode" in address:
         normalzip = normalize_zip(address["ZipCode"])
         if normalzip:
