@@ -18,6 +18,10 @@ logger = getLogger(__file__)
 SOURCE_NAME = "us_giscorps_vaccine_providers"
 
 
+class CustomBailError(Exception):
+    pass
+
+
 def _get_availability(site: dict) -> schema.Availability:
     appt_only = site["attributes"]["appt_only"]
 
@@ -280,7 +284,7 @@ def _get_address(site):
         normalized = normalize_address(parsed)
 
         return normalized
-    except usaddress.RepeatedLabelError:
+    except (usaddress.RepeatedLabelError, CustomBailError):
         return None
 
 
