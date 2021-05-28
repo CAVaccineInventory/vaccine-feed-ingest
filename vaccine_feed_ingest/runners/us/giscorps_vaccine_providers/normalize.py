@@ -323,10 +323,6 @@ def apply_address_fixups(address: OrderedDict[str, str]) -> OrderedDict[str, str
             "ISLANDS",
             "LIMA",
             "CLAYTON",
-            "",
-            "",
-            "",
-            "",
         ]:
 
             address["PlaceName"] = (
