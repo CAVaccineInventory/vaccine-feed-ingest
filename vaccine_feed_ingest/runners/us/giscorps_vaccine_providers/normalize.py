@@ -7,11 +7,16 @@ import pathlib
 import sys
 from typing import List, Optional, OrderedDict
 
+import usaddress
 from vaccine_feed_ingest_schema import location as schema
 
-import usaddress
 from vaccine_feed_ingest.utils.log import getLogger
-from vaccine_feed_ingest.utils.normalize import normalize_phone, parse_address, normalize_zip, normalize_address
+from vaccine_feed_ingest.utils.normalize import (
+    normalize_address,
+    normalize_phone,
+    normalize_zip,
+    parse_address,
+)
 
 logger = getLogger(__file__)
 
@@ -186,68 +191,68 @@ def normalize_state_name(name: str) -> str:
         return name
 
     us_state_abbrev = {
-        'Alabama': 'AL',
-        'Alaska': 'AK',
-        'American Samoa': 'AS',
-        'Arizona': 'AZ',
-        'Arkansas': 'AR',
-        'California': 'CA',
-        'Colorado': 'CO',
-        'Connecticut': 'CT',
-        'Delaware': 'DE',
-        'District of Columbia': 'DC',
-        'Florida': 'FL',
-        'Georgia': 'GA',
-        'Guam': 'GU',
-        'Hawaii': 'HI',
-        'Idaho': 'ID',
-        'Illinois': 'IL',
-        'Indiana': 'IN',
-        'Iowa': 'IA',
-        'Kansas': 'KS',
-        'Kentucky': 'KY',
-        'Louisiana': 'LA',
-        'Maine': 'ME',
-        'Maryland': 'MD',
-        'Massachusetts': 'MA',
-        'Michigan': 'MI',
-        'Minnesota': 'MN',
-        'Mississippi': 'MS',
-        'Missouri': 'MO',
-        'Montana': 'MT',
-        'Nebraska': 'NE',
-        'Nevada': 'NV',
-        'New Hampshire': 'NH',
-        'New Jersey': 'NJ',
-        'New Mexico': 'NM',
-        'New York': 'NY',
-        'North Carolina': 'NC',
-        'North Dakota': 'ND',
-        'Northern Mariana Islands': 'MP',
-        'Ohio': 'OH',
-        'Oklahoma': 'OK',
-        'Oregon': 'OR',
-        'Pennsylvania': 'PA',
-        'Puerto Rico': 'PR',
-        'Rhode Island': 'RI',
-        'South Carolina': 'SC',
-        'South Dakota': 'SD',
-        'Tennessee': 'TN',
-        'Texas': 'TX',
-        'Utah': 'UT',
-        'Vermont': 'VT',
-        'Virgin Islands': 'VI',
-        'Virginia': 'VA',
-        'Washington': 'WA',
-        'West Virginia': 'WV',
-        'Wisconsin': 'WI',
-        'Wyoming': 'WY'
+        "Alabama": "AL",
+        "Alaska": "AK",
+        "American Samoa": "AS",
+        "Arizona": "AZ",
+        "Arkansas": "AR",
+        "California": "CA",
+        "Colorado": "CO",
+        "Connecticut": "CT",
+        "Delaware": "DE",
+        "District of Columbia": "DC",
+        "Florida": "FL",
+        "Georgia": "GA",
+        "Guam": "GU",
+        "Hawaii": "HI",
+        "Idaho": "ID",
+        "Illinois": "IL",
+        "Indiana": "IN",
+        "Iowa": "IA",
+        "Kansas": "KS",
+        "Kentucky": "KY",
+        "Louisiana": "LA",
+        "Maine": "ME",
+        "Maryland": "MD",
+        "Massachusetts": "MA",
+        "Michigan": "MI",
+        "Minnesota": "MN",
+        "Mississippi": "MS",
+        "Missouri": "MO",
+        "Montana": "MT",
+        "Nebraska": "NE",
+        "Nevada": "NV",
+        "New Hampshire": "NH",
+        "New Jersey": "NJ",
+        "New Mexico": "NM",
+        "New York": "NY",
+        "North Carolina": "NC",
+        "North Dakota": "ND",
+        "Northern Mariana Islands": "MP",
+        "Ohio": "OH",
+        "Oklahoma": "OK",
+        "Oregon": "OR",
+        "Pennsylvania": "PA",
+        "Puerto Rico": "PR",
+        "Rhode Island": "RI",
+        "South Carolina": "SC",
+        "South Dakota": "SD",
+        "Tennessee": "TN",
+        "Texas": "TX",
+        "Utah": "UT",
+        "Vermont": "VT",
+        "Virgin Islands": "VI",
+        "Virginia": "VA",
+        "Washington": "WA",
+        "West Virginia": "WV",
+        "Wisconsin": "WI",
+        "Wyoming": "WY",
     }
 
     name = name.strip()
     name = name.replace(".", "")
 
-    #capitalize the first letter of each word in cases where a state name is provided
+    # capitalize the first letter of each word in cases where a state name is provided
     spl = name.split(" ")
     if len(spl) > 1:
         " ".join([word.capitalize() for word in spl])
@@ -263,7 +268,11 @@ def normalize_state_name(name: str) -> str:
 def apply_address_fixups(address: OrderedDict[str, str]) -> OrderedDict[str, str]:
 
     if "PlaceName" in address and "StateName" in address:
-        problem_dakotas = ["Valley City, North", "Williston North", "Belle Fourche, South"]
+        problem_dakotas = [
+            "Valley City, North",
+            "Williston North",
+            "Belle Fourche, South",
+        ]
         if address["PlaceName"] in problem_dakotas and address["StateName"] == "Dakota":
             pl_old = address["PlaceName"]
             address["PlaceName"] = pl_old[:-5].strip()
@@ -282,16 +291,47 @@ def apply_address_fixups(address: OrderedDict[str, str]) -> OrderedDict[str, str
         if state in ["Bay Arkansas", "Palestine Arkansas"]:
             spl = state.split(" ")
             state = spl[1]
-            address["PlaceName"] = (address.get("PlaceName") or "" + " " + spl[0]).strip()
+            address["PlaceName"] = (
+                address.get("PlaceName") or "" + " " + spl[0]
+            ).strip()
 
         address["StateName"] = normalize_state_name(state)
 
         if len(address["StateName"]) == 1:
             del address["StateName"]
 
-        if address.get("StateName") in ["ANCHORAGE", "LAGOON", "C2", "IN SPRINGFIELD", "BAY", "JUNCTION", "JERSEY", "CAROLINA", "FE", "MEXICO", "OAKS", "GUAYAMA", "ISABELA", "HATILLO", "BAYAMÓN", "CAGUAS", "FAJARDO", "PONCE", "MAYAGÜEZ", "ISLANDS", "LIMA", "CLAYTON", "", "", "", ""]:
+        if address.get("StateName") in [
+            "ANCHORAGE",
+            "LAGOON",
+            "C2",
+            "IN SPRINGFIELD",
+            "BAY",
+            "JUNCTION",
+            "JERSEY",
+            "CAROLINA",
+            "FE",
+            "MEXICO",
+            "OAKS",
+            "GUAYAMA",
+            "ISABELA",
+            "HATILLO",
+            "BAYAMÓN",
+            "CAGUAS",
+            "FAJARDO",
+            "PONCE",
+            "MAYAGÜEZ",
+            "ISLANDS",
+            "LIMA",
+            "CLAYTON",
+            "",
+            "",
+            "",
+            "",
+        ]:
 
-            address["PlaceName"] = (address.get("PlaceName") or "" + " " + address["StateName"].lower()).strip()
+            address["PlaceName"] = (
+                address.get("PlaceName") or "" + " " + address["StateName"].lower()
+            ).strip()
 
             del address["StateName"]
 
