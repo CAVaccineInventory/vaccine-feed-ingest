@@ -10,7 +10,7 @@ from typing import List, Optional
 from vaccine_feed_ingest_schema import location as schema
 
 from vaccine_feed_ingest.utils.log import getLogger
-from vaccine_feed_ingest.utils.normalize import normalize_phone
+from vaccine_feed_ingest.utils.normalize import normalize_phone, normalize_url
 
 logger = getLogger(__file__)
 
@@ -45,9 +45,10 @@ def _get_id(site: dict) -> str:
 
 def _get_contacts(site: dict) -> Optional[List[schema.Contact]]:
     contacts = []
-    if site["attributes"]["phone"]:
-        for phone in normalize_phone(site["attributes"]["phone"]):
-            contacts.append(phone)
+    phs = site["attributes"].get("phone")
+    if phs:
+        if phs.get("main"):
+            contacts.append(schema.Contact(phone=phs.get("main")))
 
     # if site["attributes"]["publicEmail"]:
     #     contacts.append(schema.Contact(email=site["attributes"]["publicEmail"]))
@@ -55,7 +56,7 @@ def _get_contacts(site: dict) -> Optional[List[schema.Contact]]:
     # there are multiple urls, vaccine, agency, health dept. etcw
     web = site["attributes"].get("website")
     if web:
-        web = sanitize_url(web)
+        web = normalize_url(web)
         contacts.append(schema.Contact(website=web))
 
     if len(contacts) > 0:
@@ -64,26 +65,17 @@ def _get_contacts(site: dict) -> Optional[List[schema.Contact]]:
     return None
 
 
-def sanitize_url(url):
-    url = url.strip()
-    url = url.replace("#", "")
-    url = url.replace("\\", "/")  # thanks windows
-    url = url if url.startswith("http") else "https://" + url
-    if len(url.split(" ")) == 1:
-        return url
-    return None
-
-
 def _get_notes(site: dict) -> Optional[List[str]]:
 
     notes = []
     # if site["attributes"]["operationalHoursSpecialInstructions"]:
     notes.append(site["attributes"]["operationalHoursSpecialInstructions"])
-
-    addtl = site["attributes"].get("additionalInfo")
-    if addtl:
-        notes.append(addtl)
-    # return None
+    oper_status = site["attributes"].get("additionalInfo")
+    if oper_status:
+        addtl = oper_status.get("additionalInfo")
+        if addtl:
+            notes.append(addtl)
+    return notes
 
 
 def _get_active(site: dict) -> Optional[bool]:
@@ -94,30 +86,49 @@ def _get_active(site: dict) -> Optional[bool]:
 
     status_options = {"NORMAL": True, "LIMITED": True, "NOTICE": False}
 
-    return try_lookup(status_options, status, None, name="active status lookup")
+    return (
+        try_lookup(status_options, status, None, name="active status lookup")
+        or site["attributes"].get("activeStatus") != "A"
+    )
 
 
-# def _get_access(site: dict) -> Optional[List[str]]:
-#     drive = site["attributes"].get("drive_through")
-#     drive_bool = drive is not None
+def _get_access(site: dict) -> Optional[List[str]]:
+    services = site["attributes"].get("detailedServices")
+    walk_in = None
+    walk_in_bool = None
 
-#     # walk = site["attributes"].get("drive_through")
-#     # walk_bool = drive is not None
+    if services and services[0].get("name") == "COVID-19 vaccines":
+        walk_in = services[0].get("walkInsAccepted")
+        # referralRequired
+        # onlineSchedulingAvailable
 
-#     wheelchair = site["attributes"].get("Wheelchair_Accessible")
+    if walk_in is None:
+        pass
+    elif walk_in.lower() == "true":
+        walk_in_bool = True
+    elif walk_in.lower() == "false":
+        walk_in_bool = False
+    else:
+        walk_in_bool = bool(walk_in)
+    # drive_bool = drive is not None
 
-#     wheelchair_options = {
-#         "Yes": "yes",
-#         "Partially": "partial",
-#         "Unknown": "no",
-#         "Not Applicable": "no",
-#         "NA": "no",
-#     }
-#     wheelchair_bool = try_lookup(
-#         wheelchair_options, wheelchair, "no", name="wheelchair access"
-#     )
+    # walk = site["attributes"].get("drive_through")
+    # walk_bool = drive is not None
 
-#     return schema.Access(drive=drive_bool, wheelchair=wheelchair_bool)
+    # wheelchair = site["attributes"].get("Wheelchair_Accessible")
+
+    # wheelchair_options = {
+    #     "Yes": "yes",
+    #     "Partially": "partial",
+    #     "Unknown": "no",
+    #     "Not Applicable": "no",
+    #     "NA": "no",
+    # }
+    # wheelchair_bool = try_lookup(
+    #     wheelchair_options, wheelchair, "no", name="wheelchair access"
+    # )
+
+    return schema.Access(walk=walk_in_bool)
 
 
 def try_lookup(mapping, value, default, name=None):
@@ -140,6 +151,31 @@ def _get_published_at(site: dict) -> Optional[str]:
     #     return date.isoformat()
 
     return None
+
+
+def _get_opening_hours(site: dict) -> Optional[List[OpenHour]]:
+    days = site["attributes"].get("hours")
+    openhours = []
+
+    for day, hours in days:
+        day = {
+            "day": day,
+        }
+        # TODO: use the parse-opening hours library to parse the time range into the correct schema.
+        # the library has not yet been updated to support this
+        day.update(TimeRange.parse(hours))
+        openhours.append(day)
+
+    return openhours
+
+
+def _get_links(site: dict) -> Optional[List[schema.Link]]:
+    provider_id = site["attributes"].get("uniqueId")
+    return [
+        schema.Link(
+            authority=None, id=provider_id, uri=site["attributes"].get("website")
+        )
+    ]
 
 
 def try_get_list(lis, index, default=None):
@@ -186,12 +222,12 @@ def _get_normalized_location(site: dict, timestamp: str) -> schema.NormalizedLoc
         contact=_get_contacts(site),
         languages=None,
         opening_dates=None,
-        opening_hours=None,  # TODO: the format for this probably needs some mega-parsing as it looks like this -> "operhours": "Monday - Friday 8:00 am - 2:00 pm Saturdays 9:00 am - 12:00 pm",
+        opening_hours=_get_opening_hours(site),
         availability=None,  # _get_availability(site),
         inventory=None,
-        access=None,  # _get_access(site),
+        access=_get_access(site),
         parent_organization=None,
-        links=None,  # TODO
+        links=_get_links(site),
         notes=_get_notes(site),
         active=_get_active(site),
         source=schema.Source(
