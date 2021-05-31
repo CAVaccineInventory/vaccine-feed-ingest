@@ -46,7 +46,12 @@ def normalize_entry(vaccination_site_dict):
     if vaccination_site_dict["phone"]:
         normalized_dict["contact"].append({"phone": vaccination_site_dict["phone"]})
     if vaccination_site_dict["url"]:
-        normalized_dict["contact"].append({"url": vaccination_site_dict["url"]})
+        if vaccination_site_dict["url"][-1] == "#":
+            # HACK: not sure why trailing '#' makes the url invalid.
+            url = vaccination_site_dict["url"][:-1]
+        else:
+            url = vaccination_site_dict["url"]
+        normalized_dict["contact"].append({"website": url})
     return normalized_dict
 
 
