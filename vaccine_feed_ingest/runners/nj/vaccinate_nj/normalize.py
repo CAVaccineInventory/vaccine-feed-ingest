@@ -1,14 +1,15 @@
 #!/usr/bin/env python
 import datetime
+import os
 import pathlib
 import sys
 
 import ndjson
-import os
 
 output_dir = pathlib.Path(sys.argv[1])
 input_dir = pathlib.Path(sys.argv[2])
 timestamp = datetime.datetime.utcnow().isoformat()
+
 
 def normalize_entry(vaccination_site_dict):
     normalized_dict = {
@@ -54,6 +55,7 @@ def normalize_entry(vaccination_site_dict):
             url = vaccination_site_dict["url"]
         normalized_dict["contact"].append({"website": url})
     return normalized_dict
+
 
 json_filepaths = input_dir.glob("*.ndjson")
 for in_filepath in json_filepaths:
