@@ -1,13 +1,14 @@
 #!/usr/bin/env python
-
+import datetime
 import pathlib
 import sys
 
 import ndjson
+import os
 
-output_path = pathlib.Path(sys.argv[1])
-input_path = pathlib.Path(sys.argv[2])
-
+output_dir = pathlib.Path(sys.argv[1])
+input_dir = pathlib.Path(sys.argv[2])
+timestamp = datetime.datetime.utcnow().isoformat()
 
 def normalize_entry(vaccination_site_dict):
     normalized_dict = {
@@ -36,7 +37,7 @@ def normalize_entry(vaccination_site_dict):
             "source": "vaccinate_nj",
             "id": vaccination_site_dict["id"],
             "fetched_from_uri": "https://c19vaccinelocatornj.info/api/v1/vaccine/locations/page",
-            "fetched_at": None,  # TODO: not sure how to get this data from parsed data?
+            "fetched_at": timestamp,
             "published_at": vaccination_site_dict["lastCheckedDate"],
             "data": vaccination_site_dict,
         },
@@ -54,9 +55,12 @@ def normalize_entry(vaccination_site_dict):
         normalized_dict["contact"].append({"website": url})
     return normalized_dict
 
-
-with open(input_path / "data.parsed.ndjson", "r") as f:
-    file_contents = ndjson.load(f)
-    output_json = [normalize_entry(entry) for entry in file_contents]
-with open(output_path / "data.normalized.ndjson", "w") as f:
-    ndjson.dump(output_json, f)
+json_filepaths = input_dir.glob("*.ndjson")
+for in_filepath in json_filepaths:
+    filename, _ = os.path.splitext(in_filepath.name)
+    out_filepath = output_dir / f"{filename}.normalized.ndjson"
+    with in_filepath.open() as fin:
+        with out_filepath.open("w") as fout:
+            file_contents = ndjson.load(fin)
+            output_json = [normalize_entry(entry) for entry in file_contents]
+            ndjson.dump(output_json, fout)
