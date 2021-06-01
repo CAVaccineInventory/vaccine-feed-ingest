@@ -4,8 +4,6 @@ LABEL name=vaccine-feed-ingest
 RUN useradd -m vaccine && mkdir vaccine-feed-ingest && chown vaccine:vaccine vaccine-feed-ingest
 
 COPY ./ /vaccine-feed-ingest/
-RUN rm -rf /vaccine-feed-ingest/.venv/ && mkdir /vaccine-feed-ingest/out && \
-    chown vaccine:vaccine /vaccine-feed-ingest/out
 
 USER vaccine
 
