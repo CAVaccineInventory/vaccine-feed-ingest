@@ -185,26 +185,32 @@ def _normalize_hours(
 def _get_opening_hours(site: dict) -> Optional[List[schema.OpenHour]]:
     hours = []
 
-    if site["attributes"]["mon_open"] == "Yes":
-        hours += _normalize_hours(site["attributes"]["mon_hrs"], "monday")
-
-    if site["attributes"]["tues_open"] == "Yes":
-        hours += _normalize_hours(site["attributes"]["tues_hrs"], "tuesday")
-
-    if site["attributes"]["wed_open"] == "Yes":
-        hours += _normalize_hours(site["attributes"]["wed_hrs"], "wednesday")
-
-    if site["attributes"]["thurs_open"] == "Yes":
-        hours += _normalize_hours(site["attributes"]["thur_hrs"], "thursday")
-
-    if site["attributes"]["fri_open"] == "Yes":
-        hours += _normalize_hours(site["attributes"]["fri_hrs"], "friday")
-
-    if site["attributes"]["sat_open"] == "Yes":
-        hours += _normalize_hours(site["attributes"]["sat_hrs"], "saturday")
-
-    if site["attributes"]["sun_open"] == "Yes":
-        hours += _normalize_hours(site["attributes"]["sun_hrs"], "sunday")
+    # print(site["attributes"])
+    for key, dow, hrs in zip(
+        [
+            "mon_open",
+            "tues_open",
+            "wed_open",
+            "thurs_open",
+            "fri_open",
+            "sat_open",
+            "sun_open",
+        ],
+        ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"],
+        [
+            "mon_hrs",
+            "tues_hrs",
+            "wed_hrs",
+            "thurs_hrs",
+            "fri_hrs",
+            "sat_hrs",
+            "sun_hrs",
+        ],
+    ):
+        if key not in site["attributes"]:
+            continue
+        elif site["attributes"][key] == "Yes":
+            hours += _normalize_hours(site["attributes"][hrs], dow)
 
     return hours if hours else None
 

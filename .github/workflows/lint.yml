@@ -13,7 +13,7 @@ jobs:
     name: Action Linter
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v2.3.4
       - uses: cschleiden/actions-linter@v1
         with:
           workflows: '[".github/workflows/*.yml"]'
@@ -33,9 +33,9 @@ jobs:
       - name: apt-get dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install libbz2-dev liblzma-dev libreadline-dev libsqlite3-dev
+          sudo apt-get install libbz2-dev liblzma-dev libreadline-dev libsqlite3-dev pdftohtml
 
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v2.3.4
         with:
           repository: CAVaccineInventory/vaccine-feed-ingest
           path: ./vaccine-feed-ingest/
@@ -47,7 +47,7 @@ jobs:
           python_version=$(cat .python-version)
           echo "python_version=${python_version}" >> $GITHUB_ENV
 
-      - uses: actions/setup-python@v2
+      - uses: actions/setup-python@v2.2.2
         with:
           python-version: ${{ env.python_version }}
 
@@ -58,7 +58,7 @@ jobs:
 
       - name: load poetry install from cache
         id: cached-poetry-dependencies
-        uses: actions/cache@v2
+        uses: actions/cache@v2.1.6
         with:
           path: vaccine-feed-ingest/.venv
           key: venv-${{ runner.os }}-${{ hashFiles('**/poetry.lock') }}
@@ -69,7 +69,7 @@ jobs:
 
       - name: load .tox from cache
         id: cached-tox-dependencies
-        uses: actions/cache@v2
+        uses: actions/cache@v2.1.6
         with:
           path: vaccine-feed-ingest/.tox
           key: venv-${{ runner.os }}-${{ hashFiles('**/poetry.lock') }}
@@ -93,9 +93,9 @@ jobs:
       - name: apt-get dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install libbz2-dev liblzma-dev libreadline-dev libsqlite3-dev
+          sudo apt-get install libbz2-dev liblzma-dev libreadline-dev libsqlite3-dev pdftohtml
 
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v2.3.4
         with:
           repository: CAVaccineInventory/vaccine-feed-ingest
           path: ./vaccine-feed-ingest/
@@ -108,7 +108,7 @@ jobs:
           python_version=$(cat .python-version)
           echo "python_version=${python_version}" >> $GITHUB_ENV
 
-      - uses: actions/setup-python@v2
+      - uses: actions/setup-python@v2.2.2
         with:
           python-version: ${{ env.python_version }}
 
@@ -119,7 +119,7 @@ jobs:
 
       - name: load poetry install from cache
         id: cached-poetry-dependencies
-        uses: actions/cache@v2
+        uses: actions/cache@v2.1.6
         with:
           path: vaccine-feed-ingest/.venv
           key: venv-${{ runner.os }}-${{ hashFiles('**/poetry.lock') }}
@@ -157,13 +157,13 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v2.3.4
         with:
           # Full git history is needed to get a proper list of changed files within `super-linter`
           fetch-depth: 0
 
       - name: Non-Python Lint
-        uses: github/super-linter@v3
+        uses: github/super-linter@v4.0.2
         env:
           # Only validate files modified in the PR/commit
           VALIDATE_ALL_CODEBASE: false

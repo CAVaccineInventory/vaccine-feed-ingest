@@ -12,7 +12,7 @@ from pydantic import ValidationError
 from vaccine_feed_ingest_schema import location as schema
 
 from vaccine_feed_ingest.utils.log import getLogger
-from vaccine_feed_ingest.utils.normalize import normalize_zip
+from vaccine_feed_ingest.utils.normalize import normalize_phone, normalize_zip
 
 logger = getLogger(__file__)
 
@@ -57,16 +57,8 @@ def _get_address(site: dict) -> Optional[schema.Address]:
 def _get_contacts(site: dict) -> Optional[List[schema.Contact]]:
     contacts = []
     if site["attributes"]["SitePhone"]:
-        sourcePhone = site["attributes"]["SitePhone"].lower()
-        # Some numbers in the data have extensions (e.g. 1-855-222-0083 ext 513) which we
-        # are currently not capturing because schema doesn't seem to have space for it
-        if "ext" in sourcePhone:
-            sourcePhone = sourcePhone.split("ext")[0]
-        sourcePhone = re.sub("[^0-9]", "", sourcePhone)
-        if len(sourcePhone) == 11:
-            sourcePhone = sourcePhone[1:]
-        phone = f"({sourcePhone[0:3]}) {sourcePhone[3:6]}-{sourcePhone[6:]}"
-        contacts.append(schema.Contact(phone=phone))
+        for phone in normalize_phone(site["attributes"]["SitePhone"]):
+            contacts.append(phone)
 
     # Contacts seems to be a free text field where people usually enter emails but also sometimes
     # other stuff like numbers, hours of operation, etc
@@ -143,7 +135,20 @@ def _get_inventory(site: dict) -> Optional[List[schema.Vaccine]]:
 def _get_normalized_location(
     site: dict, timestamp: str
 ) -> Optional[schema.NormalizedLocation]:
-    if len(site["attributes"]["loc_name"]) > 256:
+    if site["attributes"] is None:
+        logger.error(
+            "Cannot normalize site data without an 'attributes' field: %s", site
+        )
+        return None
+    name = site["attributes"]["loc_name"]
+    if name is None:
+        logger.error(
+            "Cannot normalize site data without an 'attributes.loc_name' field: %s",
+            site,
+        )
+        return None
+    if len(name) > 256:
+        logger.error("Site name must have 256 characters or fewer; ignoring %s", name)
         return None
 
     # Contact parsing for this site is a little flaky. Ensure that a bug for
@@ -161,7 +166,7 @@ def _get_normalized_location(
 
     return schema.NormalizedLocation(
         id=_get_id(site),
-        name=site["attributes"]["loc_name"],
+        name=name,
         address=_get_address(site),
         location=schema.LatLng(
             latitude=site["geometry"]["y"],

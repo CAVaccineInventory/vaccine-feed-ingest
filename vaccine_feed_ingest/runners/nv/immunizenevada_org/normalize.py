@@ -9,15 +9,7 @@ from typing import List, Optional
 
 from vaccine_feed_ingest_schema import location as schema
 
-from vaccine_feed_ingest.utils.normalize import provider_id_from_name
-
-
-def format_phone(phone: str) -> str:
-    ph = re.sub(r"[^0-9]", "", phone)
-    if len(ph) == 11:
-        ph = ph[1:]
-    formatted = "({}) {}-{}".format(ph[0:3], ph[3:6], ph[6:10])
-    return formatted
+from vaccine_feed_ingest.utils.normalize import normalize_phone, provider_id_from_name
 
 
 def _get_id(site: dict) -> str:
@@ -57,14 +49,11 @@ def _get_address(address: str) -> schema.Address:
 
 
 def _get_contacts(site: dict) -> Optional[List[schema.Contact]]:
-    contacts = None
+    contacts = []
 
     if "contact-phone" in site:
-        phone_contact = schema.Contact(
-            contact_type="general",
-            phone=format_phone(site["contact-phone"]),
-        )
-        contacts = [phone_contact]
+        for phone in normalize_phone(site["contact-phone"], contact_type="general"):
+            contacts.append(phone)
 
     # Filter out sites with a url of "/"
     if site["url"].startswith("http"):
@@ -72,10 +61,10 @@ def _get_contacts(site: dict) -> Optional[List[schema.Contact]]:
             contact_type="general",
             website=site["url"],
         )
-        if contacts is None:
-            contacts = []
         contacts.append(web_contact)
 
+    if contacts == []:
+        return None
     return contacts
 
 

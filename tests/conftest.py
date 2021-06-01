@@ -95,8 +95,8 @@ def full_location():
 def vial_location():
     return {
         "type": "Feature",
+        "id": "recmq8dNXlV1yWipP",
         "properties": {
-            "id": "recmq8dNXlV1yWipP",
             "name": "RITE AID PHARMACY 05952",
             "state": "CA",
             "latitude": 37.82733,

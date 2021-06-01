@@ -5,17 +5,22 @@ import pathlib
 import subprocess
 import tempfile
 from subprocess import CalledProcessError
+from typing import Collection, Optional
 
+import orjson
 import pydantic
 from vaccine_feed_ingest_schema import location
 
 from vaccine_feed_ingest.utils.log import getLogger
 
 from ..utils.validation import VACCINATE_THE_STATES_BOUNDARY
-from . import enrichment, outputs, site
+from . import caching, enrichment, outputs, site
 from .common import STAGE_OUTPUT_SUFFIX, PipelineStage
 
 logger = getLogger(__file__)
+
+
+MAX_NORMALIZED_RECORD_SIZE = 15_000  # Maximum record size of 15KB for normalized reords
 
 
 def run_fetch(
@@ -191,7 +196,9 @@ def run_normalize(
     dry_run: bool = False,
     fail_on_runner_error: bool = True,
 ) -> bool:
-    normalize_path = site.find_executeable(site_dir, PipelineStage.NORMALIZE)
+    normalize_path, yml_path = site.resolve_executable(
+        site_dir, PipelineStage.NORMALIZE
+    )
     if not normalize_path:
         logger.info("No normalize cmd for %s to run.", site_dir.name)
         return False
@@ -237,10 +244,21 @@ def run_normalize(
         )
 
         try:
-            subprocess.run(
-                [str(normalize_path), normalize_output_dir, normalize_input_dir],
-                check=True,
-            )
+            if yml_path:
+                subprocess.run(
+                    [
+                        str(normalize_path),
+                        normalize_output_dir,
+                        normalize_input_dir,
+                        str(yml_path),
+                    ],
+                    check=True,
+                )
+            else:
+                subprocess.run(
+                    [str(normalize_path), normalize_output_dir, normalize_input_dir],
+                    check=True,
+                )
         except CalledProcessError as e:
             if fail_on_runner_error:
                 raise e
@@ -286,6 +304,10 @@ def run_enrich(
     site_dir: pathlib.Path,
     output_dir: pathlib.Path,
     timestamp: str,
+    enable_apicache: bool = True,
+    enrich_apis: Optional[Collection[str]] = None,
+    geocodio_apikey: Optional[str] = None,
+    placekey_apikey: Optional[str] = None,
     dry_run: bool = False,
 ) -> bool:
     normalize_run_dir = outputs.find_latest_run_dir(
@@ -301,7 +323,10 @@ def run_enrich(
     if not outputs.data_exists(
         normalize_run_dir, suffix=STAGE_OUTPUT_SUFFIX[PipelineStage.NORMALIZE]
     ):
-        logger.warning("No normalize data available to enrich for %s.", site_dir.name)
+        logger.warning(
+            "No normalize data available to enrich for %s.",
+            f"{site_dir.parent.name}/{site_dir.name}",
+        )
         return False
 
     with tempfile.TemporaryDirectory(
@@ -324,9 +349,26 @@ def run_enrich(
             enrich_output_dir,
         )
 
-        success = enrichment.enrich_locations(enrich_input_dir, enrich_output_dir)
+        success = None
+        if enable_apicache and enrich_apis:
+            with caching.api_cache_for_stage(
+                output_dir, site_dir, PipelineStage.ENRICH
+            ) as api_cache:
+                success = enrichment.enrich_locations(
+                    enrich_input_dir,
+                    enrich_output_dir,
+                    api_cache=api_cache,
+                    enrich_apis=enrich_apis,
+                    geocodio_apikey=geocodio_apikey,
+                    placekey_apikey=placekey_apikey,
+                )
+        else:
+            success = enrichment.enrich_locations(enrich_input_dir, enrich_output_dir)
 
         if not success:
+            logger.error(
+                "Enrichment failed for %s.", f"{site_dir.parent.name}/{site_dir.name}"
+            )
             return False
 
         if not dry_run:
@@ -352,10 +394,10 @@ def _validate_parsed(output_dir: pathlib.Path) -> bool:
     for filepath in outputs.iter_data_paths(
         output_dir, suffix=STAGE_OUTPUT_SUFFIX[PipelineStage.PARSE]
     ):
-        with filepath.open() as ndjson_file:
-            for line_no, content in enumerate(ndjson_file):
+        with filepath.open(mode="rb") as ndjson_file:
+            for line_no, content in enumerate(ndjson_file, start=1):
                 try:
-                    json.loads(content)
+                    orjson.loads(content)
                 except json.JSONDecodeError:
                     logger.warning(
                         "Invalid json record in %s at line %d: %s",
@@ -373,16 +415,38 @@ def _validate_normalized(output_dir: pathlib.Path) -> bool:
     for filepath in outputs.iter_data_paths(
         output_dir, suffix=STAGE_OUTPUT_SUFFIX[PipelineStage.NORMALIZE]
     ):
-        with filepath.open() as ndjson_file:
-            for line_no, content in enumerate(ndjson_file):
+        with filepath.open(mode="rb") as ndjson_file:
+            for line_no, content in enumerate(ndjson_file, start=1):
+                if len(content) > MAX_NORMALIZED_RECORD_SIZE:
+                    logger.warning(
+                        "Source location too large to process in %s at line %d: %s",
+                        filepath,
+                        line_no,
+                        content[:100],
+                    )
+                    return False
+
                 try:
-                    normalized_location = location.NormalizedLocation.parse_raw(content)
+                    content_dict = orjson.loads(content)
+                except json.JSONDecodeError:
+                    logger.warning(
+                        "Invalid json record in %s at line %d: %s",
+                        filepath,
+                        line_no,
+                        content,
+                    )
+                    return False
+
+                try:
+                    normalized_location = location.NormalizedLocation.parse_obj(
+                        content_dict
+                    )
                 except pydantic.ValidationError as e:
                     logger.warning(
                         "Invalid source location in %s at line %d: %s\n%s",
                         filepath,
                         line_no,
-                        content,
+                        content[:100],
                         str(e),
                     )
                     return False

@@ -2,7 +2,7 @@
 
 import os
 import pathlib
-from typing import Iterator, Optional, Sequence, Tuple
+from typing import Collection, Iterator, Optional, Sequence, Tuple
 
 from vaccine_feed_ingest.utils.log import getLogger
 
@@ -35,7 +35,9 @@ def get_site_dir(site: str) -> Optional[pathlib.Path]:
 
 
 def get_site_dirs(
-    state: Optional[str], sites: Optional[Sequence[str]]
+    state: Optional[str],
+    sites: Optional[Sequence[str]],
+    exclude_sites: Optional[Collection[str]],
 ) -> Iterator[pathlib.Path]:
     """Return a site directory path, if it exists"""
     if sites:
@@ -47,7 +49,13 @@ def get_site_dirs(
             yield site_dir
 
     else:
-        yield from get_site_dirs_for_state(state)
+        for site_dir in get_site_dirs_for_state(state):
+            site_name = str(site_dir.relative_to(RUNNERS_DIR))
+
+            if exclude_sites and site_name in exclude_sites:
+                continue
+
+            yield site_dir
 
 
 def find_relevant_file(
@@ -122,7 +130,7 @@ def resolve_executable(
     site_dir: pathlib.Path, stage: PipelineStage
 ) -> Tuple[Optional[pathlib.Path], Optional[pathlib.Path]]:
     """Returns the executable and yml paths for specified site/stage."""
-    if stage not in (PipelineStage.FETCH, PipelineStage.PARSE):
+    if stage not in (PipelineStage.FETCH, PipelineStage.PARSE, PipelineStage.NORMALIZE):
         raise Exception(f"Resolution not supported for stage {STAGE_CMD_NAME[stage]}")
     executable_path = find_executeable(site_dir, stage)
     if executable_path:
