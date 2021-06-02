@@ -10,6 +10,7 @@ import rtree
 import shapely.geometry
 import urllib3
 import us
+from sentry_sdk import set_tag
 from vaccine_feed_ingest_schema import load, location
 
 from vaccine_feed_ingest.utils.log import getLogger
@@ -117,6 +118,9 @@ def run_load_to_vial(
     import_batch_size: int = 500,
 ) -> Optional[List[load.ImportSourceLocation]]:
     """Load source to vial source locations"""
+    set_tag("vts.runner", f"{site_dir.parent.name}/{site_dir.name}")
+    set_tag("vts.stage", "load-to-vial")
+
     ennrich_run_dir = outputs.find_latest_run_dir(
         output_dir, site_dir.parent.name, site_dir.name, PipelineStage.ENRICH
     )
