@@ -61,7 +61,12 @@ def run_fetch(
         except CalledProcessError as e:
             if fail_on_runner_error:
                 raise e
-            logger.error("Subprocess errored, stage will be skipped: %s", e)
+            logger.error(
+                "Subprocess %s/%s errored, stage will be skipped: %s",
+                site_dir.parent.name,
+                site_dir.name,
+                e,
+            )
             return False
 
         if not outputs.data_exists(fetch_output_dir):
@@ -152,7 +157,12 @@ def run_parse(
         except CalledProcessError as e:
             if fail_on_runner_error:
                 raise e
-            logger.error("Subprocess errored, stage will be skipped: %s", e)
+            logger.error(
+                "Subprocess %s/%s errored, stage will be skipped: %s",
+                site_dir.parent.name,
+                site_dir.name,
+                e,
+            )
             return False
 
         if not outputs.data_exists(
@@ -262,7 +272,12 @@ def run_normalize(
         except CalledProcessError as e:
             if fail_on_runner_error:
                 raise e
-            logger.error("Subprocess errored, stage will be skipped: %s", e)
+            logger.error(
+                "Subprocess %s/%s errored, stage will be skipped: %s",
+                site_dir.parent.name,
+                site_dir.name,
+                e,
+            )
             return False
 
         if not outputs.data_exists(
