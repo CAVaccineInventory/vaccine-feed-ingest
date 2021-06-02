@@ -52,7 +52,6 @@ def out_of_range(site_id, run=200):
 site_id = 1
 while True:
     url = f"{base_url}/{site_id}"
-    logger.info(f"Fetching {url}")
     r = http.request("GET", url)
 
     obj = json.loads(r.data.decode("utf-8"))
