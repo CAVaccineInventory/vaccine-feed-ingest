@@ -7,13 +7,20 @@ import pathlib
 import sys
 from typing import List, Optional
 
-from opening_hours import TimeRange
 from vaccine_feed_ingest_schema import location as schema
 
 from vaccine_feed_ingest.utils.log import getLogger
 from vaccine_feed_ingest.utils.normalize import normalize_url
 
 logger = getLogger(__file__)
+
+try:
+    from opening_hours import Times as TimeRange
+except Exception:
+    logger.warn(
+        "if you see this message in your logs, that means a dependency changed its name in us/va_gov normalizer as predicted and its import needs updating to remove a now-unnecessary check for the old import name."
+    )
+    from opening_hours import TimeRange
 
 
 SOURCE_NAME = "us_giscorps_vaccine_providers"
