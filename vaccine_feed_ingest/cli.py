@@ -252,15 +252,19 @@ def cli():
     """Run vaccine-feed-ingest commands"""
     dotenv.load_dotenv()
 
+    sentry_enabled = os.environ.get("SENTRY_ENABLE", False)
     sentry_path = os.environ.get("SENTRY_DSN")
-    if sentry_path:
-        sentry_sdk.init(
-            dsn=sentry_path,
-            # 1.0 would capture 100% of transactions for performance monitoring.
-            traces_sample_rate=0.0,
-        )
+    if sentry_enabled:
+        if sentry_path:
+            sentry_sdk.init(
+                dsn=sentry_path,
+                # 1.0 would capture 100% of transactions for performance monitoring.
+                traces_sample_rate=0.0,
+            )
+        else:
+            logger.error("Sentry enabled but no config provided. Disabling Sentry.")
     else:
-        logger.info("Sentry disabled (no config provided).")
+        logger.info("Sentry disabled by environment variable.")
 
 
 @cli.command()
