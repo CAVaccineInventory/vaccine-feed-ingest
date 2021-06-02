@@ -11,6 +11,7 @@ from typing import Callable, Collection, Dict, Optional, Sequence
 import click
 import dotenv
 import pathy
+import sentry_sdk
 
 from .stages import caching, common, ingest, load, site
 
@@ -246,6 +247,16 @@ def _import_batch_size_option() -> Callable:
 def cli():
     """Run vaccine-feed-ingest commands"""
     dotenv.load_dotenv()
+
+    sentry_path = os.environ.get("SENTRY_DSN")
+    if sentry_path:
+        sentry_sdk.init(
+            dsn=sentry_path,
+            # 1.0 would capture 100% of transactions for performance monitoring.
+            traces_sample_rate=0.0,
+        )
+    else:
+        print("Sentry disabled (no config provided).")
 
 
 @cli.command()
