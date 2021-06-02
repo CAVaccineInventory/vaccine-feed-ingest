@@ -13,7 +13,11 @@ import dotenv
 import pathy
 import sentry_sdk
 
+from vaccine_feed_ingest.utils.log import getLogger
+
 from .stages import caching, common, ingest, load, site
+
+logger = getLogger(__file__)
 
 # Collect locations that are within .6 degrees = 66.6 km = 41 mi
 CANDIDATE_DEGREES_DISTANCE = 0.6
@@ -256,7 +260,7 @@ def cli():
             traces_sample_rate=0.0,
         )
     else:
-        print("Sentry disabled (no config provided).")
+        logger.info("Sentry disabled (no config provided).")
 
 
 @cli.command()
