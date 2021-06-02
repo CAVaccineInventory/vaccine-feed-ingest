@@ -126,9 +126,11 @@ def _get_opening_hours(site: dict) -> Optional[List[schema.OpenHour]]:
         }
         # TODO: use the parse-opening hours library to parse the time range into the correct schema.
         # the library has not yet been updated to support this
-        day.update(TimeRange.parse(hours))
-        openhours.append(day)
-
+        try:
+            day.update(TimeRange.parse(hours))
+            openhours.append(day)
+        except Exception:
+            logger.warn("error parsing " + (hours or "NoneType"))
     return openhours
 
 
