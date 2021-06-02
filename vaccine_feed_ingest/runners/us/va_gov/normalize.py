@@ -7,10 +7,11 @@ import pathlib
 import sys
 from typing import List, Optional
 
+from opening_hours import TimeRange
 from vaccine_feed_ingest_schema import location as schema
 
 from vaccine_feed_ingest.utils.log import getLogger
-from vaccine_feed_ingest.utils.normalize import normalize_phone, normalize_url
+from vaccine_feed_ingest.utils.normalize import normalize_url
 
 logger = getLogger(__file__)
 
@@ -86,7 +87,6 @@ def _get_access(site: dict) -> Optional[List[str]]:
         walk_in_bool = False
     else:
         walk_in_bool = bool(walk_in)
-  
 
     return schema.Access(walk=walk_in_bool)
 
@@ -109,7 +109,7 @@ def _get_published_at(site: dict) -> Optional[str]:
     return None
 
 
-def _get_opening_hours(site: dict) -> Optional[List[OpenHour]]:
+def _get_opening_hours(site: dict) -> Optional[List[schema.OpenHour]]:
     days = site["attributes"].get("hours")
     openhours = []
 
