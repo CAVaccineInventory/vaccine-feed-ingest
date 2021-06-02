@@ -8,6 +8,7 @@ import sys
 from typing import List, Optional, OrderedDict
 
 import usaddress
+from opening_hours import OpeningHours
 from vaccine_feed_ingest_schema import location as schema
 
 from vaccine_feed_ingest.utils.log import getLogger
@@ -91,10 +92,30 @@ def sanitize_url(url):
 
 
 def _get_notes(site: dict) -> Optional[List[str]]:
+
+    notes = []
     if site["attributes"]["Instructions"]:
-        return [site["attributes"]["Instructions"]]
+        notes.append(site["attributes"]["Instructions"])
+
+    if site.get("opening_hours_notes"):
+        notes.append(site["opening_hours_notes"])
+
+    if notes != []:
+        return notes
 
     return None
+
+
+def _get_opening_hours(site):
+    oh = site.get("operhours")
+    if oh:
+        try:
+            return OpeningHours.parse(oh).json()
+        except Exception:
+            # store the notes back in the dict so the notes function can grab it later
+            site["opening_hours_notes"] = "Hours: " + oh
+    else:
+        return None
 
 
 def _get_active(site: dict) -> Optional[bool]:
@@ -371,7 +392,7 @@ def _get_normalized_location(site: dict, timestamp: str) -> schema.NormalizedLoc
         contact=_get_contacts(site),
         languages=None,
         opening_dates=None,
-        opening_hours=None,  # TODO: the format for this probably needs some mega-parsing as it looks like this -> "operhours": "Monday - Friday 8:00 am - 2:00 pm Saturdays 9:00 am - 12:00 pm",
+        opening_hours=_get_opening_hours(site),
         availability=_get_availability(site),
         inventory=None,
         access=_get_access(site),
