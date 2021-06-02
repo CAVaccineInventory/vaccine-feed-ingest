@@ -314,8 +314,9 @@ def _parse_sites(
 
     Each entry in `sites` is a list of lines of text.
     Each entry is intended to describe a single vaccine site,
-    but there are some exceptions where a single entry will contain
-    multiple addresses for different sites of the same provider.
+    but there are some exceptions where a single entry may contain
+    multiple addresses for different sites of the same provider,
+    or multiple sites may have similar information.
     """
     sites = []
     current_site: ParsedSite = ParsedSite()
@@ -323,8 +324,11 @@ def _parse_sites(
     # Assume a blank line is used to separate different sites
     # for the same provider.
     # This assumption holds for most but not all providers.
-    # When false, it will lead to a single site being reported
-    # for the provider, with all the details joined together by newlines.
+    # When false, it can lead to:
+    # - a single "site" for the provider, with all the details joined together by newlines
+    #   or
+    # - multiple "sites" for the provider that have the same/overlapping information
+    # Normalisation will attempt to handle these.
     for line in lines:
         if line:
             current_site.append(line)
