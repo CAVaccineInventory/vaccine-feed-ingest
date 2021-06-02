@@ -18,25 +18,6 @@ logger = getLogger(__file__)
 SOURCE_NAME = "us_giscorps_vaccine_providers"
 
 
-# def _get_availability(site: dict) -> schema.Availability:
-#     appt_only = site["attributes"]["appt_only"]
-
-#     appt_options = {
-#         "Yes": True,
-#         "No": False,
-#         "Vax only": True,
-#         "Test only": False,
-#     }
-
-#     avail = try_lookup(appt_options, appt_only, None, name="availability lookup")
-
-#     if avail is not None:
-#         return schema.Availability(appointments=avail)
-#     # there seems to be no walk-in data unless you want to parse "drive_in" = yes and "vehiche_required" = no into a "walk-in = yes"
-
-#     return None
-
-
 def _get_id(site: dict) -> str:
     data_id = site["id"]
 
@@ -49,9 +30,6 @@ def _get_contacts(site: dict) -> Optional[List[schema.Contact]]:
     if phs:
         if phs.get("main"):
             contacts.append(schema.Contact(phone=phs.get("main")))
-
-    # if site["attributes"]["publicEmail"]:
-    #     contacts.append(schema.Contact(email=site["attributes"]["publicEmail"]))
 
     # there are multiple urls, vaccine, agency, health dept. etcw
     web = site["attributes"].get("website")
@@ -79,8 +57,6 @@ def _get_notes(site: dict) -> Optional[List[str]]:
 
 
 def _get_active(site: dict) -> Optional[bool]:
-    # end date may be important to check to determine if the site is historicle or current but i dont really feel like digging through the docs rn. see https://github.com/CAVaccineInventory/vaccine-feed-ingest/pull/119 for links that eventually lead to specs on the
-    # end_date = site["attributes"].get("end_date")
 
     status = site["attributes"]["operatingStatus"].get("code")
 
@@ -110,23 +86,7 @@ def _get_access(site: dict) -> Optional[List[str]]:
         walk_in_bool = False
     else:
         walk_in_bool = bool(walk_in)
-    # drive_bool = drive is not None
-
-    # walk = site["attributes"].get("drive_through")
-    # walk_bool = drive is not None
-
-    # wheelchair = site["attributes"].get("Wheelchair_Accessible")
-
-    # wheelchair_options = {
-    #     "Yes": "yes",
-    #     "Partially": "partial",
-    #     "Unknown": "no",
-    #     "Not Applicable": "no",
-    #     "NA": "no",
-    # }
-    # wheelchair_bool = try_lookup(
-    #     wheelchair_options, wheelchair, "no", name="wheelchair access"
-    # )
+  
 
     return schema.Access(walk=walk_in_bool)
 
@@ -145,10 +105,6 @@ def try_lookup(mapping, value, default, name=None):
 
 
 def _get_published_at(site: dict) -> Optional[str]:
-    # date_with_millis = site["attributes"]["CreationDate"]
-    # if date_with_millis:
-    #     date = datetime.datetime.fromtimestamp(date_with_millis / 1000)  # Drop millis
-    #     return date.isoformat()
 
     return None
 
