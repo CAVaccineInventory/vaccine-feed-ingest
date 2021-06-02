@@ -66,10 +66,9 @@ def run_fetch(
             if fail_on_runner_error:
                 raise e
             logger.error(
-                "Subprocess %s/%s errored, stage will be skipped",
+                "Subprocess %s/%s errored on fetch, stage will be skipped",
                 site_dir.parent.name,
                 site_dir.name,
-                exc_info=True,
             )
             return False
 
@@ -165,10 +164,9 @@ def run_parse(
             if fail_on_runner_error:
                 raise e
             logger.error(
-                "Subprocess %s/%s errored, stage will be skipped",
+                "Subprocess %s/%s errored on parse, stage will be skipped",
                 site_dir.parent.name,
                 site_dir.name,
-                exc_info=True,
             )
             return False
 
@@ -283,10 +281,9 @@ def run_normalize(
             if fail_on_runner_error:
                 raise e
             logger.error(
-                "Subprocess %s/%s errored, stage will be skipped",
+                "Subprocess %s/%s errored on normalize, stage will be skipped",
                 site_dir.parent.name,
                 site_dir.name,
-                exc_info=True,
             )
             return False
 
