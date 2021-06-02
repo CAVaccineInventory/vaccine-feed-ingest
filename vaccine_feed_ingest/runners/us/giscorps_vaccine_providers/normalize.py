@@ -7,8 +7,8 @@ import pathlib
 import sys
 from typing import List, Optional, OrderedDict
 
-from opening_hours import OpeningHours
 import usaddress
+from opening_hours import OpeningHours
 from vaccine_feed_ingest_schema import location as schema
 
 from vaccine_feed_ingest.utils.log import getLogger
