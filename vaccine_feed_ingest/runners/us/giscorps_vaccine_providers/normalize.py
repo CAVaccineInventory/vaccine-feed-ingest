@@ -214,6 +214,7 @@ def normalize_state_name(name: str) -> str:
 
     name = name.strip()
     name = name.replace(".", "")
+    name = name.replace("'", "")
 
     # capitalize the first letter of each word in cases where a state name is provided
     spl = name.split(" ")
@@ -250,6 +251,8 @@ def apply_address_fixups(address: OrderedDict[str, str]) -> OrderedDict[str, str
             state = "Michigan"
         elif state == "SR":
             raise CustomBailError()
+        elif state == "GL":
+            state = "FL"
 
         if state in ["Bay Arkansas", "Palestine Arkansas"]:
             spl = state.split(" ")
