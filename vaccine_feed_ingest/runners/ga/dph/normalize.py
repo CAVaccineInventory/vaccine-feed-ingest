@@ -16,7 +16,7 @@ runner_dir = state_dir.parent
 root_dir = runner_dir.parent
 sys.path.append(str(root_dir))
 
-from schema import schema  # noqa: E402
+from vaccine_feed_ingest_schema import schema  # noqa: E402
 
 # Configure logger
 logging.basicConfig(
@@ -26,15 +26,13 @@ logging.basicConfig(
 )
 logger = logging.getLogger("ga/dph/normalize.py")
 
+SOURCE_NAME = "ga_dph"
+
 
 def _get_id(site: dict) -> str:
     data_id = site["node-id"].split("/")[1]
-    # Could parse these from directory traversal, but do not for now to avoid
-    # accidental mutation.
-    org = "dph"
-    runner = "ga"
 
-    return f"{runner}:{org}:{data_id}"
+    return data_id
 
 
 def _get_contacts(site: dict) -> Optional[List[schema.Contact]]:
@@ -56,15 +54,16 @@ def _get_contacts(site: dict) -> Optional[List[schema.Contact]]:
 
 
 def _get_normalized_location(site: dict, timestamp: str) -> schema.NormalizedLocation:
+    print(_get_id(site))
     return schema.NormalizedLocation(
-        id=_get_id(site),
+        id=f"{SOURCE_NAME}:{_get_id(site)}",
         name=site["Location Name"],
         address=schema.Address(
             street1=site["address-parts"]["address-line1"],
-            street2=site["address-parts"].get("address-line2", None),
+            street2=site["address-parts"].get("address-line2"),
             city=site["address-parts"]["locality"],
             state="GA",
-            zip=site["address-parts"]["postal-code"],
+            zip=site["address-parts"].get("postal-code"),
         ),
         location=None,
         contact=None,
@@ -79,7 +78,7 @@ def _get_normalized_location(site: dict, timestamp: str) -> schema.NormalizedLoc
         notes=None,
         active=None,
         source=schema.Source(
-            source="dph",
+            source=SOURCE_NAME,
             id=site["node-id"],
             fetched_from_uri="https://dph.georgia.gov/locations/covid-vaccination-site",  # noqa: E501
             fetched_at=timestamp,
