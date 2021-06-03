@@ -13,10 +13,17 @@ jobs:
     name: Action Linter
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v2.3.4
       - uses: cschleiden/actions-linter@v1
         with:
           workflows: '[".github/workflows/*.yml"]'
+
+
+  force-rebase-schema-1-0-0:
+    name: You must rebase and install to get new schema v1.0.0
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "If you fail this job, you must rebase on main and then run poetry install --extras lint"
 
 
   tox:
@@ -26,9 +33,9 @@ jobs:
       - name: apt-get dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install libbz2-dev liblzma-dev libreadline-dev libsqlite3-dev
+          sudo apt-get install libbz2-dev liblzma-dev libreadline-dev libsqlite3-dev pdftohtml
 
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v2.3.4
         with:
           repository: CAVaccineInventory/vaccine-feed-ingest
           path: ./vaccine-feed-ingest/
@@ -40,7 +47,7 @@ jobs:
           python_version=$(cat .python-version)
           echo "python_version=${python_version}" >> $GITHUB_ENV
 
-      - uses: actions/setup-python@v2
+      - uses: actions/setup-python@v2.2.2
         with:
           python-version: ${{ env.python_version }}
 
@@ -51,7 +58,7 @@ jobs:
 
       - name: load poetry install from cache
         id: cached-poetry-dependencies
-        uses: actions/cache@v2
+        uses: actions/cache@v2.1.6
         with:
           path: vaccine-feed-ingest/.venv
           key: venv-${{ runner.os }}-${{ hashFiles('**/poetry.lock') }}
@@ -62,7 +69,7 @@ jobs:
 
       - name: load .tox from cache
         id: cached-tox-dependencies
-        uses: actions/cache@v2
+        uses: actions/cache@v2.1.6
         with:
           path: vaccine-feed-ingest/.tox
           key: venv-${{ runner.os }}-${{ hashFiles('**/poetry.lock') }}
@@ -78,18 +85,85 @@ jobs:
           rm -f .tox/lint/log/*
 
 
+  run-pipeline:
+    name: Run all-stages for modified runners
+    runs-on: ubuntu-latest
+    if: ${{ github.event_name == 'pull_request' }}
+    steps:
+      - name: apt-get dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install libbz2-dev liblzma-dev libreadline-dev libsqlite3-dev pdftohtml
+
+      - uses: actions/checkout@v2.3.4
+        with:
+          repository: CAVaccineInventory/vaccine-feed-ingest
+          path: ./vaccine-feed-ingest/
+          submodules: true
+          fetch-depth: 0
+
+      - name: get python version
+        working-directory: vaccine-feed-ingest
+        run: |
+          python_version=$(cat .python-version)
+          echo "python_version=${python_version}" >> $GITHUB_ENV
+
+      - uses: actions/setup-python@v2.2.2
+        with:
+          python-version: ${{ env.python_version }}
+
+      - name: setup from README.md
+        run: |
+          curl -sSL https://raw.githubusercontent.com/python-poetry/poetry/master/get-poetry.py | python -
+          echo "$HOME/.poetry/bin" >> $GITHUB_PATH
+
+      - name: load poetry install from cache
+        id: cached-poetry-dependencies
+        uses: actions/cache@v2.1.6
+        with:
+          path: vaccine-feed-ingest/.venv
+          key: venv-${{ runner.os }}-${{ hashFiles('**/poetry.lock') }}
+
+      - run: poetry install --extras lint
+        if: steps.cached-poetry-dependencies.outputs.cache-hit != 'true'
+        working-directory: vaccine-feed-ingest
+
+      - name: ensure cli starts
+        working-directory: vaccine-feed-ingest
+        run: poetry run vaccine-feed-ingest --help
+
+      - name: calculate runners to run
+        working-directory: vaccine-feed-ingest
+        run: |
+          git diff --name-only --diff-filter=ACMRT ${{ github.event.pull_request.base.sha }} ${{ github.sha }} | \
+            grep "vaccine_feed_ingest/runners/[^._]" | \
+            sed -E "s#vaccine_feed_ingest/runners/([^/]+)/([^/]+)/.*#\1/\2#" | \
+            grep -v "us/" > ../runners_to_run.txt || true
+
+      - name: run selected runners
+        working-directory: vaccine-feed-ingest
+        run: |
+          if [[ -s ../runners_to_run.txt ]]; then
+            echo "will run the following runners"
+            cat ../runners_to_run.txt
+            cat ../runners_to_run.txt | xargs poetry run vaccine-feed-ingest all-stages
+          else
+            echo "no runners to run"
+          fi
+
+
   repo-linter:
     name: SuperLinter
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v2.3.4
         with:
           # Full git history is needed to get a proper list of changed files within `super-linter`
           fetch-depth: 0
 
       - name: Non-Python Lint
-        uses: github/super-linter@v3
+        uses: github/super-linter@v4.0.2
         env:
           # Only validate files modified in the PR/commit
           VALIDATE_ALL_CODEBASE: false

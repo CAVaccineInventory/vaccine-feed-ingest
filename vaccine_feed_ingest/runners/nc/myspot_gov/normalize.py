@@ -2,18 +2,21 @@
 
 import datetime
 import json
-import logging
 import pathlib
+import re
 import sys
 
 from vaccine_feed_ingest_schema import location as schema
 
-logger = logging.getLogger(__name__)
+from vaccine_feed_ingest.utils.log import getLogger
+from vaccine_feed_ingest.utils.normalize import normalize_phone, normalize_url
+
+logger = getLogger(__file__)
 
 
 def _get_id(site: dict) -> str:
     loc_id = site["Event Location Id"]
-    return f"nc:myspot_gov:{loc_id}"
+    return f"nc_myspot_gov:{loc_id}"
 
 
 def _get_name(site: dict) -> str:
@@ -41,28 +44,32 @@ def _get_location(site: dict):
 
 def _get_contacts(site: dict):
     ret = []
-    if site["Appointment Phone"] != "":
-        raw_phone = str(site["Appointment Phone"]).lstrip("1")
-        if raw_phone[3] == "-" or raw_phone[7] == "-":
-            phone = "(" + raw_phone[0:3] + ") " + raw_phone[4:7] + "-" + raw_phone[8:12]
-            phone_notes = raw_phone[12:]
-        elif len(raw_phone) == 10:
-            phone = "(" + raw_phone[0:3] + ") " + raw_phone[3:6] + "-" + raw_phone[6:10]
-            phone_notes = ""
-        else:
-            phone = raw_phone[0:14]
-            phone_notes = raw_phone[14:]
+    if site["Appointment Phone"]:
+        for phone in normalize_phone(site["Appointment Phone"]):
+            ret.append(phone)
 
-        if phone_notes == "":
-            ret.append(schema.Contact(phone=phone))
-        else:
-            phone_notes = phone_notes.lstrip(",")
-            phone_notes = phone_notes.lstrip(";")
-            phone_notes = phone_notes.lstrip(" ")
-            ret.append(schema.Contact(phone=phone, other=f"phone_notes:{phone_notes}"))
+    url = site["Web Address"]
+    # Some URLs have multiple schemes.
+    valid_url = re.match(r"(https?:\/\/)*(.+)", url)
 
-    if site["Web Address"] != "":
-        ret.append(schema.Contact(website=site["Web Address"]))
+    if (
+        url == "http://"
+        or url == "https://"
+        or url == "none"
+        or url == ""
+        or url.startswith("Please email")
+    ):
+        return ret
+    elif valid_url is not None:
+        if valid_url.group(1) is None:
+            url = valid_url.group(2)
+        else:
+            url = f"{valid_url.group(1)}{valid_url.group(2)}"
+        url = normalize_url(url)
+        ret.append(schema.Contact(website=url))
+    else:
+        logger.warning(f"Unknown, invalid URL: {url}")
+
     return ret
 
 
@@ -133,7 +140,7 @@ def _get_source(site: dict, timestamp: str) -> schema.Source:
         fetched_at=timestamp,
         fetched_from_uri="https://myspot.nc.gov/api/get-vaccine-locations",
         id=site["Event Location Id"],
-        source="nc:myspot_gov",
+        source="nc_myspot_gov",
     )
 
 

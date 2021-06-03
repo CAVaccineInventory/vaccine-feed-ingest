@@ -2,22 +2,17 @@
 
 import datetime
 import json
-import logging
 import os
 import pathlib
-import re
 import sys
 from typing import List, Optional
 
 from vaccine_feed_ingest_schema import location as schema
 
-# Configure logger
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s %(levelname)s:%(name)s:%(message)s",
-    datefmt="%m/%d/%Y %H:%M:%S",
-)
-logger = logging.getLogger("ri/arcgis/normalize.py")
+from vaccine_feed_ingest.utils.log import getLogger
+from vaccine_feed_ingest.utils.normalize import normalize_phone, normalize_url
+
+logger = getLogger(__file__)
 
 
 def _get_id(site: dict) -> str:
@@ -33,7 +28,7 @@ def _get_id(site: dict) -> str:
     arcgis = "da57e8c8663048a2a9893c636fef63d0"
     layer = 0
 
-    return f"{runner}:{site_name}:{arcgis}_{layer}:{data_id}"
+    return f"{runner}_{site_name}:{arcgis}_{layer}_{data_id}"
 
 
 def _get_inventory(site: dict) -> Optional[List[schema.Vaccine]]:
@@ -47,6 +42,10 @@ def _get_inventory(site: dict) -> Optional[List[schema.Vaccine]]:
         "janssen (johnson & johnson) covid-19 vaccine": schema.Vaccine(
             vaccine="johnson_johnson_janssen"
         ),
+        "johnson & johnson (janssen) covid-19 vaccine": schema.Vaccine(
+            vaccine="johnson_johnson_janssen"
+        ),
+        "varies": None,
     }
 
     inventory = []
@@ -54,7 +53,8 @@ def _get_inventory(site: dict) -> Optional[List[schema.Vaccine]]:
     for vf in vaccines_field:
         try:
             if vf != "-" and vf != "\x08":  # "-" is listed when no data given
-                inventory.append(potentials[vf])
+                if potentials[vf] is not None:
+                    inventory.append(potentials[vf])
         except KeyError as e:
             logger.error("Unexpected vaccine type: %s", e)
 
@@ -67,17 +67,14 @@ def _get_inventory(site: dict) -> Optional[List[schema.Vaccine]]:
 def _get_contacts(site: dict) -> Optional[List[schema.Contact]]:
     contacts = []
     if site["attributes"]["USER_Scheduling_by_Phone"]:
-        sourcePhone = re.sub(
-            "[^0-9]", "", site["attributes"]["USER_Scheduling_by_Phone"]
-        )
-        if len(sourcePhone) == 10:
-            phone = f"({sourcePhone[0:3]}) {sourcePhone[3:6]}-{sourcePhone[6:]}"
-            contacts.append(schema.Contact(phone=phone))
+        for phone in normalize_phone(site["attributes"]["USER_Scheduling_by_Phone"]):
+            contacts.append(phone)
 
     if site["attributes"]["USER_Link_to_Sign_Up"]:
-        contacts.append(
-            schema.Contact(website=site["attributes"]["USER_Link_to_Sign_Up"])
-        )
+        url = site["attributes"]["USER_Link_to_Sign_Up"].strip()
+        if url is not None and url != "\x08" and url != "-":
+            url = normalize_url(url)
+            contacts.append(schema.Contact(website=url))
 
     if len(contacts) > 0:
         return contacts
@@ -119,7 +116,7 @@ def _get_normalized_location(site: dict, timestamp: str) -> schema.NormalizedLoc
         notes=_get_notes(site),
         active=None,
         source=schema.Source(
-            source="ri:arcgis",
+            source="ri_arcgis",
             id=site["attributes"]["OBJECTID"],
             fetched_from_uri="https://rihealth.maps.arcgis.com/apps/instant/nearby/index.html?appid=a25f35833533498bac3f724f92a84b4e",  # noqa: E501
             fetched_at=timestamp,

@@ -6,23 +6,23 @@ authors = ["Bryan Culbertson <bryan.culbertson@gmail.com>"]
 
 [tool.poetry.dependencies]
 # Lint
-flake8 = { version = "^3.9.0", optional = true }
-black = { version = "^20.8b1", optional = true }
+flake8 = { version = "^3.9.2", optional = true }
+black = { version = "^21.5b2", optional = true }
 mypy = { version = "^0.812", optional = true }
 isort = { version = "^5.8.0", optional = true }
 
 # Test
-pytest = { version = "^6.2.3", optional = true }
-pytest-runner = {version = "^5.3.0", optional = true}
+pytest = { version = "^6.2.4", optional = true }
+pytest-runner = {version = "^5.3.1", optional = true}
 
 # Main
 python = "^3.9"
 click = "^7.1.2"
 python-dotenv = "^0.17.0"
-pathy = {extras = ["gcs"], version = "^0.4.0"}
+pathy = {extras = ["gcs"], version = "^0.5.2"}
 arcgis = "^1.8.5"
 PyYAML = "^5.4.1"
-pydantic = "^1.8.1"
+pydantic = "^1.8.2"
 Rtree = "^0.9.7"
 Shapely = "^1.7.1"
 geojson = "^2.5.0"
@@ -32,11 +32,26 @@ pandas = "^1.2.4"
 openpyxl = "^3.0.7"
 pytz = "^2021.1"
 beautifulsoup4 = "^4.9.3"
-vaccine-feed-ingest-schema = "^0.2.1"
+vaccine-feed-ingest-schema = "^1.2.4"
 aiohttp = "^3.7.4"
+TableauScraper = "^0.1.11"
+lxml = "^4.6.3"
+pykml = "^0.2.0"
+html5lib = "^1.1"
+url-normalize = "^1.4.3"
+dateparser = "^1.0.0"
+phonenumbers = "^8.12.24"
+pyproj = "^3.1.0"
+ndjson = "^0.3.1"
+orjson = "^3.5.2"
+diskcache = "^5.2.1"
+placekey = "^0.0.11"
+pygeocodio = "^1.0.0"
+usaddress = "^0.5.10"
+parse-opening-hours = "^0.4.0"
 
 [tool.poetry.dev-dependencies]
-tox = "^3.23.0"
+tox = "^3.23.1"
 
 [tool.poetry.extras]
 lint = ["flake8", "black", "mypy", "isort"]

@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 
 import asyncio
-import logging
 import pathlib
 import sys
 from typing import List
@@ -10,7 +9,9 @@ from urllib.parse import urljoin
 from aiohttp import ClientSession
 from bs4 import BeautifulSoup
 
-logger = logging.getLogger("ga/dph/fetch.py")
+from vaccine_feed_ingest.utils.log import getLogger
+
+logger = getLogger(__file__)
 start_url = "https://dph.georgia.gov/locations/covid-vaccination-site"
 
 
@@ -59,6 +60,8 @@ async def fetch_location(
 async def main():
     output_dir = pathlib.Path(sys.argv[1])
     output_file = output_dir / "locations.html"
+
+    logger.info("starting")
 
     async with ClientSession() as session:
         contents = ""

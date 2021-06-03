@@ -5,6 +5,8 @@ from typing import Iterator, Optional
 
 from .common import STAGE_OUTPUT_NAME, PipelineStage
 
+API_CACHE_NAME = ".api_cache.tar.gz"
+
 
 def find_all_run_dirs(
     base_output_dir: pathlib.Path,
@@ -13,7 +15,7 @@ def find_all_run_dirs(
     stage: PipelineStage,
 ) -> Iterator[pathlib.Path]:
     """Find latest stage output path"""
-    stage_dir = base_output_dir / state / site / STAGE_OUTPUT_NAME[stage]
+    stage_dir = generate_stage_dir(base_output_dir, state, site, stage)
 
     if not stage_dir.exists():
         return
@@ -38,6 +40,25 @@ def find_latest_run_dir(
     return next(find_all_run_dirs(base_output_dir, state, site, stage), None)
 
 
+def generate_site_dir(
+    base_output_dir: pathlib.Path,
+    state: str,
+    site: str,
+) -> pathlib.Path:
+    """Generate output path for site"""
+    return base_output_dir / state / site
+
+
+def generate_stage_dir(
+    base_output_dir: pathlib.Path,
+    state: str,
+    site: str,
+    stage: PipelineStage,
+) -> pathlib.Path:
+    """Generate output path for pipeline stage."""
+    return generate_site_dir(base_output_dir, state, site) / STAGE_OUTPUT_NAME[stage]
+
+
 def generate_run_dir(
     base_output_dir: pathlib.Path,
     state: str,
@@ -45,8 +66,18 @@ def generate_run_dir(
     stage: PipelineStage,
     timestamp: str,
 ) -> pathlib.Path:
-    """Generate output path for a pipeline stage."""
-    return base_output_dir / state / site / STAGE_OUTPUT_NAME[stage] / timestamp
+    """Generate output path for a specific run of a pipeline stage."""
+    return generate_stage_dir(base_output_dir, state, site, stage) / timestamp
+
+
+def generate_api_cache_path(
+    base_output_dir: pathlib.Path,
+    state: str,
+    site: str,
+    stage: PipelineStage,
+) -> pathlib.Path:
+    """Generate api cache path for site and stage."""
+    return generate_stage_dir(base_output_dir, state, site, stage) / API_CACHE_NAME
 
 
 def iter_data_paths(
