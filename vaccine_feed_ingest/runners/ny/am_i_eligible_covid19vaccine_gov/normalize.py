@@ -2,13 +2,14 @@
 
 import datetime
 import json
-import logging
 import pathlib
 import re
 import sys
 from typing import List, Optional
 
-from vaccine_feed_ingest.schema import schema  # noqa: E402
+from vaccine_feed_ingest_schema import location as schema
+
+from vaccine_feed_ingest.utils.log import getLogger
 
 CITY_RE = re.compile(r"^([\w ]+), NY$")
 # the providerName field smells like it's being parsed from someplace else,
@@ -17,17 +18,17 @@ CITY_RE = re.compile(r"^([\w ]+), NY$")
 # we'll leave that for now.
 NAME_CLEAN_RE = re.compile("^[\u1d42*]+")
 
-logger = logging.getLogger(__name__)
+logger = getLogger(__file__)
 
 
 def _get_inventory(raw: str) -> Optional[List[schema.Vaccine]]:
     # we've only seen "Pfizer", but no reason not to use the rest of the
     # potentials from `ak/arcgis/normalize.py`
     potentials = {
-        "pfizer": schema.Vaccine(vaccine="pfizer"),
+        "pfizer": schema.Vaccine(vaccine="pfizer_biontech"),
         "moderna": schema.Vaccine(vaccine="moderna"),
-        "janssen": schema.Vaccine(vaccine="janssen"),
-        "jjj": schema.Vaccine(vaccine="janssen"),
+        "janssen": schema.Vaccine(vaccine="johnson_johnson_janssen"),
+        "jjj": schema.Vaccine(vaccine="johnson_johnson_janssen"),
     }
     try:
         return [potentials[raw.lower()]]
@@ -47,7 +48,7 @@ def _get_source(site_blob: dict, timestamp: str) -> schema.Source:
     )
 
 
-def normalize(site_blob: dict, timestamp: str) -> str:
+def normalize(site_blob: dict, timestamp: str) -> dict:
     """
     sample entry:
 
@@ -57,9 +58,13 @@ def normalize(site_blob: dict, timestamp: str) -> str:
     city = CITY_RE.search(site_blob["address"]).group(1)
     appts_available = True if site_blob["availableAppointments"] == "Y" else False
 
-    normalized = schema.NormalizedLocation(
+    return schema.NormalizedLocation(
         id=f"am_i_eligible_covid19vaccine_gov:{site_blob['providerId']}",
         name=name,
+        address=schema.Address(
+            city=city,
+            state="NY",
+        ),
         availability=schema.Availability(appointments=appts_available),
         inventory=_get_inventory(site_blob["vaccineBrand"]),
         links=[
@@ -67,12 +72,8 @@ def normalize(site_blob: dict, timestamp: str) -> str:
                 authority="am_i_eligible_covid19vaccine_gov", id=site_blob["providerId"]
             ),
         ],
-        fetched_at=timestamp,
-        published_at=site_blob["lastUpdated"],
         source=_get_source(site_blob, timestamp),
     ).dict()
-    normalized["address"] = {"city": city, "state": "NY"}
-    return normalized
 
 
 parsed_at_timestamp = datetime.datetime.utcnow().isoformat()

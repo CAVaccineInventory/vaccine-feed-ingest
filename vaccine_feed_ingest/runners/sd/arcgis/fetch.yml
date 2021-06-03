@@ -1,0 +1,6 @@
+---
+state: sd
+arcgis:
+- id: 3bb3f167d57149ef8027a68a609edc2d
+  layer_names:
+  - VaccineProviders

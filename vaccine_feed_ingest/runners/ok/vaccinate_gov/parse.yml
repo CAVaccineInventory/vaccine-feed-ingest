@@ -1,0 +1,4 @@
+---
+state: ok
+site: vaccinate_gov
+parser: json_list

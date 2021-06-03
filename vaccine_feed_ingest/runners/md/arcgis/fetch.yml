@@ -3,8 +3,4 @@ state: md
 arcgis:
 - id: d677f143334648a1a40b84d94df8e134
   layer_names:
-  - Mass Vaccination Sites
-  - Pharmacy Vaccination Sites
-  - Local Health Department Vaccination Sites
-  - Hospital Vaccination Sites
   - All Maryland Vaccination Sites

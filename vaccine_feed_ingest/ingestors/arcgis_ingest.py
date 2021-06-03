@@ -1,22 +1,18 @@
 #!/usr/bin/env python3
 
 import json
-import logging
 from os.path import join
 from typing import Optional, Sequence
 
 import urllib3
 from arcgis import GIS
 
+from vaccine_feed_ingest.utils.log import getLogger
+
 http = urllib3.PoolManager()
 
-# Configure logger
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s %(levelname)s:%(name)s:%(message)s",
-    datefmt="%m/%d/%Y %H:%M:%S",
-)
-logger = logging.getLogger("arcgis")
+
+logger = getLogger(__file__)
 
 
 def fetch_geojson(
@@ -24,7 +20,7 @@ def fetch_geojson(
     output_dir: str,
     selected_layers: Optional[Sequence[str]] = None,
 ) -> None:
-    """ Save selected layers of the arcgis service item """
+    """Save selected layers of the arcgis service item"""
     gis = GIS()
     item = gis.content.get(service_item_id)
 
@@ -42,8 +38,15 @@ def fetch_geojson(
 
         results = layer.query(return_all_records=True, out_sr=4326)
         layer_id = layer.properties.id
+        for feature in results:
+            feature.attributes.update(
+                {
+                    "layer_id": layer_id,
+                    "service_item_id": service_item_id,
+                }
+            )
         file_name = f"{service_item_id}_{layer_id}.json"
-        print(f"Saving {layer.properties.name} layer to {file_name}")
+        logger.info(f"Saving {layer.properties.name} layer to {file_name}")
         results.save(output_dir, file_name)
 
 
@@ -96,7 +99,7 @@ def get_count(query_url: str) -> int:
 def get_results(
     query_url: str, offset: int, batch_size: int, output_dir: str, format: str
 ) -> None:
-    """ Fetch one batch of ArcGIS features from the query_url """
+    """Fetch one batch of ArcGIS features from the query_url"""
 
     # Set Output Spatial reference to EPSG 4326 GPS coords
     out_sr = "4326"
@@ -118,17 +121,17 @@ def get_results(
 
     output_file = join(output_dir, f"{offset}.json")
     with open(output_file, "wb") as fh:
-        print(f"Writing {output_file}")
+        logger.info(f"Writing {output_file}")
         fh.write(r.data)
 
 
 def fetch(
     query_url: str, output_dir: str, batch_size: int = 50, format: str = "geojson"
 ) -> None:
-    """ Fetch ArcGIS features in chunks of batch_size """
+    """Fetch ArcGIS features in chunks of batch_size"""
 
     count = get_count(query_url)
-    print(f"Found {count} results")
+    logger.info(f"Found {count} results")
 
     for offset in range(0, count, batch_size):
         get_results(query_url, offset, batch_size, output_dir, format)

@@ -1,37 +1,331 @@
 """
 Various tricks for matching source locations to product locations from VIAL
 """
+import hashlib
 import re
-from typing import Optional, Tuple
+from typing import List, Optional, OrderedDict, Tuple
+
+import orjson
+import phonenumbers
+import url_normalize
+import usaddress
+from vaccine_feed_ingest_schema import location
+from vaccine_feed_ingest_schema.location import VaccineProvider
+
+from .log import getLogger
+
+logger = getLogger(__file__)
 
 
-def provider_id_from_name(name: str) -> Optional[Tuple[str, str]]:
-    """ Generate provider ids for retail pharmacies (riteaid:123) """
+# Add to this list in alphabetical order
+VACCINE_PROVIDER_REGEXES = {
+    VaccineProvider.ACME: [
+        re.compile(r"ACME PHARMACY #(\d+)", re.I),
+    ],
+    VaccineProvider.ALBERTSONS: [
+        re.compile(r"ALBERTSONS(?: MARKET)? PHARMACY #(\d+)", re.I),
+    ],
+    VaccineProvider.BIG_Y: [
+        re.compile(r"BIG Y PHARMACY(?: #\d+ Rx)? #(\d+)", re.I),
+    ],
+    VaccineProvider.BROOKSHIRE: [
+        re.compile(r"BROOKSHIRE PHARMACY #\d+ #(\d+)", re.I),
+    ],
+    VaccineProvider.COSTCO: [
+        re.compile(r"COSTCO(?: MARKET)? PHARMACY #\s*(\d+)", re.I),
+        re.compile(r"COSTCO WHOLESALE CORPORATION #(\d+)", re.I),
+    ],
+    VaccineProvider.CUB: [
+        re.compile(r"CUB PHARMACY #\d+ #(\d+)", re.I),
+    ],
+    VaccineProvider.CVS: [
+        re.compile(r"CVS\s(?:STORE)?(?:PHARMACY)?(?:, INC.?)?\s?#?(\d+)", re.I),
+    ],
+    VaccineProvider.DILLONS: [
+        re.compile(r"DILLON\'S PHARMACY #(\d+)", re.I),
+    ],
+    VaccineProvider.DRUGCO: [
+        re.compile(r"DRUGCO DISCOUNT PHARMACY #(\d+)", re.I),
+    ],
+    VaccineProvider.FAMILY_FARE: [
+        re.compile(r"FAMILY\s+FARE\s+PHARMACY\s+#?\d+\s+#(\d+)", re.I),
+    ],
+    VaccineProvider.FOOD_CITY: [
+        re.compile(r"FOOD CITY PHARMACY #\d+ #(\d+)", re.I),
+    ],
+    VaccineProvider.FOOD_LION: [
+        re.compile(r"FOOD LION #(\d+)", re.I),
+    ],
+    VaccineProvider.FRED_MEYER: [
+        re.compile(r"FRED MEYER(?: PHARMACY)? #(\d+)", re.I),
+    ],
+    VaccineProvider.FRYS: [
+        re.compile(r"FRY\'S FOOD AND DRUG #(\d+)", re.I),
+    ],
+    VaccineProvider.GENOA: [
+        re.compile(r"GENOA HEALTHCARE (\d+) \(", re.I),
+        re.compile(r"GENOA HEALTHCARE LLC #(\d+)", re.I),
+    ],
+    VaccineProvider.GIANT: [
+        re.compile(r"GIANT #(\d+)", re.I),
+    ],
+    VaccineProvider.GIANT_EAGLE: [
+        re.compile(r"GIANT EAGLE PHARMACY #\d+ #G(\d+)", re.I),
+    ],
+    VaccineProvider.GIANT_FOOD: [
+        re.compile(r"GIANT FOOD #(\d+)", re.I),
+    ],
+    VaccineProvider.HAGGEN: [
+        re.compile(r"HAGGEN PHARMACY #(\d+)", re.I),
+    ],
+    VaccineProvider.HANNAFORD: [
+        re.compile(r"HANNAFORD #(\d+)", re.I),
+    ],
+    VaccineProvider.HARMONS: [
+        re.compile(r"HARMONS PHARMACY #(\d+)", re.I),
+    ],
+    VaccineProvider.HARPS: [
+        re.compile(r"HARPS PHARMACY #(\d+)", re.I),
+    ],
+    VaccineProvider.HARRIS_TEETER: [
+        re.compile(r"HARRIS TEETER PHARMACY #(\d+)", re.I),
+    ],
+    VaccineProvider.HARTIG: [
+        re.compile(r"HARTIG DRUG CO #?\d+ #(\d+)", re.I),
+    ],
+    VaccineProvider.HEB: [
+        re.compile(r"H-E-B #(\d+)", re.I),
+    ],
+    VaccineProvider.HOMELAND: [
+        re.compile(r"HOMELAND PHARMACY #(\d+)", re.I),
+    ],
+    VaccineProvider.HY_VEE: [
+        re.compile(r"HY-VEE INC. #(\d+)", re.I),
+    ],
+    VaccineProvider.INGLES: [
+        re.compile(r"INGLES PHARMACY #\d+ #(\d+)", re.I),
+    ],
+    VaccineProvider.KAISER_HEALTH_PLAN: [
+        re.compile(r"KAISER HEALTH PLAN \w+(?: \w+)? PHY (\d+)", re.I),
+    ],
+    VaccineProvider.KAISER_PERMANENTE: [
+        re.compile(r"KAISER PERMANENTE PHARMACY #(\d+)", re.I),
+    ],
+    VaccineProvider.KING_SOOPERS: [
+        re.compile(r"KING SOOPERS PHARMACY #?(\d+)", re.I),
+    ],
+    VaccineProvider.KROGER: [
+        re.compile(r"KROGER PHARMACY #?(\d+)", re.I),
+    ],
+    VaccineProvider.LITTLE_CLINIC: [
+        re.compile(r"THE LITTLE CLINIC #(\d+)", re.I),
+    ],
+    VaccineProvider.MARIANOS: [
+        re.compile(r"MARIANO\'S PHARMACY #(\d+)", re.I),
+    ],
+    VaccineProvider.OSCO: [
+        re.compile(r"OSCO (?:DRUG|PHARMACY) #(\d+)", re.I),
+    ],
+    VaccineProvider.MARKET_STREET: [
+        re.compile(r"MARKET STREET PHARMACY #(\d+)", re.I),
+    ],
+    VaccineProvider.MEDICAP: [
+        re.compile(r"MEDICAP PHARMACY #\d+ #(\d+)", re.I),
+    ],
+    VaccineProvider.MEIJER: [
+        re.compile(r"MEIJER #(\d+)", re.I),
+    ],
+    VaccineProvider.PAVILIONS: [
+        re.compile(r"PAVILIONS PHARMACY #(\d+)", re.I),
+    ],
+    VaccineProvider.PICK_N_SAVE: [
+        re.compile(r"PICK N SAVE PHARMACY #(\d+)", re.I),
+    ],
+    VaccineProvider.PRICE_CHOPPER: [
+        re.compile(r"PRICE CHOPPER PHARMACY #?\d+ #(?:MS)?(\d+)", re.I),
+    ],
+    VaccineProvider.PUBLIX: [
+        re.compile(r"PUBLIX SUPER MARKETS INC\. #(\d+)", re.I),
+    ],
+    VaccineProvider.QFC: [
+        re.compile(r"QFC PHARMACY #(\d+)", re.I),
+    ],
+    VaccineProvider.RALEYS: [
+        re.compile(r"RALEY\'S PHARMACY #(\d+)", re.I),
+    ],
+    VaccineProvider.RITE_AID: [
+        re.compile(r"RITE AID (?:PHARMACY |#RA)(\d+)", re.I),
+    ],
+    VaccineProvider.SAMS: [
+        re.compile(r"SAM'?S PHARMACY (?:10-|#\s*)(\d+)", re.I),
+        re.compile(r"SAMS CLUB (?:#\d+\-)?(\d+)", re.I),
+    ],
+    VaccineProvider.SAFEWAY: [
+        re.compile(r"Safeway (?:PHARMACY )?\s?#?(\d+)", re.I),
+    ],
+    VaccineProvider.SAV_ON: [
+        re.compile(r"SAV-?ON PHARMACY #\s?(\d+)", re.I),
+    ],
+    VaccineProvider.SHOP_RITE: [
+        re.compile(r"SHOPRITE PHARMACY #(\d+)", re.I),
+    ],
+    VaccineProvider.SMITHS: [
+        re.compile(r"SMITH\'S PHARMACY #(\d+)", re.I),
+    ],
+    VaccineProvider.STOP_AND_SHOP: [
+        re.compile(r"STOP \& SHOP #(\d+)", re.I),
+    ],
+    VaccineProvider.TOM_THUMB: [
+        re.compile(r"TOM THUMB PHARMACY #(\d+)", re.I),
+    ],
+    VaccineProvider.THRIFTY: [
+        re.compile(r"THRIFTY DRUG STORES INC #(\d+)", re.I),
+    ],
+    VaccineProvider.VONS: [
+        re.compile(r"VONS PHARMACY #(\d+)", re.I),
+    ],
+    VaccineProvider.WALGREENS: [
+        re.compile(r"Walgreens (?:Specialty )?(?:Pharmacy )?#(\d+)", re.I),
+        re.compile(r"Walgreens Co\. #(\d+)", re.I),
+    ],
+    VaccineProvider.WALMART: [
+        re.compile(r"WALMART INC #10-(\d+)", re.I),
+        re.compile(r"WALMART PHARMACY 10-(\d+)", re.I),
+        re.compile(r"WALMART (?:INC,|PHARMACY) #(\d+)", re.I),
+    ],
+    VaccineProvider.WEIS: [
+        re.compile(r"WEIS PHARMACY #\d+ #(\d+)", re.I),
+    ],
+    VaccineProvider.WINN_DIXIE: [
+        re.compile(r"WINN-DIXIE #(\d+)", re.I),
+    ],
+}
 
-    m = re.search(r"RITE AID PHARMACY (\d+)", name, re.I)
-    if m:
-        return "rite_aid", m.group(1)
-    m = re.search(r"Walgreens (?:Specialty )?(?:Pharmacy )?#(\d+)", name, re.I)
-    if m:
-        return "walgreens", m.group(1)
-    m = re.search(r"Safeway (?:PHARMACY )?\s?#?(\d+)", name, re.I)
-    if m:
-        return "safeway", m.group(1)
-    m = re.search(r"VONS PHARMACY #(\d+)", name, re.I)
-    if m:
-        return "vons", m.group(1)
-    m = re.search(r"SAMS PHARMACY 10-(\d+)", name, re.I)
-    if m:
-        return "sams", m.group(1)
-    m = re.search(r"SAV-?ON PHARMACY #\s?(\d+)", name, re.I)
-    if m:
-        # These are albertsons locations
-        return "albertsons", m.group(1)
-    m = re.search(r"PAVILIONS PHARMACY #(\d+)", name, re.I)
-    if m:
-        return "pavilions", m.group(1)
-    m = re.search(r"WALMART PHARMACY 10-(\d+)", name, re.I)
-    if m:
-        return "walmart", m.group(1)
+
+def provider_id_from_name(
+    name: str,
+) -> Optional[Tuple[VaccineProvider, str]]:
+    """Generate provider ids for retail pharmacies (riteaid:123)"""
+
+    for vaccine_provider, regexes in VACCINE_PROVIDER_REGEXES.items():
+        for regex in regexes:
+            m = regex.search(name)
+            if m:
+                return vaccine_provider, str(int(m.group(1)))
 
     return None
+
+
+ZIP_RE = re.compile(r"([0-9]{5})([0-9]{4})")
+
+
+def normalize_zip(zipc: Optional[str]) -> Optional[str]:
+    if zipc is not None:
+        if ZIP_RE.match(zipc):
+            zipc = ZIP_RE.sub(r"\1-\2", zipc)
+        length = len(zipc)
+        if length != 5 and length != 10:
+            zipc = None
+
+    return zipc
+
+
+def normalize_url(url: Optional[str]) -> Optional[str]:
+    if url is None:
+        return url
+
+    return url_normalize.url_normalize(url)
+
+
+def normalize_phone(
+    phone: Optional[str], contact_type: Optional[str] = None
+) -> List[location.Contact]:
+    if phone is None:
+        return []
+
+    # Canonicalize various terms; lowercase to simplify.
+    phone = str(phone)  # nc/myspot_gov has some entries that are bare numbers.
+    phone = phone.lower()
+    phone = phone.replace(" option ", " ext. ")
+    phone = phone.replace(" press #", " ext. ")
+    phone = phone.replace(" press ", " ext. ")
+
+    contacts = []
+    for match in phonenumbers.PhoneNumberMatcher(phone, "US"):
+        contacts.append(
+            location.Contact(
+                contact_type=contact_type,
+                phone=phonenumbers.format_number(
+                    match.number, phonenumbers.PhoneNumberFormat.NATIONAL
+                ),
+            )
+        )
+    return contacts
+
+
+def parse_address(address: str) -> OrderedDict[str, str]:
+    """Parse address, but may require subsequent cleaning depending on dataset."""
+
+    address = address.replace("\n", ", ")
+
+    parsed_address, address_type = usaddress.tag(address)
+    if address_type != "Street Address":
+        logger.warning(
+            f"Couldn't parse address '{address}' of type {address_type}; best guess: {parsed_address}"
+        )
+
+    # Fixup: At least one address has "WI, USA" in the "StateName" component.
+    # Strip non-state components
+    if parsed_address.get("StateName"):
+        parsed_address["StateName"] = parsed_address["StateName"].partition(",")[0]
+
+    return parsed_address
+
+
+def normalize_address(patched_address: OrderedDict[str, str]) -> location.Address:
+    """Normalize a usaddress-parsed (and possibly -patched) address.
+
+    Calling convention:
+
+        parsed_address = parse_address("1600 Pennsylvania Ave NW, Washington DC 20500")
+        patched_address = apply_local_fixes(parsed_address)
+        address = normalize_address(patched_address)
+
+
+    where apply_local_fixes does any cleanup fixes needed for the dataset.
+    """
+
+    address_kwargs = {
+        # "street1",
+        # "city",
+        # "state",
+        # "zip"
+    }
+    street_buffer: List[str] = []
+    suite_buffer: List[str] = []
+    while len(patched_address) > 0:
+        component, value = patched_address.popitem(last=False)
+        if component == "PlaceName":
+            address_kwargs["city"] = value
+        elif component == "StateName":
+            address_kwargs["state"] = value
+        elif component == "ZipCode":
+            address_kwargs["zip"] = value
+        elif component == "OccupancyType":
+            suite_buffer.append(value)
+        elif component == "OccupancyIdentifier":
+            suite_buffer.append(value)
+        else:
+            street_buffer.append(value)
+    address_kwargs["street1"] = " ".join(street_buffer)
+    if len(suite_buffer) > 0:
+        address_kwargs["street2"] = " ".join(suite_buffer)
+
+    return location.Address(**address_kwargs)
+
+
+def calculate_content_hash(loc: location.NormalizedLocation) -> str:
+    """Calculate a hash from the normalized content of a location without source data"""
+    loc_dict = loc.dict(exclude_none=True, exclude={"source"})
+    loc_json = orjson.dumps(loc_dict, option=orjson.OPT_SORT_KEYS)
+    return hashlib.md5(loc_json).hexdigest()

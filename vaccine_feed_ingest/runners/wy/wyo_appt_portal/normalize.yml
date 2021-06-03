@@ -1,0 +1,5 @@
+---
+state: wy
+site: wyo_appt_portal
+parser: prepmod
+url: https://www.wyoapptportal.org

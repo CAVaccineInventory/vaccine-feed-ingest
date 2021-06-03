@@ -1,37 +1,26 @@
 #!/usr/bin/env python
 
+import datetime
 import json
-import logging
 import os
 import pathlib
 import re
 import sys
-from datetime import datetime
-from typing import List, Optional
+from typing import List, Optional, Tuple
 
-# import schema
-site_dir = pathlib.Path(__file__).parent
-state_dir = site_dir.parent
-runner_dir = state_dir.parent
-root_dir = runner_dir.parent
-sys.path.append(str(root_dir))
+from vaccine_feed_ingest_schema import location as schema
 
-from schema import schema  # noqa: E402
+from vaccine_feed_ingest.utils.log import getLogger
+from vaccine_feed_ingest.utils.validation import BOUNDING_BOX
 
-# Configure logger
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s %(levelname)s:%(name)s:%(message)s",
-    datefmt="%m/%d/%Y %H:%M:%S",
-)
-logger = logging.getLogger("az/arcgis/normalize.py")
+logger = getLogger(__file__)
 
 output_dir = pathlib.Path(sys.argv[1])
 input_dir = pathlib.Path(sys.argv[2])
 
 json_filepaths = input_dir.glob("*.ndjson")
 
-parsed_at_timestamp = datetime.utcnow().isoformat()
+parsed_at_timestamp = datetime.datetime.utcnow().isoformat()
 
 
 def _get_id(site: dict) -> str:
@@ -39,7 +28,7 @@ def _get_id(site: dict) -> str:
 
     # Could parse these from directory traversal, but do not for now to avoid
     # accidental mutation.
-    site = "arcgis"
+    site_name = "arcgis"
     runner = "az"
 
     # Could parse these from the input file name, but do not for now to avoid
@@ -47,7 +36,7 @@ def _get_id(site: dict) -> str:
     arcgis = "128ead309d754558ad81bccd99188dc9"
     layer = 0
 
-    return f"{runner}:{site}:{arcgis}_{layer}:{data_id}"
+    return f"{runner}_{site_name}:{arcgis}_{layer}_{data_id}"
 
 
 def _get_contacts(site: dict) -> Optional[List[schema.Contact]]:
@@ -68,10 +57,16 @@ def _get_contacts(site: dict) -> Optional[List[schema.Contact]]:
 
         for match in matches:
             phone = f"({match.group('area_code')}) {match.group('rest_of_number')}"
-            contacts.append(schema.Contact(phone=phone))
+            contacts.append(schema.Contact(contact_type="general", phone=phone))
 
-    if site["attributes"]["prereg_website"]:
-        contacts.append(schema.Contact(website=site["attributes"]["prereg_website"]))
+    website = site["attributes"]["prereg_website"]
+    if website:
+        # this edge case...
+        website = website.replace("htttp", "http")
+        if "http" not in website:
+            website = "https://" + website
+        website = website.replace(" ", "")
+        contacts.append(schema.Contact(contact_type="general", website=website))
 
     if len(contacts) > 0:
         return contacts
@@ -90,14 +85,14 @@ def _get_opening_dates(site: dict) -> Optional[List[schema.OpenDate]]:
     closes = None
     if site["attributes"]["begindate"] is not None:
         opens = (
-            datetime.fromtimestamp(site["attributes"]["begindate"] // 1000)
+            datetime.datetime.fromtimestamp(site["attributes"]["begindate"] // 1000)
             .date()
             .isoformat()
         )
 
     if site["attributes"]["enddate"] is not None:
         closes = (
-            datetime.fromtimestamp(site["attributes"]["enddate"] // 1000)
+            datetime.datetime.fromtimestamp(site["attributes"]["enddate"] // 1000)
             .date()
             .isoformat()
         )
@@ -113,33 +108,25 @@ def _get_opening_dates(site: dict) -> Optional[List[schema.OpenDate]]:
     ]
 
 
-def _parse_time(human_readable_time: str) -> (int, int):
-    match = re.match(r"^(?P<hour>\d+):(?P<minute>\d+) ?AM?$", human_readable_time)
-    if match:
-        return int(match.group("hour")), int(match.group("minute"))
+TIME_RANGE_RE = re.compile(
+    r"(?P<hour>\d{1,2})(:(?P<minute>\d{1,2}))?\s*(?P<am_pm>[AP]\.?M\.?)?"
+)
 
-    match = re.match(r"^(?P<hour>\d+):(?P<minute>\d+) ?P[MN]?$", human_readable_time)
-    if match:
-        return int(match.group("hour")) + 12, int(match.group("minute"))
 
-    match = re.match(r"^(?P<hour>\d+) ?AM$", human_readable_time)
+def _parse_time(human_readable_time: str) -> Tuple[int, int]:
+    match = TIME_RANGE_RE.search(human_readable_time)
     if match:
-        return int(match.group("hour")), 0
-
-    match = re.match(r"^(?P<hour>\d+) ?PM$", human_readable_time)
-    if match:
-        return int(match.group("hour")) + 12, 0
-
-    match = re.match(r"^(?P<hour>\d+):(?P<minute>\d+)$", human_readable_time)
-    if match:
-        return int(match.group("hour")), int(match.group("minute"))
-
+        hour = int(match.group("hour"))
+        minute = int(match.group("minute") or "0")
+        if (1 <= hour <= 11) and ((match.group("am_pm") or "").startswith("P")):
+            hour += 12
+        return hour, minute
     raise ValueError(human_readable_time)
 
 
-def _normalize_time(human_readable_time: str) -> str:
+def _normalize_time(human_readable_time: str) -> datetime.time:
     hour, minute = _parse_time(human_readable_time)
-    return str(hour % 24).rjust(2, "0") + ":" + str(minute).rjust(2, "0")
+    return datetime.time(hour % 24, minute)
 
 
 def _normalize_hours(
@@ -148,13 +135,12 @@ def _normalize_hours(
     processed_hours = human_readable_hours
     if processed_hours is None:
         return []
+    processed_hours = processed_hours.upper()
 
-    if processed_hours == "8-4":
-        return [schema.OpenHour(day=day, open="08:00", closes="16:00")]
     if processed_hours == "8:00AM7:00PM":
-        return [schema.OpenHour(day=day, open="08:00", closes="16:00")]
+        return [schema.OpenHour(day=day, opens="08:00", closes="19:00")]
 
-    processed_hours = processed_hours.upper().lstrip("BY APPOINTMENT ").strip()
+    processed_hours = re.sub("^BY APPOINTMENT", "", processed_hours).strip()
 
     if " AND " in processed_hours:
         ranges = processed_hours.split(" AND ")
@@ -171,13 +157,24 @@ def _normalize_hours(
         logger.warning("unparseable hours: '%s'", human_readable_hours)
         return []
 
-    open_time, close_time = processed_hours.split("-")
+    open_time, close_time = [x.strip() for x in re.split(r"\s*-\s*", processed_hours)]
+    opens = _normalize_time(open_time)
+    closes = _normalize_time(close_time)
+
+    if opens > closes:
+        if not re.search(r"[AP]\.?M\.?$", close_time):
+            # handle the "9-5" case, where the AM/PM is implied
+            closes = closes.replace(hour=closes.hour + 12)
+        elif len(re.findall(r"P\.?M\.?", processed_hours)) == 2:
+            # handle the "10PM - 5PM" typo cases
+            opens = opens.replace(hour=opens.hour - 12)
+
     try:
         return [
             schema.OpenHour(
                 day=day,
-                open=_normalize_time(open_time.strip().upper()),
-                closes=_normalize_time(close_time.strip().upper()),
+                opens=opens.isoformat("minutes"),
+                closes=closes.isoformat("minutes"),
             )
         ]
     except ValueError:
@@ -188,46 +185,78 @@ def _normalize_hours(
 def _get_opening_hours(site: dict) -> Optional[List[schema.OpenHour]]:
     hours = []
 
-    if site["attributes"]["mon_open"] == "Yes":
-        hours += _normalize_hours(site["attributes"]["mon_hrs"], "monday")
-
-    if site["attributes"]["tues_open"] == "Yes":
-        hours += _normalize_hours(site["attributes"]["tues_hrs"], "tuesday")
-
-    if site["attributes"]["wed_open"] == "Yes":
-        hours += _normalize_hours(site["attributes"]["wed_hrs"], "wednesday")
-
-    if site["attributes"]["thurs_open"] == "Yes":
-        hours += _normalize_hours(site["attributes"]["thur_hrs"], "thursday")
-
-    if site["attributes"]["fri_open"] == "Yes":
-        hours += _normalize_hours(site["attributes"]["fri_hrs"], "friday")
-
-    if site["attributes"]["sat_open"] == "Yes":
-        hours += _normalize_hours(site["attributes"]["sat_hrs"], "saturday")
-
-    if site["attributes"]["sun_open"] == "Yes":
-        hours += _normalize_hours(site["attributes"]["sun_hrs"], "sunday")
+    # print(site["attributes"])
+    for key, dow, hrs in zip(
+        [
+            "mon_open",
+            "tues_open",
+            "wed_open",
+            "thurs_open",
+            "fri_open",
+            "sat_open",
+            "sun_open",
+        ],
+        ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"],
+        [
+            "mon_hrs",
+            "tues_hrs",
+            "wed_hrs",
+            "thurs_hrs",
+            "fri_hrs",
+            "sat_hrs",
+            "sun_hrs",
+        ],
+    ):
+        if key not in site["attributes"]:
+            continue
+        elif site["attributes"][key] == "Yes":
+            hours += _normalize_hours(site["attributes"][hrs], dow)
 
     return hours if hours else None
 
 
 def _get_inventory(site: dict) -> Optional[List[schema.Vaccine]]:
+    # Though the data source includes attributes for each possible vaccine, they
+    # do not appear to be used every time (rather this string is typically set)
     inventory_str = site["attributes"]["vaccine_manufacturer"]
-    inventory = (
-        inventory_str.split(";") if ";" in inventory_str else inventory_str.split(",")
+
+    inventory = []
+
+    pfizer = re.search("pfizer", inventory_str, re.IGNORECASE)
+    moderna = re.search("moderna", inventory_str, re.IGNORECASE)
+    johnson = re.search(
+        "janssen|johnson.*johnson|j&j|j_j", inventory_str, re.IGNORECASE
     )
 
-    return [
-        {
-            "Pfizer_BioNTech": schema.Vaccine(vaccine="pfizer"),
-            "Pfizer-BioNTech": schema.Vaccine(vaccine="pfizer"),
-            "Pfizer": schema.Vaccine(vaccine="pfizer"),
-            "Moderna": schema.Vaccine(vaccine="moderna"),
-            "J_J": schema.Vaccine(vaccine="janssen"),
-        }[vaccine.lstrip("\u200b").strip()]
-        for vaccine in inventory
-    ]
+    if pfizer:
+        inventory.append(schema.Vaccine(vaccine=schema.VaccineType.PFIZER_BIONTECH))
+    if moderna:
+        inventory.append(schema.Vaccine(vaccine=schema.VaccineType.MODERNA))
+    if johnson:
+        inventory.append(
+            schema.Vaccine(vaccine=schema.VaccineType.JOHNSON_JOHNSON_JANSSEN)
+        )
+
+    if len(inventory) == 0:
+        logger.warning("No vaccines found in inventory: %s", inventory_str)
+        return None
+
+    return inventory
+
+
+def _get_lat_lng(site: dict) -> Optional[schema.LatLng]:
+    lat_lng = schema.LatLng(
+        latitude=site["geometry"]["y"], longitude=site["geometry"]["x"]
+    )
+
+    # Some locations in the AZ data set have lat/lng near the south pole. Drop
+    # those values.
+    if not BOUNDING_BOX.latitude.contains(
+        lat_lng.latitude
+    ) or not BOUNDING_BOX.longitude.contains(lat_lng.longitude):
+        return None
+
+    return lat_lng
 
 
 def _get_normalized_location(site: dict, timestamp: str) -> schema.NormalizedLocation:
@@ -238,12 +267,10 @@ def _get_normalized_location(site: dict, timestamp: str) -> schema.NormalizedLoc
             street1=site["attributes"]["addr1"],
             street2=site["attributes"]["addr2"],
             city=site["attributes"]["city"],
-            state=site["attributes"]["state"] or "AZ",
+            state="AZ",
             zip=site["attributes"]["zip"],
         ),
-        location=schema.LatLng(
-            latitude=site["geometry"]["y"], longitude=site["geometry"]["x"]
-        ),
+        location=_get_lat_lng(site),
         contact=_get_contacts(site),
         languages=_get_languages(site),
         opening_dates=_get_opening_dates(site),
@@ -258,7 +285,7 @@ def _get_normalized_location(site: dict, timestamp: str) -> schema.NormalizedLoc
         else None,
         active=None,
         source=schema.Source(
-            source="arcgis",
+            source="az_arcgis",
             id=site["attributes"]["globalid"],
             fetched_from_uri="https://adhsgis.maps.arcgis.com/apps/opsdashboard/index.html#/5d636af4d5134a819833b1a3b906e1b6",  # noqa: E501
             fetched_at=timestamp,
