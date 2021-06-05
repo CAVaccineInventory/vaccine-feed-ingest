@@ -25,6 +25,70 @@ VACCINE_MAPPING = {
 }
 
 
+PROVIDER_MAPPING = {
+    "albertsons_acme": location.VaccineProvider.ACME,
+    "albertsons_amigos": None,
+    "albertsons_carrs": None,
+    "albertsons_haggen": location.VaccineProvider.HAGGEN,
+    "albertsons_jewelosco": "albertsons_jewelosco",
+    "albertsons_market_street": location.VaccineProvider.MARKET_STREET,
+    "albertsons_market": None,
+    "albertsons_pak_n_save": None,
+    "albertsons_pavilions": location.VaccineProvider.PAVILIONS,
+    "albertsons_randalls": None,
+    "albertsons_safeway": location.VaccineProvider.SAFEWAY,
+    "albertsons_shaws": None,
+    "albertsons_star_market": None,
+    "albertsons_tom_thumb": location.VaccineProvider.TOM_THUMB,
+    "albertsons_united": None,
+    "albertsons_vons": location.VaccineProvider.VONS,
+    "albertsons": location.VaccineProvider.ALBERTSONS,
+    "alliancerx_walgreens_prime": location.VaccineProvider.WALGREENS,
+    "costco": location.VaccineProvider.COSTCO,
+    "cvs": location.VaccineProvider.CVS,
+    "health_mart": None,
+    "heb": location.VaccineProvider.HEB,
+    "hyvee": location.VaccineProvider.HY_VEE,
+    "kroger_bakers": None,
+    "kroger_citymarket": None,
+    "kroger_dillons": location.VaccineProvider.DILLONS,
+    "kroger_fred": location.VaccineProvider.FRED_MEYER,
+    "kroger_frys": location.VaccineProvider.FRYS,
+    "kroger_gerbes": None,
+    "kroger_hart": None,
+    "kroger_jayc": None,
+    "kroger_kingsoopers": location.VaccineProvider.KING_SOOPERS,
+    "kroger_marianos": location.VaccineProvider.MARIANOS,
+    "kroger_metro_market": None,
+    "kroger_payless": None,
+    "kroger_pick_n_save": location.VaccineProvider.PICK_N_SAVE,
+    "kroger_qfc": location.VaccineProvider.QFC,
+    "kroger_ralphs": None,
+    "kroger_smiths": location.VaccineProvider.SMITHS,
+    "kroger_the_little_clinic": location.VaccineProvider.LITTLE_CLINIC,
+    "kroger": location.VaccineProvider.KROGER,
+    "kta_super_stores": None,
+    "pharmaca": None,
+    "price_chopper_market_32": None,
+    "price_chopper_market_bistro": None,
+    "price_chopper": location.VaccineProvider.PRICE_CHOPPER,
+    "publix": location.VaccineProvider.PUBLIX,
+    "riteaid": location.VaccineProvider.RITE_AID,
+    "sams_club": location.VaccineProvider.SAMS,
+    "southeastern_grocers_fresco_y_mas": None,
+    "southeastern_grocers_harveys": None,
+    "southeastern_grocers_winn_dixie": location.VaccineProvider.WINN_DIXIE,
+    "thrifty_white": None,
+    "walgreens_duane_reade": None,
+    "walgreens_specialty_pharmacy_of_puerto_rico": location.VaccineProvider.WALGREENS,
+    "walgreens_specialty_pharmacy": location.VaccineProvider.WALGREENS,
+    "walgreens": location.VaccineProvider.WALGREENS,
+    "walmart": location.VaccineProvider.WALMART,
+    "wegmans": None,
+    "weis": location.VaccineProvider.WEIS,
+}
+
+
 class BaseModel(pydantic.BaseModel):
     """BaseModel for all schema to inherit from."""
 
@@ -218,7 +282,12 @@ def _get_inventory(loc: GMVLocation) -> Optional[List[location.Vaccine]]:
 
 
 def _get_parent_organization(loc: GMVLocation) -> Optional[location.Organization]:
-    pass
+    provider = PROVIDER_MAPPING.get(loc.provider)
+
+    if not provider:
+        return None
+
+    return location.Organization(id=provider)
 
 
 def _get_links(loc: GMVLocation) -> Optional[List[location.Link]]:
