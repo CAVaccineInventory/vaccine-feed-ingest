@@ -129,7 +129,18 @@ def _get_address(loc: GMVLocation) -> Optional[location.Address]:
 
 
 def _get_lat_lng(loc: GMVLocation) -> Optional[location.LatLng]:
-    pass
+    if not loc.position:
+        return None
+
+    # Skip positions that are missing a value
+    if not loc.position.latitude or not loc.position.longitude:
+        logger.warning("Skipping position with missing coordinates")
+        return None
+
+    return location.LatLng(
+        latitude=loc.position.latitude,
+        longitude=loc.position.longitude,
+    )
 
 
 def _get_contacts(loc: GMVLocation) -> Optional[List[location.Contact]]:
