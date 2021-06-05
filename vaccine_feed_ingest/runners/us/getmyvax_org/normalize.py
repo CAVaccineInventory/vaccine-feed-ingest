@@ -191,7 +191,13 @@ def _get_contacts(loc: GMVLocation) -> Optional[List[location.Contact]]:
 
 
 def _get_availability(loc: GMVLocation) -> Optional[location.Availability]:
-    pass
+    if not loc.availability:
+        return None
+
+    if loc.availability.available == "UNKNOWN":
+        return None
+
+    return location.Availability(appointments=True)
 
 
 def _get_inventory(loc: GMVLocation) -> Optional[List[location.Vaccine]]:
