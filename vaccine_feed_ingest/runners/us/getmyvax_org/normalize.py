@@ -18,6 +18,12 @@ logger = getLogger(__file__)
 SOURCE_NAME = "getmyvax_org"
 LOCATIONS_URL = "https://getmyvax.org/api/edge/locations.ndjson"
 
+VACCINE_MAPPING = {
+    "moderna": location.VaccineType.MODERNA,
+    "pfizer": location.VaccineType.PFIZER_BIONTECH,
+    "jj": location.VaccineType.JOHNSON_JOHNSON_JANSSEN,
+}
+
 
 class BaseModel(pydantic.BaseModel):
     """BaseModel for all schema to inherit from."""
@@ -189,7 +195,20 @@ def _get_availability(loc: GMVLocation) -> Optional[location.Availability]:
 
 
 def _get_inventory(loc: GMVLocation) -> Optional[List[location.Vaccine]]:
-    pass
+    if not loc.availability:
+        return None
+
+    vaccines = set()
+    for product in loc.availability.products or []:
+        if vaccine_type := VACCINE_MAPPING.get(product):
+            vaccines.add(vaccine_type)
+        else:
+            logger.info("Unrecognized vaccine for product %s", product)
+
+    if not vaccines:
+        return None
+
+    return [location.Vaccine(vaccine=vaccine) for vaccine in vaccines]
 
 
 def _get_access(loc: GMVLocation) -> Optional[location.Access]:
