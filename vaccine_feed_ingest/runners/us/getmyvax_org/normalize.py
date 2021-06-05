@@ -144,7 +144,44 @@ def _get_lat_lng(loc: GMVLocation) -> Optional[location.LatLng]:
 
 
 def _get_contacts(loc: GMVLocation) -> Optional[List[location.Contact]]:
-    pass
+    contacts = []
+
+    if loc.info_phone:
+        contacts.append(
+            location.Contact(
+                contact_type=location.ContactType.GENERAL,
+                phone=loc.info_phone,
+            )
+        )
+
+    if loc.info_url:
+        contacts.append(
+            location.Contact(
+                contact_type=location.ContactType.GENERAL,
+                website=loc.info_url,
+            )
+        )
+
+    if loc.booking_phone:
+        contacts.append(
+            location.Contact(
+                contact_type=location.ContactType.BOOKING,
+                phone=loc.booking_phone,
+            )
+        )
+
+    if loc.booking_url:
+        contacts.append(
+            location.Contact(
+                contact_type=location.ContactType.BOOKING,
+                website=loc.booking_url,
+            )
+        )
+
+    if not contacts:
+        return None
+
+    return contacts
 
 
 def _get_availability(loc: GMVLocation) -> Optional[location.Availability]:
