@@ -223,9 +223,10 @@ def normalize_state_name(name: str) -> str:
     else:
         name = name.lower().capitalize()
 
-    try:
-        return us.states.lookup(name).abbr
-    except Exception:
+    lookup = us.states.lookup(name)
+    if lookup:
+        return lookup.abbr
+    else:
         return name.upper()
 
 
