@@ -1,12 +1,13 @@
 #!/usr/bin/env python3
 
+import datetime
 import pathlib
 import sys
-import datetime
 from typing import List, Optional
 
 import orjson
 import pydantic
+import us
 from vaccine_feed_ingest_schema import location
 
 from vaccine_feed_ingest.utils.log import getLogger
@@ -92,7 +93,39 @@ def process_line(line: bytes, timestamp: datetime.datetime) -> bytes:
 
 
 def _get_address(loc: GMVLocation) -> Optional[location.Address]:
-    pass
+    if not loc.address_lines and not loc.city and not loc.state and not loc.postal_code:
+        return None
+
+    street1 = None
+    if loc.address_lines:
+        street1 = loc.address_lines[0]
+
+    street2 = None
+    if len(loc.address_lines) > 1:
+        street2 = ", ".join(loc.address_lines[1:])
+
+    state_abbr = None
+    if loc.state:
+        if state := us.states.lookup(loc.state):
+            state_abbr = state.abbr
+        else:
+            logger.warning("Invalid state %s", loc.state)
+
+    postal_code = None
+    # Handle invalid postal codes that are less than 5 digits
+    if loc.postal_code:
+        if len(loc.postal_code) >= 5:
+            postal_code = loc.postal_code
+        else:
+            logger.warning("Invalid postal code %s", loc.postal_code)
+
+    return location.Address(
+        street1=street1,
+        street2=street2,
+        city=loc.city,
+        state=state_abbr,
+        zip=postal_code,
+    )
 
 
 def _get_lat_lng(loc: GMVLocation) -> Optional[location.LatLng]:
