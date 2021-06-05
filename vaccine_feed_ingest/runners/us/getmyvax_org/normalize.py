@@ -217,10 +217,6 @@ def _get_inventory(loc: GMVLocation) -> Optional[List[location.Vaccine]]:
     return [location.Vaccine(vaccine=vaccine) for vaccine in vaccines]
 
 
-def _get_access(loc: GMVLocation) -> Optional[location.Access]:
-    pass
-
-
 def _get_parent_organization(loc: GMVLocation) -> Optional[location.Organization]:
     pass
 
@@ -243,7 +239,7 @@ def normalize_location(
         opening_hours=None,
         availability=_get_availability(loc),
         inventory=_get_inventory(loc),
-        access=_get_access(loc),
+        access=None,
         parent_organization=_get_parent_organization(loc),
         links=_get_links(loc),
         notes=None,
