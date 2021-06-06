@@ -27,65 +27,76 @@ VACCINE_MAPPING = {
 
 PROVIDER_MAPPING = {
     "albertsons_acme": location.VaccineProvider.ACME,
-    "albertsons_amigos": None,
-    "albertsons_carrs": None,
+    "albertsons_amigos": location.VaccineProvider.AMIGOS,
+    "albertsons_carrs": location.VaccineProvider.CARRS,
     "albertsons_haggen": location.VaccineProvider.HAGGEN,
-    "albertsons_jewelosco": "albertsons_jewelosco",
+    "albertsons_jewelosco": location.VaccineProvider.JEWEL_OSCO,
     "albertsons_market_street": location.VaccineProvider.MARKET_STREET,
-    "albertsons_market": None,
-    "albertsons_pak_n_save": None,
+    "albertsons_market": location.VaccineProvider.ALBERTSONS_MARKET,
+    "albertsons_pak_n_save": location.VaccineProvider.PAK_N_SAVE,
     "albertsons_pavilions": location.VaccineProvider.PAVILIONS,
-    "albertsons_randalls": None,
+    "albertsons_randalls": location.VaccineProvider.RANDALLS,
     "albertsons_safeway": location.VaccineProvider.SAFEWAY,
-    "albertsons_shaws": None,
-    "albertsons_star_market": None,
+    "albertsons_shaws": location.VaccineProvider.SHAWS,
+    "albertsons_star_market": location.VaccineProvider.STAR_MARKET,
     "albertsons_tom_thumb": location.VaccineProvider.TOM_THUMB,
-    "albertsons_united": None,
+    "albertsons_united": location.VaccineProvider.UNITED_SUPERMARKET,
     "albertsons_vons": location.VaccineProvider.VONS,
     "albertsons": location.VaccineProvider.ALBERTSONS,
     "alliancerx_walgreens_prime": location.VaccineProvider.WALGREENS,
+    "community_a_walgreens_pharmacy": location.VaccineProvider.WALGREENS,
     "costco": location.VaccineProvider.COSTCO,
     "cvs": location.VaccineProvider.CVS,
-    "health_mart": None,
+    "fresco_y_mas": location.VaccineProvider.FRESCO_Y_MAS,
+    "harveys": location.VaccineProvider.HARVEYS,
+    "health_mart_health_mart": location.VaccineProvider.HEALTH_MART,
+    "health_mart": location.VaccineProvider.HEALTH_MART,
     "heb": location.VaccineProvider.HEB,
     "hyvee": location.VaccineProvider.HY_VEE,
-    "kroger_bakers": None,
-    "kroger_citymarket": None,
+    "kroger_bakers": location.VaccineProvider.BAKERS,
+    "kroger_citymarket": location.VaccineProvider.CITY_MARKET,
+    "kroger_covid": location.VaccineProvider.KROGER,
     "kroger_dillons": location.VaccineProvider.DILLONS,
     "kroger_fred": location.VaccineProvider.FRED_MEYER,
     "kroger_frys": location.VaccineProvider.FRYS,
-    "kroger_gerbes": None,
-    "kroger_hart": None,
-    "kroger_jayc": None,
+    "kroger_gerbes": location.VaccineProvider.GERBES,
+    "kroger_hart": location.VaccineProvider.HART,
+    "kroger_jayc": location.VaccineProvider.JAYC,
     "kroger_kingsoopers": location.VaccineProvider.KING_SOOPERS,
     "kroger_marianos": location.VaccineProvider.MARIANOS,
-    "kroger_metro_market": None,
-    "kroger_payless": None,
+    "kroger_metro_market": location.VaccineProvider.METRO_MARKET,
+    "kroger_payless": location.VaccineProvider.PAY_LESS,
     "kroger_pick_n_save": location.VaccineProvider.PICK_N_SAVE,
     "kroger_qfc": location.VaccineProvider.QFC,
-    "kroger_ralphs": None,
+    "kroger_ralphs": location.VaccineProvider.RALPHS,
     "kroger_smiths": location.VaccineProvider.SMITHS,
     "kroger_the_little_clinic": location.VaccineProvider.LITTLE_CLINIC,
     "kroger": location.VaccineProvider.KROGER,
-    "kta_super_stores": None,
-    "pharmaca": None,
-    "price_chopper_market_32": None,
-    "price_chopper_market_bistro": None,
+    "kta_super_stores": location.VaccineProvider.KTA_SUPER_STORES,
+    "pharmaca": location.VaccineProvider.PHARMACA,
+    "price_chopper_market_32": location.VaccineProvider.MARKET_32,
+    "price_chopper_market_bistro": location.VaccineProvider.MARKET_BISTRO,
     "price_chopper": location.VaccineProvider.PRICE_CHOPPER,
     "publix": location.VaccineProvider.PUBLIX,
+    "rite_aid": location.VaccineProvider.RITE_AID,
     "riteaid": location.VaccineProvider.RITE_AID,
+    "safeway": location.VaccineProvider.SAFEWAY,
+    "sams_club_sams_club": location.VaccineProvider.SAMS,
     "sams_club": location.VaccineProvider.SAMS,
-    "southeastern_grocers_fresco_y_mas": None,
-    "southeastern_grocers_harveys": None,
+    "southeastern_grocers_fresco_y_mas": location.VaccineProvider.FRESCO_Y_MAS,
+    "southeastern_grocers_harveys": location.VaccineProvider.HARVEYS,
     "southeastern_grocers_winn_dixie": location.VaccineProvider.WINN_DIXIE,
-    "thrifty_white": None,
-    "walgreens_duane_reade": None,
+    "thrifty_white": location.VaccineProvider.THRIFTY_WHITE,
+    "walgreens_duane_reade": location.VaccineProvider.DUANE_READE,
     "walgreens_specialty_pharmacy_of_puerto_rico": location.VaccineProvider.WALGREENS,
     "walgreens_specialty_pharmacy": location.VaccineProvider.WALGREENS,
     "walgreens": location.VaccineProvider.WALGREENS,
+    "walmart_walmart": location.VaccineProvider.WALMART,
     "walmart": location.VaccineProvider.WALMART,
-    "wegmans": None,
+    "wegmans": location.VaccineProvider.WEGMANS,
+    "weis_weis": location.VaccineProvider.WEIS,
     "weis": location.VaccineProvider.WEIS,
+    "winn_dixie": location.VaccineProvider.WINN_DIXIE,
 }
 
 
@@ -291,7 +302,59 @@ def _get_parent_organization(loc: GMVLocation) -> Optional[location.Organization
 
 
 def _get_links(loc: GMVLocation) -> Optional[List[location.Link]]:
-    pass
+    if not loc.external_ids:
+        return None
+
+    links = []
+
+    for provider_id, store_id in loc.external_ids.items():
+        if not store_id:
+            logger.info("Missing value for external_id %s", provider_id)
+            continue
+
+        authority = None
+
+        if provider_id == "vaccinespotter":
+            authority = "vaccinespotter_org"
+
+        elif provider_id == "vtrcks":
+            authority = location.LocationAuthority.VTRCKS
+
+        elif provider_id.startswith("univaf_"):
+            # Skip versioned univaf ids until we figure out what to do with them.
+            continue
+
+        elif provider_id in ("njiis_covid", "comassvax"):
+            # Skip because their ids are just addresses
+            continue
+
+        elif provider_id in ("centura_driveup_event", "denver_ball_arena"):
+            # Skip because I am not sure if the ids are of good quality or useful
+            continue
+
+        elif (
+            provider_id.endswith("_powered_by_walgreens")
+            or provider_id.endswith("_a_walgreens_pharmacy")
+            or provider_id.endswith("_a_walgreens_rx")
+        ):
+            # These stores keep their custom names, but have walgreens store ids
+            authority = location.VaccineProvider.WALGREENS
+
+        else:
+            authority = PROVIDER_MAPPING.get(provider_id)
+
+        if not authority:
+            logger.info(
+                "Unrecognized provider for external_id %s:%s", provider_id, store_id
+            )
+            continue
+
+        links.append(location.Link(authority=authority, id=str(store_id)))
+
+    if not links:
+        return None
+
+    return links
 
 
 def normalize_location(
