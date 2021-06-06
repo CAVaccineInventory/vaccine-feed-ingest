@@ -11,8 +11,13 @@ from typing import Callable, Collection, Dict, Optional, Sequence
 import click
 import dotenv
 import pathy
+import sentry_sdk
+
+from vaccine_feed_ingest.utils.log import getLogger
 
 from .stages import caching, common, ingest, load, site
+
+logger = getLogger(__file__)
 
 # Collect locations that are within .6 degrees = 66.6 km = 41 mi
 CANDIDATE_DEGREES_DISTANCE = 0.6
@@ -246,6 +251,20 @@ def _import_batch_size_option() -> Callable:
 def cli():
     """Run vaccine-feed-ingest commands"""
     dotenv.load_dotenv()
+
+    sentry_enabled = os.environ.get("SENTRY_ENABLE", False)
+    sentry_path = os.environ.get("SENTRY_DSN")
+    if sentry_enabled:
+        if sentry_path:
+            sentry_sdk.init(
+                dsn=sentry_path,
+                # 1.0 would capture 100% of transactions for performance monitoring.
+                traces_sample_rate=0.0,
+            )
+        else:
+            logger.error("Sentry enabled but no config provided. Disabling Sentry.")
+    else:
+        logger.info("Sentry disabled by environment variable.")
 
 
 @cli.command()

@@ -9,6 +9,7 @@ from typing import Collection, Optional
 
 import orjson
 import pydantic
+from sentry_sdk import set_tag
 from vaccine_feed_ingest_schema import location
 
 from vaccine_feed_ingest.utils.log import getLogger
@@ -30,6 +31,9 @@ def run_fetch(
     dry_run: bool = False,
     fail_on_runner_error: bool = True,
 ) -> bool:
+    set_tag("vts.runner", f"{site_dir.parent.name}/{site_dir.name}")
+    set_tag("vts.stage", "fetch")
+
     fetch_path, yml_path = site.resolve_executable(site_dir, PipelineStage.FETCH)
     if not fetch_path:
         log_msg = (
@@ -61,7 +65,11 @@ def run_fetch(
         except CalledProcessError as e:
             if fail_on_runner_error:
                 raise e
-            logger.error("Subprocess errored, stage will be skipped: %s", e)
+            logger.error(
+                "Subprocess %s/%s errored on fetch, stage will be skipped",
+                site_dir.parent.name,
+                site_dir.name,
+            )
             return False
 
         if not outputs.data_exists(fetch_output_dir):
@@ -95,6 +103,9 @@ def run_parse(
     dry_run: bool = False,
     fail_on_runner_error: bool = True,
 ) -> bool:
+    set_tag("vts.runner", f"{site_dir.parent.name}/{site_dir.name}")
+    set_tag("vts.stage", "parse")
+
     parse_path, yml_path = site.resolve_executable(site_dir, PipelineStage.PARSE)
     if not parse_path:
         log_msg = (
@@ -152,7 +163,11 @@ def run_parse(
         except CalledProcessError as e:
             if fail_on_runner_error:
                 raise e
-            logger.error("Subprocess errored, stage will be skipped: %s", e)
+            logger.error(
+                "Subprocess %s/%s errored on parse, stage will be skipped",
+                site_dir.parent.name,
+                site_dir.name,
+            )
             return False
 
         if not outputs.data_exists(
@@ -196,6 +211,9 @@ def run_normalize(
     dry_run: bool = False,
     fail_on_runner_error: bool = True,
 ) -> bool:
+    set_tag("vts.runner", f"{site_dir.parent.name}/{site_dir.name}")
+    set_tag("vts.stage", "normalize")
+
     normalize_path, yml_path = site.resolve_executable(
         site_dir, PipelineStage.NORMALIZE
     )
@@ -262,7 +280,11 @@ def run_normalize(
         except CalledProcessError as e:
             if fail_on_runner_error:
                 raise e
-            logger.error("Subprocess errored, stage will be skipped: %s", e)
+            logger.error(
+                "Subprocess %s/%s errored on normalize, stage will be skipped",
+                site_dir.parent.name,
+                site_dir.name,
+            )
             return False
 
         if not outputs.data_exists(
@@ -310,6 +332,9 @@ def run_enrich(
     placekey_apikey: Optional[str] = None,
     dry_run: bool = False,
 ) -> bool:
+    set_tag("vts.runner", f"{site_dir.parent.name}/{site_dir.name}")
+    set_tag("vts.stage", "enrich")
+
     normalize_run_dir = outputs.find_latest_run_dir(
         output_dir, site_dir.parent.name, site_dir.name, PipelineStage.NORMALIZE
     )
