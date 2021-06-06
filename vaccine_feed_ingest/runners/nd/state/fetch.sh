@@ -10,19 +10,6 @@ else
     echo "Must pass an output_dir as first argument"
 fi
 
-REQ_BODY=''
-
-# SESSION_ID="$(curl --silent -I 'https://public.tableau.com/views/pharmacies_desktop/Pharmacies_desktop?%3Aembed=y&%3AshowVizHome=no&%3Adisplay_count=y&%3Adisplay_static_image=y&%3AbootstrapWhenNotified=true&%3Alanguage=en&:embed=y&:showVizHome=n&:apiID=host0#navType=1&navSrc=Parse' | grep -i '^X-Session-Id' | awk '{print $2}' | tr -d '\r')"
-
-# curl "https://wabi-us-gov-iowa-api.analysis.usgovcloudapi.net/public/reports/querydata?synchronous=true" \
-# 	-X POST \
-# 	-H "Content-Type: application/json" \
-# 	-H "host: wabi-us-gov-iowa-api.analysis.usgovcloudapi.net" \
-#     -H 'accept: application/json' \
-# 	--data "@body.json" \
-#     -o "${output_dir}/powerbi.json"
-
-
 curl -X POST 'https://wabi-us-gov-iowa-api.analysis.usgovcloudapi.net/public/reports/querydata?synchronous=true' \
 --header 'Host: wabi-us-gov-iowa-api.analysis.usgovcloudapi.net' \
 --header 'Content-Type: application/json' \
