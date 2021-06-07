@@ -2101,7 +2101,7 @@ python-crfsuite = ">=0.7"
 
 [[package]]
 name = "vaccine-feed-ingest-schema"
-version = "1.2.4"
+version = "1.2.5"
 description = "Normalized data schema for the output of the vaccine-feed-ingest pipeline."
 category = "main"
 optional = false
@@ -2214,7 +2214,7 @@ test = ["pytest", "pytest-runner"]
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.9"
-content-hash = "0b6dfcb657937da49a3f8da9cc056cd153c36c66f3af0882756b5a9fe076f122"
+content-hash = "3d123133a546ea281439161442b8bbf66df9e747b71d16ba60b6f9bdcb347e8b"
 
 [metadata.files]
 aiohttp = [
@@ -3665,8 +3665,8 @@ usaddress = [
     {file = "usaddress-0.5.10.tar.gz", hash = "sha256:1a8ebf62d0cce58d7d8286dde70373c530a9317b6fe1752a4197b75b7d0870e3"},
 ]
 vaccine-feed-ingest-schema = [
-    {file = "vaccine-feed-ingest-schema-1.2.4.tar.gz", hash = "sha256:1469a8040be6586577723ef15d959196f3d29b4d0a355b064618d9a608f22455"},
-    {file = "vaccine_feed_ingest_schema-1.2.4-py3-none-any.whl", hash = "sha256:ff304e97a7cce07f02d4e6f31deae14c6af516a4af2a3e5d1bdf83284a4fdd22"},
+    {file = "vaccine-feed-ingest-schema-1.2.5.tar.gz", hash = "sha256:e687055c307ca555c3d86840bdeadf26bbc94447806f574f0fec2f4722144d63"},
+    {file = "vaccine_feed_ingest_schema-1.2.5-py3-none-any.whl", hash = "sha256:5efe9b6fd40040bb73a97ccbaa13c0708254a3605c83792037fd7925db58ca84"},
 ]
 virtualenv = [
     {file = "virtualenv-20.4.7-py2.py3-none-any.whl", hash = "sha256:2b0126166ea7c9c3661f5b8e06773d28f83322de7a3ff7d06f0aed18c9de6a76"},
