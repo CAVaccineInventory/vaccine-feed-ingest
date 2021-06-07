@@ -7,8 +7,6 @@ import orjson
 
 from vaccine_feed_ingest.utils.log import getLogger
 
-LOCATIONS_URL = "https://getmyvax.org/api/edge/locations.ndjson"
-
 logger = getLogger(__file__)
 
 
