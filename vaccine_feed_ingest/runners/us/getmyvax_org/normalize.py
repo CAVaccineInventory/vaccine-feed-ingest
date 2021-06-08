@@ -175,6 +175,7 @@ def process_line(line: bytes, timestamp: datetime.datetime) -> bytes:
 
 def _get_address(loc: GMVLocation) -> Optional[location.Address]:
     if not loc.address_lines and not loc.city and not loc.state and not loc.postal_code:
+        logger.info("No address for location %s (%s)", loc.id, loc.name)
         return None
 
     street1 = None
@@ -190,7 +191,7 @@ def _get_address(loc: GMVLocation) -> Optional[location.Address]:
         if state := us.states.lookup(loc.state):
             state_abbr = state.abbr
         else:
-            logger.warning("Invalid state %s", loc.state)
+            logger.warning("Invalid state %s for %s (%s)", loc.state, loc.id, loc.name)
 
     postal_code = None
     # Handle invalid postal codes that are less than 5 digits
@@ -198,7 +199,9 @@ def _get_address(loc: GMVLocation) -> Optional[location.Address]:
         if len(loc.postal_code) >= 5:
             postal_code = loc.postal_code
         else:
-            logger.warning("Invalid postal code %s", loc.postal_code)
+            logger.warning(
+                "Invalid postal code %s for %s (%s)", loc.postal_code, loc.id, loc.name
+            )
 
     return location.Address(
         street1=street1,
@@ -211,6 +214,7 @@ def _get_address(loc: GMVLocation) -> Optional[location.Address]:
 
 def _get_lat_lng(loc: GMVLocation) -> Optional[location.LatLng]:
     if not loc.position:
+        logger.debug("No lat-lng for location %s (%s)", loc.id, loc.name)
         return None
 
     # Skip positions that are missing a value
