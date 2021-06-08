@@ -406,7 +406,8 @@ for in_filepath in input_dir.iterdir():
     timestamp = datetime.datetime.now()
 
     with in_filepath.open("rb") as in_file:
-        out_filepath = output_dir / f"{in_filepath.stem}.normalized.ndjson"
+        filepath_stem = in_filepath.name[: -len(".parsed.ndjson")]
+        out_filepath = output_dir / f"{filepath_stem}.normalized.ndjson"
         with out_filepath.open("wb") as out_file:
             for line in in_file:
                 out_loc_ndjson = process_line(line, timestamp)
