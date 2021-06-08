@@ -15,15 +15,13 @@ import sentry_sdk
 
 from vaccine_feed_ingest.utils.log import getLogger
 
+from . import vial
 from .stages import caching, common, ingest, load, site
 
 logger = getLogger(__file__)
 
 # Collect locations that are within .6 degrees = 66.6 km = 41 mi
 CANDIDATE_DEGREES_DISTANCE = 0.6
-
-# Default import batch size to vial
-IMPORT_BATCH_SIZE = 500
 
 
 def _generate_run_timestamp() -> str:
@@ -243,7 +241,7 @@ def _import_batch_size_option() -> Callable:
         "--import-batch-size",
         "import_batch_size",
         type=int,
-        default=lambda: os.environ.get("IMPORT_BATCH_SIZE", IMPORT_BATCH_SIZE),
+        default=lambda: os.environ.get("IMPORT_BATCH_SIZE", vial.IMPORT_BATCH_SIZE),
     )
 
 

@@ -19,6 +19,10 @@ def _strip_unused_larged_fields(loc: dict) -> None:
     if loc.get("availability") and "slots" in loc["availability"]:
         del loc["availability"]["slots"]
 
+    # Remove appointment availability capacity
+    if loc.get("availability") and "capacity" in loc["availability"]:
+        del loc["availability"]["capacity"]
+
 
 output_dir = pathlib.Path(sys.argv[1]) if len(sys.argv) >= 2 else None
 if output_dir is None:
