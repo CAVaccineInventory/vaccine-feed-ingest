@@ -21,6 +21,7 @@ logger = getLogger(__file__)
 
 
 PROVIDER_TAG = "_tag_provider"
+GEOCODIO_BATCH_SIZE = 1_000
 
 
 def enrich_locations(
@@ -298,7 +299,7 @@ def _bulk_geocode(
     if not records:
         return
 
-    for chunked_records in misc.dict_batch(records, 5000):
+    for chunked_records in misc.dict_batch(records, GEOCODIO_BATCH_SIZE):
         logger.info("attempting to geocode %d locations", len(chunked_records))
         places = geocodio_api.batch_geocode(chunked_records)
 
