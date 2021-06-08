@@ -19,6 +19,9 @@ from .utils import misc
 
 logger = getLogger(__file__)
 
+# Default import batch size to vial
+IMPORT_BATCH_SIZE = 100
+
 
 @contextlib.contextmanager
 def vial_client(
@@ -71,7 +74,7 @@ def import_source_locations(
     vial_http: urllib3.connectionpool.ConnectionPool,
     import_run_id: str,
     import_locations: Iterable[load.ImportSourceLocation],
-    import_batch_size: int = 500,
+    import_batch_size: int = IMPORT_BATCH_SIZE,
 ) -> None:
     """Import source locations"""
     path_and_query = f"/api/importSourceLocations?import_run_id={import_run_id}"

@@ -115,7 +115,7 @@ def run_load_to_vial(
     match_ids: Optional[Dict[str, str]] = None,
     create_ids: Optional[Collection[str]] = None,
     candidate_distance: float = 0.6,
-    import_batch_size: int = 500,
+    import_batch_size: int = vial.IMPORT_BATCH_SIZE,
 ) -> Optional[List[load.ImportSourceLocation]]:
     """Load source to vial source locations"""
     set_tag("vts.runner", f"{site_dir.parent.name}/{site_dir.name}")
