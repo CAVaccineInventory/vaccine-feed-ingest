@@ -96,8 +96,13 @@ def import_source_locations(
                 headers={**vial_http.headers, "Content-Type": "application/x-ndjson"},
                 body=encoded_ndjson,
             )
-        except urllib3.exceptions.ReadTimeoutError:
-            logger.error("Timeout while importing: %s", encoded_ndjson[:100])
+        except Exception as e:
+            logger.error(
+                "Error while importing locations: %s (...) %s: %s",
+                encoded_ndjson[:100],
+                encoded_ndjson[-100:],
+                e,
+            )
             raise
 
         if rsp.status != 200:
