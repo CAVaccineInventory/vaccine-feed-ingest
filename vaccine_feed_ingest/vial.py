@@ -89,12 +89,16 @@ def import_source_locations(
             ]
         )
 
-        rsp = vial_http.request(
-            "POST",
-            path_and_query,
-            headers={**vial_http.headers, "Content-Type": "application/x-ndjson"},
-            body=encoded_ndjson,
-        )
+        try:
+            rsp = vial_http.request(
+                "POST",
+                path_and_query,
+                headers={**vial_http.headers, "Content-Type": "application/x-ndjson"},
+                body=encoded_ndjson,
+            )
+        except urllib3.exceptions.ReadTimeoutError:
+            logger.error("Timeout while importing: %s", encoded_ndjson[:100])
+            raise
 
         if rsp.status != 200:
             raise HTTPError(

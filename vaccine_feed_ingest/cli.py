@@ -245,6 +245,14 @@ def _import_batch_size_option() -> Callable:
     )
 
 
+def _import_limit_option() -> Callable:
+    return click.option(
+        "--import-limit",
+        "import_limit",
+        type=int,
+    )
+
+
 @click.group()
 def cli():
     """Run vaccine-feed-ingest commands"""
@@ -479,6 +487,7 @@ def enrich(
 @_create_ids_option()
 @_candidate_distance_option()
 @_import_batch_size_option()
+@_import_limit_option()
 def load_to_vial(
     sites: Optional[Sequence[str]],
     exclude_sites: Optional[Collection[str]],
@@ -495,6 +504,7 @@ def load_to_vial(
     create_ids: Optional[Collection[str]],
     candidate_distance: float,
     import_batch_size: int,
+    import_limit: Optional[int],
 ) -> None:
     """Load specified sites to vial server."""
     site_dirs = site.get_site_dirs(state, sites, exclude_sites)
@@ -520,6 +530,7 @@ def load_to_vial(
         create_ids=create_ids,
         candidate_distance=candidate_distance,
         import_batch_size=import_batch_size,
+        import_limit=import_limit,
     )
 
 
@@ -544,6 +555,7 @@ def load_to_vial(
 @_create_ids_option()
 @_candidate_distance_option()
 @_import_batch_size_option()
+@_import_limit_option()
 @_fail_on_error_option()
 def pipeline(
     sites: Optional[Sequence[str]],
@@ -566,6 +578,7 @@ def pipeline(
     create_ids: Optional[Collection[str]],
     candidate_distance: float,
     import_batch_size: int,
+    import_limit: Optional[int],
     fail_on_runner_error: bool,
 ) -> None:
     """Run all stages in succession for specified sites."""
@@ -645,6 +658,7 @@ def pipeline(
             create_ids=create_ids,
             candidate_distance=candidate_distance,
             import_batch_size=import_batch_size,
+            import_limit=import_limit,
         )
 
 
