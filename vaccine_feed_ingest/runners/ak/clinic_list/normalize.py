@@ -26,8 +26,7 @@ def _get_id(site: dict) -> str:
 def _get_contacts(site: dict) -> Optional[List[schema.Contact]]:
     ret = []
     if phone := site["attributes"]["phone"]:
-        for phone in normalize_phone(phone):
-            ret.append(schema.Contact(phone=phone))
+        ret.extend(normalize_phone(phone))
     if email := site["attributes"]["publicEmail"]:
         ret.append(schema.Contact(email=email))
     if website := site["attributes"]["publicWebsite"]:
