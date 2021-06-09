@@ -38,6 +38,7 @@ def _get_contacts(site: dict) -> Optional[List[schema.Contact]]:
 def _get_availability(site: dict) -> Optional[schema.Availability]:
     if site["attributes"]["flu_walkins"] == "no_please_make_an_appointment":
         return schema.Availability(drop_in=False)
+    return None
 
 
 def _get_inventory(site: dict) -> Optional[List[schema.Vaccine]]:
