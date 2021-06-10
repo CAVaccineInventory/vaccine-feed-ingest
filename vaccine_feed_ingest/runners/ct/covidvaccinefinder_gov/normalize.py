@@ -12,6 +12,7 @@ import pydantic
 from vaccine_feed_ingest_schema import location as schema
 
 from vaccine_feed_ingest.utils.normalize import provider_id_from_name
+from vaccine_feed_ingest.utils.parse import location_id_from_name
 from vaccine_feed_ingest.utils.validation import BOUNDING_BOX
 
 logger = getLogger(__file__)
@@ -56,9 +57,15 @@ def _get_lat_lng(site: dict) -> Optional[schema.LatLng]:
 
 
 def _get_id(site: dict) -> str:
-    # id = site.get("_id")  # identifier. seems to change often
-    # network_id = site.get("networkId")  # provider network
+    hash_id = site.get("_id")  # identifier. seems to change often
+    network_id = site.get("networkId")  # provider network
     source_system_id = site.get("sourceSystemId")
+    if not source_system_id:
+        if network_id and hash_id:
+            return network_id + hash_id
+        else:
+            addr = site.get("addressLine1")
+            return location_id_from_name(addr) if addr else "unknown"  # This should never happen
     return source_system_id
 
 
