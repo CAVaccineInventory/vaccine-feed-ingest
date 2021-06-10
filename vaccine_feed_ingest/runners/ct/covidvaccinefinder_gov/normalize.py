@@ -65,7 +65,9 @@ def _get_id(site: dict) -> str:
             return network_id + hash_id
         else:
             addr = site.get("addressLine1")
-            return location_id_from_name(addr) if addr else "unknown"  # This should never happen
+            return (
+                location_id_from_name(addr) if addr else "unknown"
+            )  # This should never happen
     return source_system_id
 
 
