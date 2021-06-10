@@ -17,6 +17,9 @@ from vaccine_feed_ingest.utils.validation import BOUNDING_BOX
 logger = getLogger(__file__)
 
 
+SOURCE_NAME = "ct_covidvaccinefinder_gov"
+
+
 def _in_bounds(lat_lng: schema.LatLng) -> bool:
     if BOUNDING_BOX.latitude.contains(
         lat_lng.latitude
@@ -50,6 +53,13 @@ def _get_lat_lng(site: dict) -> Optional[schema.LatLng]:
         logger.warning("Invalid or missing lat/lng for %s: %s", site["_id"], str(e))
 
     return None
+
+
+def _get_id(site: dict) -> str:
+    # id = site.get("_id")  # identifier. seems to change often
+    # network_id = site.get("networkId")  # provider network
+    source_system_id = site.get("sourceSystemId")
+    return source_system_id
 
 
 def _get_contact(site: dict) -> List[schema.Contact]:
@@ -90,7 +100,7 @@ def _get_inventory(site: dict) -> List[schema.Vaccine]:
 
 def normalize(site: dict, timestamp: str) -> dict:
     links = [
-        schema.Link(authority="ct_gov", id=site["_id"]),
+        schema.Link(authority="ct_gov", id=_get_id(site)),
     ]
 
     parent_organization = schema.Organization(name=site["networks"][0]["name"])
@@ -104,7 +114,7 @@ def normalize(site: dict, timestamp: str) -> dict:
         parent_organization.id = parsed_provider_link[0]
 
     return schema.NormalizedLocation(
-        id=f"ct_covidvaccinefinder_gov:{site['_id']}",
+        id=f"{SOURCE_NAME}:{_get_id(site)}",
         name=site["displayName"],
         address=schema.Address(
             street1=site["addressLine1"],
@@ -130,8 +140,8 @@ def normalize(site: dict, timestamp: str) -> dict:
         notes=None,
         active=None,
         source=schema.Source(
-            source="ct_covidvaccinefinder_gov",
-            id=site["_id"],
+            source=SOURCE_NAME,
+            id=_get_id(site),
             fetched_from_uri="https://covidvaccinefinder.ct.gov/api/HttpTriggerGetProvider",  # noqa: E501
             fetched_at=timestamp,
             published_at=site["lastModified"],
