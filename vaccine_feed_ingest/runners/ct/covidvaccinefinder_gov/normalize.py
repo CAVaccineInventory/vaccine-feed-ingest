@@ -58,11 +58,11 @@ def _get_lat_lng(site: dict) -> Optional[schema.LatLng]:
 
 def _get_id(site: dict) -> str:
     hash_id = site.get("_id")  # identifier. seems to change often
-    network_id = site.get("networkId")  # provider network
+    # network_id = site.get("networkId")  # provider network
     source_system_id = site.get("sourceSystemId")
     if not source_system_id:
-        if network_id and hash_id:
-            return network_id + hash_id
+        if hash_id:
+            return hash_id
         else:
             addr = site.get("addressLine1")
             return (
