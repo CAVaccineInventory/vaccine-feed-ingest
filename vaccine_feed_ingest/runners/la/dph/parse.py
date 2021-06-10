@@ -3,17 +3,14 @@
 import json
 import pathlib
 import sys
+
 from bs4 import BeautifulSoup
 
 from vaccine_feed_ingest.utils.parse import location_id_from_name
 
 
 def detect_vaccine_types(string):
-    vaccines = {
-        "pfizer": None,
-        "moderna": None,
-        "janssen": None
-    }
+    vaccines = {"pfizer": None, "moderna": None, "janssen": None}
     if "moderna" in string:
         vaccines["moderna"] = True
     elif "pfizer" in string:
@@ -34,17 +31,14 @@ def article_to_location(html_article):
     identifier = location_id_from_name(name)
     vaccines = None
 
-    transport = {
-        "walk": None,
-        "drive": None
-    }
+    transport = {"walk": None, "drive": None}
     phone_number = None
     address_l1, address_l2 = None, None
     register_link = None
     secondary_vax_str = None
     secondary_vaccines = None
 
-    info_row = html_article.find('div', class_='info row')
+    info_row = html_article.find("div", class_="info row")
     if info_row:
         date = info_row.find("div", class_="date")
         if date:
@@ -56,12 +50,12 @@ def article_to_location(html_article):
                     vaccines = detect_vaccine_types(ptext)
 
                 # this may contain "walk in and drive-thru"
-                else:  
+                else:
                     if "walk-in" in ptext:
                         transport["walk"] = True
                     elif "drive-thru" in ptext:
                         transport["drive"] = True
-            
+
             secondary = date.find(class_="secondary")
             if secondary:
                 ps = secondary.find_all("p")
@@ -104,7 +98,7 @@ def article_to_location(html_article):
         "location": address_l2.strip() if address_l2 else "",
         "directions_link": directions_link or "",
         "phone_number": phone_number or "",
-        "register_at": register_link or ""
+        "register_at": register_link or "",
     }
 
 
@@ -112,9 +106,11 @@ def parse_ladph_html(file_contents):
     """
     This parses the HTML into ndjson
     """
-    soup = BeautifulSoup(file_contents, 'html.parser')
+    soup = BeautifulSoup(file_contents, "html.parser")
 
-    return (article_to_location(html_article) for html_article in soup.select("article"))
+    return (
+        article_to_location(html_article) for html_article in soup.select("article")
+    )
 
 
 output_dir = pathlib.Path(sys.argv[1])
