@@ -70,7 +70,6 @@ def article_to_location(html_article):
             address = location.find("p").get_text().strip()
             addressparts = address.split("\n")
             addressparts = [a.strip() for a in addressparts]
-            print(addressparts)
             if len(addressparts) == 3:
                 address_l1 = addressparts[1]
                 address_l2 = addressparts[2]
