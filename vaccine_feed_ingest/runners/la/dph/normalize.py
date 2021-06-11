@@ -145,10 +145,24 @@ def _get_published_at(site: dict) -> Optional[str]:
 
 
 def _get_inventory(site: dict) -> Optional[schema.Vaccine]:
-    vaccines_dose_1
-    vaccines_dose_2
 
-    return None
+    vaccines = []
+
+    vax1 = site.get("vaccines_dose_1")
+    vax2 = site.get("vaccines_dose_2")
+
+    pfizer = vax1.get("pfizer") or vax2.get("pfizer")
+    moderna = vax1.get("moderna") or vax2.get("moderna")
+    janssen = vax1.get("janssen") or vax2.get("janssen")
+
+    if pfizer:
+        vaccines.append(schema.Vaccine(schema.VaccineType.PFIZER_BIONTECH))
+    if moderna:
+        vaccines.append(schema.Vaccine(schema.VaccineType.MODERNA))
+    if janssen:
+        vaccines.append(schema.Vaccine(schema.VaccineType.JOHNSON_JOHNSON_JANSSEN))
+
+    return vaccines
 
 
 def try_get_list(lis, index, default=None):
