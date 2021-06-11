@@ -7,6 +7,7 @@ import pathlib
 import sys
 from typing import List, Optional, OrderedDict
 
+import pydantic
 import us
 import usaddress
 from opening_hours import OpeningHours
@@ -326,7 +327,18 @@ def _get_address(site):
         normalized = normalize_address(parsed)
 
         return normalized
-    except (usaddress.RepeatedLabelError, CustomBailError):
+    except (
+        usaddress.RepeatedLabelError,
+        CustomBailError,
+        pydantic.error_wrappers.ValidationError,
+    ) as e:
+        logger.info("Skipping parsing for one record due to exception")
+        logger.warning(
+            "An error occurred while parsing the address for GISCorps record "
+            + site["attributes"]["GlobalID"]
+            + ": "
+            + str(e)
+        )
         return None
 
 
