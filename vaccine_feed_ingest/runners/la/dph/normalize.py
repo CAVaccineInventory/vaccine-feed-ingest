@@ -91,23 +91,23 @@ def try_lookup(mapping, value, default, name=None):
         return default
 
 
-def _get_inventory(site: dict) -> Optional[schema.Vaccine]:
+def _get_inventory(site: dict) -> Optional[List[schema.Vaccine]]:
 
     vaccines = []
+    vax_default = {"pfizer": None, "moderna": None, "janssen": None}
+    vax1 = site.get("vaccines_dose_1") or vax_default
+    vax2 = site.get("vaccines_dose_2") or vax_default
 
-    vax1 = site.get("vaccines_dose_1")
-    vax2 = site.get("vaccines_dose_2")
-
-    pfizer = vax1.get("pfizer") or vax2.get("pfizer")
-    moderna = vax1.get("moderna") or vax2.get("moderna")
-    janssen = vax1.get("janssen") or vax2.get("janssen")
+    pfizer = vax1.get("pfizer", False) or vax2.get("pfizer", False)
+    moderna = vax1.get("moderna", False) or vax2.get("moderna", False)
+    janssen = vax1.get("janssen", False) or vax2.get("janssen", False)
 
     if pfizer:
-        vaccines.append(schema.Vaccine(schema.VaccineType.PFIZER_BIONTECH))
+        vaccines.append(schema.Vaccine(vaccine=schema.VaccineType.PFIZER_BIONTECH))
     if moderna:
-        vaccines.append(schema.Vaccine(schema.VaccineType.MODERNA))
+        vaccines.append(schema.Vaccine(vaccine=schema.VaccineType.MODERNA))
     if janssen:
-        vaccines.append(schema.Vaccine(schema.VaccineType.JOHNSON_JOHNSON_JANSSEN))
+        vaccines.append(schema.Vaccine(vaccine=schema.VaccineType.JOHNSON_JOHNSON_JANSSEN))
 
     return vaccines
 
