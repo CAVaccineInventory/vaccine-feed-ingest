@@ -100,26 +100,11 @@ def _get_active(site: dict) -> Optional[bool]:
 
 
 def _get_access(site: dict) -> Optional[List[str]]:
-    drive = site["attributes"].get("drive_through")
-    drive_bool = drive is not None
 
-    # walk = site["attributes"].get("drive_through")
-    # walk_bool = drive is not None
+    # "transport": {"walk": true, "drive": null}
+    transport = site.get("transport", {"walk": None, "drive": None})
 
-    wheelchair = site["attributes"].get("Wheelchair_Accessible")
-
-    wheelchair_options = {
-        "Yes": "yes",
-        "Partially": "partial",
-        "Unknown": "no",
-        "Not Applicable": "no",
-        "NA": "no",
-    }
-    wheelchair_bool = try_lookup(
-        wheelchair_options, wheelchair, "no", name="wheelchair access"
-    )
-
-    return schema.Access(drive=drive_bool, wheelchair=wheelchair_bool)
+    return schema.Access(drive=transport.get("drive"), walk=transport.get("walk"))
 
 
 def try_lookup(mapping, value, default, name=None):
@@ -165,30 +150,30 @@ def _get_inventory(site: dict) -> Optional[schema.Vaccine]:
     return vaccines
 
 
-def try_get_list(lis, index, default=None):
-    if lis is None:
-        return default
+# def try_get_list(lis, index, default=None):
+#     if lis is None:
+#         return default
 
-    try:
-        value = lis[index]
-        if value == "none":
-            logger.warn("saw none value")
-        return value
-    except IndexError:
-        return default
+#     try:
+#         value = lis[index]
+#         if value == "none":
+#             logger.warn("saw none value")
+#         return value
+#     except IndexError:
+#         return default
 
 
-def try_get_lat_long(site):
-    location = None
-    try:
-        location = schema.LatLng(
-            latitude=site["geometry"]["y"],
-            longitude=site["geometry"]["x"],
-        )
-    except KeyError:
-        pass
+# def try_get_lat_long(site):
+#     location = None
+#     try:
+#         location = schema.LatLng(
+#             latitude=site["geometry"]["y"],
+#             longitude=site["geometry"]["x"],
+#         )
+#     except KeyError:
+#         pass
 
-    return location
+#     return location
 
 
 def normalize_state_name(name: str) -> str:
