@@ -58,11 +58,11 @@ def sanitize_url(url):
 def _get_notes(site: dict) -> Optional[List[str]]:
 
     notes = []
-    if site["attributes"]["Instructions"]:
-        notes.append(site["attributes"]["Instructions"])
+    if directions := site.get("directions_link"):
+        notes.append("Get directions: " + directions)
 
-    if site.get("opening_hours_notes"):
-        notes.append(site["opening_hours_notes"])
+    if notes := site.get("notes"):
+        notes.append(notes)
 
     if notes != []:
         return notes
