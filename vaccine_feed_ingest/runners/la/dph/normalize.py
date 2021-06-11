@@ -37,7 +37,7 @@ def _get_id(site: dict) -> str:
 def _get_contacts(site: dict) -> Optional[List[schema.Contact]]:
     contacts = []
     if phone := site.get("phone_number"):
-        contacts.append(schema.Contact(phone=phone))
+        contacts.extend(normalize_phone(phone))
 
     if len(contacts) > 0:
         return contacts
