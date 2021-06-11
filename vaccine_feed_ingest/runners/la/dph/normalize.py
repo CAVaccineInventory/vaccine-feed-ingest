@@ -107,7 +107,9 @@ def _get_inventory(site: dict) -> Optional[List[schema.Vaccine]]:
     if moderna:
         vaccines.append(schema.Vaccine(vaccine=schema.VaccineType.MODERNA))
     if janssen:
-        vaccines.append(schema.Vaccine(vaccine=schema.VaccineType.JOHNSON_JOHNSON_JANSSEN))
+        vaccines.append(
+            schema.Vaccine(vaccine=schema.VaccineType.JOHNSON_JOHNSON_JANSSEN)
+        )
 
     return vaccines
 
