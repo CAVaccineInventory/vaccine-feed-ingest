@@ -1,0 +1,285 @@
+#!/usr/bin/env python
+
+import datetime
+import json
+import os
+import pathlib
+import sys
+from typing import List, Optional, OrderedDict
+
+import us
+import usaddress
+from opening_hours import OpeningHours
+from vaccine_feed_ingest_schema import location as schema
+
+from vaccine_feed_ingest.utils.log import getLogger
+from vaccine_feed_ingest.utils.normalize import (
+    normalize_address,
+    normalize_phone,
+    normalize_zip,
+    parse_address,
+)
+
+logger = getLogger(__file__)
+
+
+SOURCE_NAME = "la_dph"
+
+
+class CustomBailError(Exception):
+    pass
+
+
+def _get_id(site: dict) -> str:
+    return site.get("id", "")
+
+
+def _get_contacts(site: dict) -> Optional[List[schema.Contact]]:
+    contacts = []
+    if phone := site.get("phone_number"):
+        contacts.append(schema.Contact(phone=phone))
+
+    if len(contacts) > 0:
+        return contacts
+
+    return None
+
+
+def sanitize_url(url):
+    url = url.strip()
+    url = url.replace("#", "")
+    url = url.replace("\\", "/")  # thanks windows
+    url = url if url.startswith("http") else "https://" + url
+    if len(url.split(" ")) == 1:
+        return url
+    return None
+
+
+def _get_notes(site: dict) -> Optional[List[str]]:
+
+    notes = []
+    if site["attributes"]["Instructions"]:
+        notes.append(site["attributes"]["Instructions"])
+
+    if site.get("opening_hours_notes"):
+        notes.append(site["opening_hours_notes"])
+
+    if notes != []:
+        return notes
+
+    return None
+
+
+def _get_opening_hours(site):
+    oh = site.get("operhours")
+    if oh:
+        try:
+            return OpeningHours.parse(oh).json()
+        except Exception:
+            # store the notes back in the dict so the notes function can grab it later
+            site["opening_hours_notes"] = "Hours: " + oh
+    else:
+        return None
+
+
+def _get_active(site: dict) -> Optional[bool]:
+    # end date may be important to check to determine if the site is historicle or current but i dont really feel like digging through the docs rn. see https://github.com/CAVaccineInventory/vaccine-feed-ingest/pull/119 for links that eventually lead to specs on the
+    # end_date = site["attributes"].get("end_date")
+
+    status = site["attributes"].get("status")
+
+    status_options = {
+        "Open": True,
+        "Closed": False,
+        "Testing Restricted": True,
+        "Scheduled to Open": False,
+        "Temporarily Closed": False,
+    }
+
+    return try_lookup(status_options, status, None, name="active status lookup")
+
+
+def _get_access(site: dict) -> Optional[List[str]]:
+    drive = site["attributes"].get("drive_through")
+    drive_bool = drive is not None
+
+    # walk = site["attributes"].get("drive_through")
+    # walk_bool = drive is not None
+
+    wheelchair = site["attributes"].get("Wheelchair_Accessible")
+
+    wheelchair_options = {
+        "Yes": "yes",
+        "Partially": "partial",
+        "Unknown": "no",
+        "Not Applicable": "no",
+        "NA": "no",
+    }
+    wheelchair_bool = try_lookup(
+        wheelchair_options, wheelchair, "no", name="wheelchair access"
+    )
+
+    return schema.Access(drive=drive_bool, wheelchair=wheelchair_bool)
+
+
+def try_lookup(mapping, value, default, name=None):
+    if value is None:
+        return default
+
+    try:
+        return mapping[value]
+    except KeyError as e:
+        name = " for " + name or ""
+        logger.warn("value not present in lookup table%s: %s", name, e)
+
+        return default
+
+
+def _get_published_at(site: dict) -> Optional[str]:
+    date_with_millis = site["attributes"]["CreationDate"]
+    if date_with_millis:
+        date = datetime.datetime.fromtimestamp(date_with_millis / 1000)  # Drop millis
+        return date.isoformat()
+
+    return None
+
+
+def _get_inventory(site: dict) -> Optional[schema.Vaccine]:
+    vaccines_dose_1
+    vaccines_dose_2
+
+    return None
+
+
+def try_get_list(lis, index, default=None):
+    if lis is None:
+        return default
+
+    try:
+        value = lis[index]
+        if value == "none":
+            logger.warn("saw none value")
+        return value
+    except IndexError:
+        return default
+
+
+def try_get_lat_long(site):
+    location = None
+    try:
+        location = schema.LatLng(
+            latitude=site["geometry"]["y"],
+            longitude=site["geometry"]["x"],
+        )
+    except KeyError:
+        pass
+
+    return location
+
+
+def normalize_state_name(name: str) -> str:
+
+    if name is None:
+        return name
+
+    name = name.strip()
+    name = name.replace(".", "")
+    name = name.replace("'", "")
+
+    # capitalize the first letter of each word in cases where a state name is provided
+    spl = name.split(" ")
+    if len(spl) > 1:
+        " ".join([word.capitalize() for word in spl])
+    else:
+        name = name.lower().capitalize()
+
+    lookup = us.states.lookup(name)
+    if lookup:
+        return lookup.abbr
+    else:
+        return name.upper()
+
+
+def apply_address_fixups(address: OrderedDict[str, str]) -> OrderedDict[str, str]:
+
+    return address
+
+
+def _get_address(site):
+    try:
+
+        street_address = site.get("street_address")
+        if street_address = "Locations throughout region":
+            street_address = ""
+
+        parsed = parse_address(street_address + ", " + site.get("location"))
+
+        parsed = apply_address_fixups(parsed)
+
+        normalized = normalize_address(parsed)
+
+        return normalized
+    except (usaddress.RepeatedLabelError, CustomBailError):
+        return None
+
+
+def _get_normalized_location(site: dict, timestamp: str) -> schema.NormalizedLocation:
+
+    return schema.NormalizedLocation(
+        id=f"{SOURCE_NAME}:{_get_id(site)}",
+        name=site["attributes"]["name"],
+        address=_get_address(site),
+        location=None,
+        contact=_get_contacts(site),
+        languages=None,
+        opening_dates=None,
+        opening_hours=None,
+        availability=None,
+        inventory=_get_inventory(site),
+        access=_get_access(site),
+        parent_organization=None,
+        links=None,  # TODO
+        notes=_get_notes(site),
+        active=_get_active(site),
+        source=schema.Source(
+            source=SOURCE_NAME,
+            id=_get_id(site),
+            fetched_from_uri="https://ldh.la.gov/covidvaccine-locations",  # noqa: E501
+            fetched_at=timestamp,
+            published_at=_get_published_at(site),
+            data=site,
+        ),
+    )
+
+
+output_dir = pathlib.Path(sys.argv[1])
+input_dir = pathlib.Path(sys.argv[2])
+
+json_filepaths = input_dir.glob("*.ndjson")
+
+parsed_at_timestamp = datetime.datetime.utcnow().isoformat()
+
+for in_filepath in json_filepaths:
+    filename, _ = os.path.splitext(in_filepath.name)
+    out_filepath = output_dir / f"{filename}.normalized.ndjson"
+
+    logger.info(
+        "normalizing %s => %s",
+        in_filepath,
+        out_filepath,
+    )
+
+    with in_filepath.open() as fin:
+        with out_filepath.open("w") as fout:
+            for site_json in fin:
+                parsed_site = json.loads(site_json)
+
+                normalized_site = _get_normalized_location(
+                    parsed_site, parsed_at_timestamp
+                )
+
+                json.dump(normalized_site.dict(), fout)
+                fout.write("\n")
+
+
+# <h4>This event is ongoing Monday-Friday every week.</h4>
