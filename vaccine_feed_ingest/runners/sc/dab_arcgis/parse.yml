@@ -1,0 +1,4 @@
+---
+state: sc
+site: arcgis
+parser: arcgis_features
