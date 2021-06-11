@@ -250,8 +250,10 @@ def apply_address_fixups(address: OrderedDict[str, str]) -> OrderedDict[str, str
             state = "North Dakota"
         elif state == "Mich.":
             state = "Michigan"
-        elif state == "SR":
-            raise CustomBailError()
+        elif state in ["SR", "US", "HEIGHTS"]:
+            # raise CustomBailError()
+            del address["StateName"]
+            state = None
         elif state == "GL":
             state = "FL"
 
@@ -264,7 +266,7 @@ def apply_address_fixups(address: OrderedDict[str, str]) -> OrderedDict[str, str
 
         address["StateName"] = normalize_state_name(state)
 
-        if len(address["StateName"]) == 1:
+        if address["StateName"] and len(address["StateName"]) == 1:
             del address["StateName"]
 
         if address.get("StateName") in [
