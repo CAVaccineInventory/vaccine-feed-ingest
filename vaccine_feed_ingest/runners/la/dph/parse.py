@@ -37,6 +37,7 @@ def article_to_location(html_article):
     register_link = None
     secondary_vax_str = None
     secondary_vaccines = None
+    notes = None
 
     info_row = html_article.find("div", class_="info row")
     if info_row:
@@ -88,6 +89,10 @@ def article_to_location(html_article):
             if register_a:
                 register_link = register_a.get("href")
 
+    notes_html = html_article.find("h4")
+    if notes_html:
+        notes = notes_html.get_text()
+
     return {
         "id": identifier,
         "name": name,
@@ -99,6 +104,7 @@ def article_to_location(html_article):
         "directions_link": directions_link or "",
         "phone_number": phone_number or "",
         "register_at": register_link or "",
+        "notes:": notes,
     }
 
 
