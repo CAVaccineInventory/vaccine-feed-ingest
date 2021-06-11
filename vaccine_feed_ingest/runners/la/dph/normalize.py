@@ -188,7 +188,7 @@ def _get_normalized_location(site: dict, timestamp: str) -> schema.NormalizedLoc
 
     return schema.NormalizedLocation(
         id=f"{SOURCE_NAME}:{_get_id(site)}",
-        name=site["attributes"]["name"],
+        name=site.get("name"),
         address=_get_address(site),
         location=None,
         contact=_get_contacts(site),
