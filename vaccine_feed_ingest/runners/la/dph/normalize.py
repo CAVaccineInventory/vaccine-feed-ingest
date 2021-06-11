@@ -70,18 +70,6 @@ def _get_notes(site: dict) -> Optional[List[str]]:
     return None
 
 
-def _get_opening_hours(site):
-    oh = site.get("operhours")
-    if oh:
-        try:
-            return OpeningHours.parse(oh).json()
-        except Exception:
-            # store the notes back in the dict so the notes function can grab it later
-            site["opening_hours_notes"] = "Hours: " + oh
-    else:
-        return None
-
-
 def _get_active(site: dict) -> Optional[bool]:
     # end date may be important to check to determine if the site is historicle or current but i dont really feel like digging through the docs rn. see https://github.com/CAVaccineInventory/vaccine-feed-ingest/pull/119 for links that eventually lead to specs on the
     # end_date = site["attributes"].get("end_date")
@@ -208,7 +196,7 @@ def _get_address(site):
     try:
 
         street_address = site.get("street_address")
-        if street_address = "Locations throughout region":
+        if street_address == "Locations throughout region":
             street_address = ""
 
         parsed = parse_address(street_address + ", " + site.get("location"))
@@ -237,7 +225,7 @@ def _get_normalized_location(site: dict, timestamp: str) -> schema.NormalizedLoc
         inventory=_get_inventory(site),
         access=_get_access(site),
         parent_organization=None,
-        links=None,  # TODO
+        links=None,
         notes=_get_notes(site),
         active=_get_active(site),
         source=schema.Source(
