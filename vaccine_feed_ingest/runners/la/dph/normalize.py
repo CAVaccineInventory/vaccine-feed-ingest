@@ -70,23 +70,6 @@ def _get_notes(site: dict) -> Optional[List[str]]:
     return None
 
 
-def _get_active(site: dict) -> Optional[bool]:
-    # end date may be important to check to determine if the site is historicle or current but i dont really feel like digging through the docs rn. see https://github.com/CAVaccineInventory/vaccine-feed-ingest/pull/119 for links that eventually lead to specs on the
-    # end_date = site["attributes"].get("end_date")
-
-    status = site["attributes"].get("status")
-
-    status_options = {
-        "Open": True,
-        "Closed": False,
-        "Testing Restricted": True,
-        "Scheduled to Open": False,
-        "Temporarily Closed": False,
-    }
-
-    return try_lookup(status_options, status, None, name="active status lookup")
-
-
 def _get_access(site: dict) -> Optional[List[str]]:
 
     # "transport": {"walk": true, "drive": null}
@@ -106,15 +89,6 @@ def try_lookup(mapping, value, default, name=None):
         logger.warn("value not present in lookup table%s: %s", name, e)
 
         return default
-
-
-def _get_published_at(site: dict) -> Optional[str]:
-    date_with_millis = site["attributes"]["CreationDate"]
-    if date_with_millis:
-        date = datetime.datetime.fromtimestamp(date_with_millis / 1000)  # Drop millis
-        return date.isoformat()
-
-    return None
 
 
 def _get_inventory(site: dict) -> Optional[schema.Vaccine]:
@@ -227,13 +201,13 @@ def _get_normalized_location(site: dict, timestamp: str) -> schema.NormalizedLoc
         parent_organization=None,
         links=None,
         notes=_get_notes(site),
-        active=_get_active(site),
+        active=None,
         source=schema.Source(
             source=SOURCE_NAME,
             id=_get_id(site),
             fetched_from_uri="https://ldh.la.gov/covidvaccine-locations",  # noqa: E501
             fetched_at=timestamp,
-            published_at=_get_published_at(site),
+            published_at=None,
             data=site,
         ),
     )
