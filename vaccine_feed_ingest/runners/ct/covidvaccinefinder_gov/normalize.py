@@ -61,10 +61,10 @@ def _get_id(site: dict) -> str:
         "sourceSystemId",
         site.get(
             "_id",  # identifier. seems to change often
-            location_id_from_name(
-                site["addressLine1"] if site["addressLine1"] && site["addressLine1"] != ""
-            )
-        )
+            location_id_from_name(site["addressLine1"])
+            if (site["addressLine1"] and site["addressLine1"] != "")
+            else "unknown",
+        ),
     )
 
 
