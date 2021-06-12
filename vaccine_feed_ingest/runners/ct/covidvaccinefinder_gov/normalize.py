@@ -57,15 +57,15 @@ def _get_lat_lng(site: dict) -> Optional[schema.LatLng]:
 
 
 def _get_id(site: dict) -> str:
-    return (
-        site.get("sourceSystemId")
-        or site.get("_id")
-        or (
-            location_id_from_name(site["addressLine1"])
-            if (site["addressLine1"] and site["addressLine1"] != "")
-            else "unknown"
-        )
+    addr = site.get("addressLine1")
+    has_location = addr and addr != ""
+    alt_id = (
+        location_id_from_name(site["addressLine1"])
+        if has_location
+        else site.get("_id", "unknown")
     )
+
+    return site.get("sourceSystemId", alt_id) or alt_id
 
 
 def _get_contact(site: dict) -> List[schema.Contact]:
