@@ -57,14 +57,14 @@ def _get_lat_lng(site: dict) -> Optional[schema.LatLng]:
 
 
 def _get_id(site: dict) -> str:
-    return site.get(
-        "sourceSystemId",
-        site.get(
-            "_id",  # identifier. seems to change often
+    return (
+        site.get("sourceSystemId")
+        or site.get("_id")
+        or (
             location_id_from_name(site["addressLine1"])
             if (site["addressLine1"] and site["addressLine1"] != "")
-            else "unknown",
-        ),
+            else "unknown"
+        )
     )
 
 
