@@ -1,0 +1,6 @@
+---
+state: az
+arcgis:
+- id: f2fd7b6ec56a4b7699a007752c5e7e9a
+  layer_names:
+  - survey

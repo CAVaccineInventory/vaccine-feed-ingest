@@ -44,6 +44,7 @@ def load_sites_to_vial(
     create_ids: Optional[Collection[str]],
     candidate_distance: float,
     import_batch_size: int,
+    import_limit: Optional[int],
 ) -> None:
     """Load list of sites to vial"""
     with vial.vial_client(vial_server, vial_apikey) as vial_http:
@@ -85,6 +86,7 @@ def load_sites_to_vial(
                 create_ids=create_ids,
                 candidate_distance=candidate_distance,
                 import_batch_size=import_batch_size,
+                import_limit=import_limit,
             )
 
             # If data was loaded then refresh existing locations
@@ -115,7 +117,8 @@ def run_load_to_vial(
     match_ids: Optional[Dict[str, str]] = None,
     create_ids: Optional[Collection[str]] = None,
     candidate_distance: float = 0.6,
-    import_batch_size: int = 500,
+    import_batch_size: int = vial.IMPORT_BATCH_SIZE,
+    import_limit: Optional[int] = None,
 ) -> Optional[List[load.ImportSourceLocation]]:
     """Load source to vial source locations"""
     set_tag("vts.runner", f"{site_dir.parent.name}/{site_dir.name}")
@@ -229,6 +232,12 @@ def run_load_to_vial(
                         num_new_locations += 1
 
                 import_locations.append(import_location)
+
+                if import_limit and num_imported_locations >= import_limit:
+                    logger.info(
+                        "Reached import limit of %d and starting load", import_limit
+                    )
+                    break
 
         if not import_locations:
             logger.warning(

@@ -10,4 +10,5 @@ else
     echo "Must pass an output_dir as first argument"
 fi
 
-(cd "$output_dir" && curl --silent https://www.healthy.arkansas.gov/local-health-units -o data.html)
+curl "https://calendar.google.com/calendar/ical/fj6fi61ophj8p0mlvck08r3gg4%40group.calendar.google.com/public/basic.ics" \
+    -o "${output_dir}/cone_clinics.ics"

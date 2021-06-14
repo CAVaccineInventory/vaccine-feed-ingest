@@ -19,6 +19,9 @@ from .utils import misc
 
 logger = getLogger(__file__)
 
+# Default import batch size to vial
+IMPORT_BATCH_SIZE = 100
+
 
 @contextlib.contextmanager
 def vial_client(
@@ -71,7 +74,7 @@ def import_source_locations(
     vial_http: urllib3.connectionpool.ConnectionPool,
     import_run_id: str,
     import_locations: Iterable[load.ImportSourceLocation],
-    import_batch_size: int = 500,
+    import_batch_size: int = IMPORT_BATCH_SIZE,
 ) -> None:
     """Import source locations"""
     path_and_query = f"/api/importSourceLocations?import_run_id={import_run_id}"
@@ -86,12 +89,21 @@ def import_source_locations(
             ]
         )
 
-        rsp = vial_http.request(
-            "POST",
-            path_and_query,
-            headers={**vial_http.headers, "Content-Type": "application/x-ndjson"},
-            body=encoded_ndjson,
-        )
+        try:
+            rsp = vial_http.request(
+                "POST",
+                path_and_query,
+                headers={**vial_http.headers, "Content-Type": "application/x-ndjson"},
+                body=encoded_ndjson,
+            )
+        except Exception as e:
+            logger.error(
+                "Error while importing locations: %s (...) %s: %s",
+                encoded_ndjson[:100],
+                encoded_ndjson[-100:],
+                e,
+            )
+            raise
 
         if rsp.status != 200:
             raise HTTPError(

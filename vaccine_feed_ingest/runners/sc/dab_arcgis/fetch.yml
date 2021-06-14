@@ -1,0 +1,6 @@
+---
+state: sc
+arcgis:
+- id: d5c82a2ca66440459d96d237390a852d
+  layer_names:
+  - vaccine_locations_agol

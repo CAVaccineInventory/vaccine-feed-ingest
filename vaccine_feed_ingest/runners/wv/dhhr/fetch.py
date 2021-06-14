@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+import json
 import os
 import re
 import sys
@@ -47,3 +48,11 @@ if target_url == "":
 file = open(os.path.join(output_dir, "output.html"), "w")
 file.write(requests.get(target_url).text)
 file.close()
+
+# Write an NDJSON file with fetch metadata, like the URL,
+# to provide this information to the rest of the data pipeline.
+metadata_output_path = os.path.join(output_dir, "metadata.ndjson")
+with open(metadata_output_path, "w") as f:
+    json.dump({"fetched_from_uri": target_url}, f)
+    f.write("\n")
+logger.info("Fetch metadata written to %s", metadata_output_path)

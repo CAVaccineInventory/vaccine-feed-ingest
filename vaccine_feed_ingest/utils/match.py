@@ -21,6 +21,9 @@ LEGACY_CONCORDANCE_MAP = {
     "vaccinespotter_location_id": "vaccinespotter_org",
 }
 
+# Skip these authorities for matching purposes
+SKIP_AUTHORITIES = {location.LocationAuthority.VTRCKS}
+
 
 def is_concordance_similar(
     source: location.NormalizedLocation,
@@ -59,6 +62,9 @@ def is_concordance_similar(
         if link.authority.startswith("_"):
             continue
 
+        if link.authority in SKIP_AUTHORITIES:
+            continue
+
         source_concordance[link.authority].add(link.id)
 
     candidate_concordance: Dict[str, Set[str]] = defaultdict(lambda: set())
@@ -68,11 +74,14 @@ def is_concordance_similar(
         if entry.startswith("_"):
             continue
 
-        # Skip concordances with a colon
+        # Skip concordances without a colon
         if ":" not in entry:
             continue
 
         authority, value = entry.split(":", maxsplit=1)
+
+        if authority in SKIP_AUTHORITIES:
+            continue
 
         candidate_concordance[authority].add(value)
 
