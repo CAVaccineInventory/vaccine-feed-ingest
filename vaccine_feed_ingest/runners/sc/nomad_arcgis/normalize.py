@@ -132,6 +132,15 @@ def _get_inventory(site: dict) -> Optional[List[schema.Vaccine]]:
     return None
 
 
+def _get_published_at(site: dict) -> Optional[str]:
+    date_with_millis = site["attributes"]["EditDate"]
+    if date_with_millis:
+        date = datetime.datetime.fromtimestamp(date_with_millis / 1000)  # Drop millis
+        return date.isoformat()
+
+    return None
+
+
 def _get_normalized_location(
     site: dict, timestamp: str
 ) -> Optional[schema.NormalizedLocation]:
@@ -191,6 +200,7 @@ def _get_normalized_location(
             id=site["attributes"]["GlobalID"],
             fetched_from_uri="https://services2.arcgis.com/XZg2efAbaieYAXmu/ArcGIS/rest/services/Vaccine_Locations_nomad/FeatureServer",  # noqa: E501
             fetched_at=timestamp,
+            published_at=_get_published_at(site),
             data=site,
         ),
     )
