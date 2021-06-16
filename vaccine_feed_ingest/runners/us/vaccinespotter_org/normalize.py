@@ -72,9 +72,9 @@ def normalize(site_blob: dict, timestamp: str) -> dict:
     site = site_blob["properties"]
 
     links = [schema.Link(authority="vaccinespotter_org", id=site["id"])]
-
-    parsed_provider_link = provider_id_from_name(
-        site["provider_brand_name"]  # or use site["name"]?
+    brandname = site["provider_brand_name"]
+    parsed_provider_link = (
+        provider_id_from_name(brandname) if brandname else None  # or use site["name"]?
     )
     if parsed_provider_link is not None:
         links.append(
@@ -88,9 +88,7 @@ def normalize(site_blob: dict, timestamp: str) -> dict:
         name=site["name"],
         address=_get_address(site),
         location=_get_lat_lng(site_blob["geometry"], site["id"]),
-        contact=[
-            schema.Contact(contact_type=None, phone=None, website=site["url"]),
-        ],
+        contact=_get_contact(site),
         languages=None,
         opening_dates=None,
         opening_hours=None,
