@@ -12,4 +12,4 @@ fi
 
 cd "$output_dir"
 
-curl --silent "https://www.mass.gov/doc/covid-19-vaccine-locations-for-currently-eligible-recipients-csv/download" -o 'ma.xlsx'
+curl --silent "https://www.mass.gov/doc/covid-19-vaccine-locations-for-currently-eligible-recipients-csv/download" -o 'ma.csv'

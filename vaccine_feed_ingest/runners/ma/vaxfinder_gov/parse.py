@@ -9,7 +9,7 @@ import pandas
 output_dir = pathlib.Path(sys.argv[1])
 input_dir = pathlib.Path(sys.argv[2])
 
-xlsx_filepath = input_dir / "ma.xlsx"
+xlsx_filepath = input_dir / "ma.csv"
 
 locations = []
 data = pandas.read_excel(xlsx_filepath, engine="openpyxl", skiprows=1)
