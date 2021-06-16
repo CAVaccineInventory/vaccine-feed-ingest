@@ -35,6 +35,15 @@ def _get_address(site: dict) -> Optional[schema.Address]:
     return None
 
 
+def _get_contact(site) -> Optional[schema.Contact]:
+
+    if url := site.get("url"):
+        return [
+            schema.Contact(contact_type=None, phone=None, website=url),
+        ]
+    return None
+
+
 def _get_lat_lng(geometry: dict, id: str) -> Optional[schema.LatLng]:
     try:
         lat_lng = schema.LatLng(
