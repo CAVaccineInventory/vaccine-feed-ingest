@@ -1,10 +1,9 @@
 #!/usr/bin/env python
 
+import csv
 import json
 import pathlib
 import sys
-
-import csv
 
 output_dir = pathlib.Path(sys.argv[1])
 input_dir = pathlib.Path(sys.argv[2])
