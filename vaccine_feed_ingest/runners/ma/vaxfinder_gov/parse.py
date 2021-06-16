@@ -4,7 +4,7 @@ import json
 import pathlib
 import sys
 
-import pandas
+import csv
 
 output_dir = pathlib.Path(sys.argv[1])
 input_dir = pathlib.Path(sys.argv[2])
@@ -12,10 +12,11 @@ input_dir = pathlib.Path(sys.argv[2])
 xlsx_filepath = input_dir / "ma.csv"
 
 locations = []
-data = pandas.read_excel(xlsx_filepath, engine="openpyxl", skiprows=1)
 
-for row in data.itertuples():
-    locations.append(dict(name=row[1], address=row[3]))
+with open(xlsx_filepath) as csvfile:
+    csvreader = csv.DictReader(csvfile, delimiter=' ', quotechar='|')
+    for row in csvreader:
+        locations.append(row)
 
 out_filepath = output_dir / "data.parsed.ndjson"
 
