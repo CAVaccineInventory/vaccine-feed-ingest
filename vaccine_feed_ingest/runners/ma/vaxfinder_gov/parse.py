@@ -13,7 +13,7 @@ xlsx_filepath = input_dir / "ma.csv"
 locations = []
 
 with open(xlsx_filepath) as csvfile:
-    csvreader = csv.DictReader(csvfile, delimiter=' ', quotechar='|')
+    csvreader = csv.DictReader(csvfile)
     for row in csvreader:
         locations.append(row)
 
