@@ -15,19 +15,19 @@ locations = []
 
 def transpose_keys(input_dict):
     keymap = {
-        'Location Name': "name",
-        'Serves': 'serves',
-        'Full Address': 'address',
-        'Site Type': 'site_type',
-        'Find an appointment': 'appointment_link',
-        'Phone': 'phone',
-        'E-mail': 'email',
-        'Appointment info': 'additional_info',
-        'Instructions at site': 'instructions',
-        'Accessibility': 'accessibility',
-        'Days of the week open': 'days_open',
-        'Vaccines available': 'vaccines_available',
-        'Website': 'website'
+        "Location Name": "name",
+        "Serves": "serves",
+        "Full Address": "address",
+        "Site Type": "site_type",
+        "Find an appointment": "appointment_link",
+        "Phone": "phone",
+        "E-mail": "email",
+        "Appointment info": "additional_info",
+        "Instructions at site": "instructions",
+        "Accessibility": "accessibility",
+        "Days of the week open": "days_open",
+        "Vaccines available": "vaccines_available",
+        "Website": "website",
     }
 
     newdict = {}
