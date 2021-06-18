@@ -104,9 +104,8 @@ class BaseModel(pydantic.BaseModel):
     """BaseModel for all schema to inherit from."""
 
     class Config:
-        # Fail if an attribute that doesn't exist is added.
-        # This helps reduce typos.
-        extra = "forbid"
+        # Change this to "forbid" when testing to catch issues
+        extra = "ignore"
 
         # Store enums as string values.
         # This helps when using exporting models with enums
