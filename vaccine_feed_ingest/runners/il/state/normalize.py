@@ -5,20 +5,12 @@ import json
 import os
 import pathlib
 import sys
-from typing import List, Optional, OrderedDict
+from typing import Optional, List
 
-import us
-import usaddress
 from vaccine_feed_ingest_schema import location as schema
 
 from vaccine_feed_ingest.utils.log import getLogger
-from vaccine_feed_ingest.utils.normalize import (
-    normalize_address,
-    normalize_phone,
-    normalize_zip,
-    parse_address,
-    provider_id_from_name
-)
+from vaccine_feed_ingest.utils.normalize import provider_id_from_name
 
 logger = getLogger(__file__)
 
@@ -31,7 +23,7 @@ def _get_id(site: dict) -> str:
 
 
 def _get_contacts(site: dict) -> Optional[List[schema.Contact]]:
-  
+
     # there are multiple urls, vaccine, agency, health dept. etc
     if website := site.get("website"):
         return [schema.Contact(website=website)]
@@ -77,7 +69,7 @@ def _get_address(site):
         street1=site.get("address"),
         zip=site.get("zip"),
         state="IL",
-        city=site.get("city")
+        city=site.get("city"),
     )
 
 
