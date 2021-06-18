@@ -123,9 +123,10 @@ class CapacityItem(BaseModel):
 
 
 class Availability(BaseModel):
-    source: str
+    sources: List[str]
     valid_at: datetime.datetime
     checked_at: datetime.datetime
+    changed_at: datetime.datetime
     available: str
     available_count: Optional[int]
     capacity: Optional[List[CapacityItem]]
