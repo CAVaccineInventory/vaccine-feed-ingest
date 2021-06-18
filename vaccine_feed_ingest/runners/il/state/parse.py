@@ -18,7 +18,7 @@ def transpose_keys(input_dict):
         "Site Name": "name",
         "Location Type": "loc_type",
         "Address": "address",
-        "City": "address",
+        "City": "city",
         "Zip": "zip",
         "County": "county",
         "pindetails": "pindetails",
