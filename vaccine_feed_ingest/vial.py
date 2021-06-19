@@ -3,7 +3,7 @@
 import contextlib
 import json
 import urllib.parse
-from typing import Any, Dict, Iterable, Iterator, NamedTuple, Optional, Tuple
+from typing import Any, Dict, Set, Iterable, Iterator, NamedTuple, Optional, Tuple
 from urllib.error import HTTPError
 
 import geojson
@@ -70,24 +70,40 @@ def start_import_run(vial_http: urllib3.connectionpool.ConnectionPool) -> str:
     return import_run_id
 
 
+class ImportSourceLocationsResult(NamedTuple):
+    """Content hash and match state of source locations"""
+
+    created: Optional[Set[str]]
+    updated: Optional[Set[str]]
+
+
 def import_source_locations(
     vial_http: urllib3.connectionpool.ConnectionPool,
     import_run_id: str,
     import_locations: Iterable[load.ImportSourceLocation],
     import_batch_size: int = IMPORT_BATCH_SIZE,
-) -> None:
+) -> ImportSourceLocationsResult:
     """Import source locations"""
+    created = set()
+    updated = set()
+
     path_and_query = f"/api/importSourceLocations?import_run_id={import_run_id}"
     logger.info("Contacting VIAL: POST %s", path_and_query)
 
     batches = 0
     for import_locations_batch in misc.batch(import_locations, import_batch_size):
-        encoded_ndjson = b"\n".join(
-            [
-                orjson.dumps(loc.dict(exclude_none=True))
-                for loc in import_locations_batch
-            ]
-        )
+        encoded_locs = []
+
+        for loc in import_locations_batch:
+            if loc.match and loc.match.action == "new":
+                created.add(loc.source_uid)
+            else:
+                updated.add(loc.source_uid)
+
+            loc_json = orjson.dumps(loc.dict(exclude_none=True))
+            encoded_locs.append(loc_json)
+
+        encoded_ndjson = b"\n".join(encoded_locs)
 
         try:
             rsp = vial_http.request(
@@ -123,6 +139,8 @@ def import_source_locations(
             )
 
     logger.info("Submitted %d total batches to VIAL.", batches)
+
+    return ImportSourceLocationsResult(created=created, updated=updated)
 
 
 def _clean_geojson_record(record: dict) -> None:
