@@ -25,7 +25,7 @@ output_path = pathlib.Path(output_dir)
 for state in us.STATES_AND_TERRITORIES:
     output_file_path = output_path / f"{state.abbr.lower()}.ndjson"
 
-    query = urlencode({"state": state.abbr})
+    query = urlencode({"state": state.abbr, "external_id_format": "v2"})
     next_url: Optional[str] = f"{LOCATIONS_URL}?{query}"
 
     with output_file_path.open(mode="wb") as out_file:

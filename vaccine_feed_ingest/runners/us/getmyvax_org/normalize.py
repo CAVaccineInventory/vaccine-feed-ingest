@@ -3,7 +3,7 @@
 import datetime
 import pathlib
 import sys
-from typing import List, Optional
+from typing import List, Optional, Tuple
 
 import orjson
 import pydantic
@@ -104,9 +104,8 @@ class BaseModel(pydantic.BaseModel):
     """BaseModel for all schema to inherit from."""
 
     class Config:
-        # Fail if an attribute that doesn't exist is added.
-        # This helps reduce typos.
-        extra = "forbid"
+        # Change this to "forbid" when testing to catch issues
+        extra = "ignore"
 
         # Store enums as string values.
         # This helps when using exporting models with enums
@@ -123,9 +122,10 @@ class CapacityItem(BaseModel):
 
 
 class Availability(BaseModel):
-    source: str
+    sources: List[str]
     valid_at: datetime.datetime
     checked_at: datetime.datetime
+    changed_at: datetime.datetime
     available: str
     available_count: Optional[int]
     capacity: Optional[List[CapacityItem]]
@@ -160,7 +160,7 @@ class GMVLocation(BaseModel):
     created_at: datetime.datetime
     updated_at: datetime.datetime
     availability: Optional[Availability]
-    external_ids: Optional[dict]
+    external_ids: Optional[List[Tuple[str, str]]]
 
 
 def process_line(line: bytes, timestamp: datetime.datetime) -> bytes:
@@ -311,7 +311,7 @@ def _get_links(loc: GMVLocation) -> Optional[List[location.Link]]:
 
     links = []
 
-    for provider_id, store_id in loc.external_ids.items():
+    for provider_id, store_id in loc.external_ids:
         if not store_id:
             logger.info("Missing value for external_id %s", provider_id)
             continue
