@@ -1,6 +1,6 @@
 import json
 import pathlib
-from typing import Collection, Dict, Iterable, Iterator, List, Optional
+from typing import Collection, Dict, Iterable, Iterator, Optional
 from urllib.error import HTTPError
 
 import jellyfish
