@@ -1,6 +1,6 @@
 import json
 import pathlib
-from typing import Collection, Dict, Iterable, Iterator, List, Optional
+from typing import Collection, Dict, Iterable, Iterator, Optional
 from urllib.error import HTTPError
 
 import jellyfish
@@ -16,7 +16,7 @@ from vaccine_feed_ingest_schema import load, location
 from vaccine_feed_ingest.utils.log import getLogger
 
 from .. import vial
-from ..utils import normalize
+from ..utils import misc, normalize
 from ..utils.match import (
     is_address_similar,
     is_concordance_similar,
@@ -70,7 +70,7 @@ def load_sites_to_vial(
             )
 
         for site_dir in site_dirs:
-            imported_locations = run_load_to_vial(
+            import_result = run_load_to_vial(
                 site_dir,
                 output_dir,
                 dry_run=dry_run,
@@ -90,16 +90,11 @@ def load_sites_to_vial(
             )
 
             # If data was loaded then refresh existing locations
-            if locations is not None and imported_locations:
-                source_ids = [
-                    loc.source_uid
-                    for loc in imported_locations
-                    if loc.match and loc.match.action == "new"
-                ]
-
-                if source_ids:
-                    logger.info("Updating existing locations with the ones we created")
-                    vial.update_existing_locations(vial_http, locations, source_ids)
+            if locations is not None and import_result and import_result.created:
+                logger.info("Updating existing locations with the ones we created")
+                vial.update_existing_locations(
+                    vial_http, locations, import_result.created
+                )
 
 
 def run_load_to_vial(
@@ -119,7 +114,7 @@ def run_load_to_vial(
     candidate_distance: float = 0.6,
     import_batch_size: int = vial.IMPORT_BATCH_SIZE,
     import_limit: Optional[int] = None,
-) -> Optional[List[load.ImportSourceLocation]]:
+) -> Optional[vial.ImportSourceLocationsResult]:
     """Load source to vial source locations"""
     set_tag("vts.runner", f"{site_dir.parent.name}/{site_dir.name}")
     set_tag("vts.stage", "load-to-vial")
@@ -146,126 +141,140 @@ def run_load_to_vial(
     num_already_matched_locations = 0
     num_already_imported_locations = 0
 
-    for filepath in outputs.iter_data_paths(
-        ennrich_run_dir, suffix=STAGE_OUTPUT_SUFFIX[PipelineStage.ENRICH]
-    ):
-        import_locations = []
-        with filepath.open(mode="rb") as src_file:
-            for line in src_file:
-                try:
-                    loc_dict = orjson.loads(line)
-                except json.JSONDecodeError as e:
-                    logger.warning(
-                        "Skipping source location because it is invalid json: %s\n%s",
-                        line,
-                        str(e),
-                    )
-                    continue
+    def _process_locations(
+        ennrich_run_dir: pathlib.Path,
+    ) -> Iterator[load.ImportSourceLocation]:
+        nonlocal num_imported_locations
+        nonlocal num_new_locations
+        nonlocal num_match_locations
+        nonlocal num_already_matched_locations
+        nonlocal num_already_imported_locations
 
-                try:
-                    normalized_location = location.NormalizedLocation.parse_obj(
-                        loc_dict
-                    )
-                except pydantic.ValidationError as e:
-                    logger.warning(
-                        "Skipping source location because it is invalid: %s\n%s",
-                        line,
-                        str(e),
-                    )
-                    continue
+        for filepath in outputs.iter_data_paths(
+            ennrich_run_dir, suffix=STAGE_OUTPUT_SUFFIX[PipelineStage.ENRICH]
+        ):
+            with filepath.open(mode="rb") as src_file:
+                for line in src_file:
+                    try:
+                        loc_dict = orjson.loads(line)
+                    except json.JSONDecodeError as e:
+                        logger.warning(
+                            "Skipping source location because it is invalid json: %s\n%s",
+                            line,
+                            str(e),
+                        )
+                        continue
 
-                # Skip source locations that haven't changed since last load
-                source_summary = None
-                if source_summaries:
-                    source_summary = source_summaries.get(normalized_location.id)
+                    try:
+                        normalized_location = location.NormalizedLocation.parse_obj(
+                            loc_dict
+                        )
+                    except pydantic.ValidationError as e:
+                        logger.warning(
+                            "Skipping source location because it is invalid: %s\n%s",
+                            line,
+                            str(e),
+                        )
+                        continue
 
-                    if (
-                        not enable_reimport
-                        and source_summary
-                        and source_summary.content_hash
-                    ):
-                        incoming_hash = normalize.calculate_content_hash(
-                            normalized_location
+                    # Skip source locations that haven't changed since last load
+                    source_summary = None
+                    if source_summaries:
+                        source_summary = source_summaries.get(normalized_location.id)
+
+                        if (
+                            not enable_reimport
+                            and source_summary
+                            and source_summary.content_hash
+                        ):
+                            incoming_hash = normalize.calculate_content_hash(
+                                normalized_location
+                            )
+
+                            if incoming_hash == source_summary.content_hash:
+                                num_already_imported_locations += 1
+                                continue
+
+                    match_action = None
+                    if match_ids and normalized_location.id in match_ids:
+                        match_action = load.ImportMatchAction(
+                            action="existing",
+                            id=match_ids[normalized_location.id],
                         )
 
-                        if incoming_hash == source_summary.content_hash:
-                            num_already_imported_locations += 1
-                            continue
+                    elif create_ids and normalized_location.id in create_ids:
+                        match_action = load.ImportMatchAction(action="new")
 
-                match_action = None
-                if match_ids and normalized_location.id in match_ids:
-                    match_action = load.ImportMatchAction(
-                        action="existing",
-                        id=match_ids[normalized_location.id],
+                    elif (enable_match or enable_create) and locations is not None:
+                        # Match source locations if we are re-matching, or if we
+                        # haven't matched this source location yet
+                        if (
+                            enable_rematch
+                            or not source_summary
+                            or not source_summary.matched
+                        ):
+                            match_action = _match_source_to_existing_locations(
+                                normalized_location,
+                                locations,
+                                candidate_distance,
+                                enable_match=enable_match,
+                                enable_create=enable_create,
+                            )
+                        else:
+                            num_already_matched_locations += 1
+
+                    import_location = _create_import_location(
+                        normalized_location, match_action=match_action
                     )
 
-                elif create_ids and normalized_location.id in create_ids:
-                    match_action = load.ImportMatchAction(action="new")
+                    num_imported_locations += 1
+                    if match_action:
+                        if match_action.action == "existing":
+                            num_match_locations += 1
+                        elif match_action.action == "new":
+                            num_new_locations += 1
 
-                elif (enable_match or enable_create) and locations is not None:
-                    # Match source locations if we are re-matching, or if we
-                    # haven't matched this source location yet
-                    if (
-                        enable_rematch
-                        or not source_summary
-                        or not source_summary.matched
-                    ):
-                        match_action = _match_source_to_existing_locations(
-                            normalized_location,
-                            locations,
-                            candidate_distance,
-                            enable_match=enable_match,
-                            enable_create=enable_create,
+                    yield import_location
+
+                    if import_limit and num_imported_locations >= import_limit:
+                        logger.info(
+                            "Reached import limit of %d and starting load", import_limit
                         )
-                    else:
-                        num_already_matched_locations += 1
+                        return
 
-                import_location = _create_import_location(
-                    normalized_location, match_action=match_action
-                )
+    import_locations = _process_locations(ennrich_run_dir)
 
-                num_imported_locations += 1
-                if match_action:
-                    if match_action.action == "existing":
-                        num_match_locations += 1
-                    elif match_action.action == "new":
-                        num_new_locations += 1
+    exists_locations, import_locations = misc.exists_iter(import_locations)
 
-                import_locations.append(import_location)
+    if not exists_locations:
+        logger.warning(
+            "No locations to import for %s",
+            site_dir.name,
+        )
+        return None
 
-                if import_limit and num_imported_locations >= import_limit:
-                    logger.info(
-                        "Reached import limit of %d and starting load", import_limit
-                    )
-                    break
-
-        if not import_locations:
-            logger.warning(
-                "No locations to import in %s in %s",
-                filepath.name,
-                site_dir.name,
+    result = None
+    if not dry_run:
+        try:
+            result = vial.import_source_locations(
+                vial_http,
+                import_run_id,
+                import_locations,
+                import_batch_size=import_batch_size,
             )
-            continue
+        except HTTPError as e:
+            logger.warning(
+                "Failed to import some source locations for %s. "
+                "Because this is action spans multiple remote calls, "
+                "some locations may have been imported: %s",
+                site_dir.name,
+                e,
+            )
 
-        if not dry_run:
-            try:
-                vial.import_source_locations(
-                    vial_http,
-                    import_run_id,
-                    import_locations,
-                    import_batch_size=import_batch_size,
-                )
-            except HTTPError as e:
-                logger.warning(
-                    "Failed to import some source locations for %s in %s. "
-                    "Because this is action spans multiple remote calls, "
-                    "some locations may have been imported: %s",
-                    filepath.name,
-                    site_dir.name,
-                    e,
-                )
-
-            continue
+            return None
+    else:
+        # Exhaust the iterator to process all of the locations
+        list(import_locations)
 
     num_unknown_locations = (
         num_imported_locations
@@ -298,7 +307,7 @@ def run_load_to_vial(
             num_already_imported_locations,
         )
 
-    return import_locations
+    return result
 
 
 def _find_candidates(
