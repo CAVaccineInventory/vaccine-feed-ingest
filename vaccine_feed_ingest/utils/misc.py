@@ -1,6 +1,6 @@
 """Miscellaneous python utils"""
 import itertools
-from typing import Any, Dict, Iterable, Iterator, TypeVar, Tuple
+from typing import Any, Dict, Iterable, Iterator, Tuple, TypeVar
 
 
 def batch(iterable: Iterable, size: int) -> Iterator[Iterator]:

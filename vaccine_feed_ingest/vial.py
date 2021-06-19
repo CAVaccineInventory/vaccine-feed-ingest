@@ -3,7 +3,7 @@
 import contextlib
 import json
 import urllib.parse
-from typing import Any, Dict, Set, Iterable, Iterator, NamedTuple, Optional, Tuple
+from typing import Any, Dict, Iterable, Iterator, NamedTuple, Optional, Set, Tuple
 from urllib.error import HTTPError
 
 import geojson

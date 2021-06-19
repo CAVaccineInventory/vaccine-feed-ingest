@@ -16,7 +16,7 @@ from vaccine_feed_ingest_schema import load, location
 from vaccine_feed_ingest.utils.log import getLogger
 
 from .. import vial
-from ..utils import normalize, misc
+from ..utils import misc, normalize
 from ..utils.match import (
     is_address_similar,
     is_concordance_similar,
