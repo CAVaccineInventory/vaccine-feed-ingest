@@ -11,6 +11,7 @@ from enum import Enum
 from typing import Dict, List, NamedTuple, Optional, Text
 
 from bs4 import BeautifulSoup, ResultSet
+from bs4.element import Tag
 
 from vaccine_feed_ingest.utils.log import getLogger
 
@@ -30,25 +31,6 @@ if input_dir is None:
     sys.exit(1)
 input_filepaths = input_dir.glob("*.html")
 metadata_filepath = input_dir.joinpath("metadata.ndjson")
-
-# Regex matching county names.
-# Anchors are necessary because some sites have "County" in their name,
-# and we don't want to parse those as counties.
-_COUNTY_REGEX = re.compile(r"^.* Count(y|ies)$")
-# Regex matching opening hours.
-# hh:mm a.m. - hh:mm p.m.( and hh:mm a.m. - hh:mm p.m.)?
-_OPENING_HOURS_REGEX = re.compile(
-    r"\s*(?P<opens>\d+:\d+ [ap]\.?m\.?)\s*[-–]\s*(?P<closes>\d+:\d+ [ap]\.?m\.?)\s*(and (?P<opens2>\d+:\d+ [ap]\.?m\.?)\s*[-–]\s*(?P<closes2>\d+:\d+ [ap]\.?m\.?))?",
-    re.IGNORECASE,
-)
-# Regex matching vaccine site info.
-# Name, Street1, (Street2,)? City,? WV, zip.
-# For simplicity, this accepts any string of details before the state and zip.
-# The parser will split these up into individual details.
-_SITE_REGEX = re.compile(
-    r"\s*(?P<details>.+)\s*WV\s+(?P<zip>\d+)",
-    re.IGNORECASE,
-)
 
 
 class DateFormat(Enum):
@@ -86,9 +68,35 @@ def _parse_first_line_as_date(paragraphs: ResultSet) -> Optional[Text]:
     return None
 
 
+# Regex matching county names.
+# Some sites have "County" in their name,
+# and we don't want to parse those as counties.
+_COUNTY_REGEX = re.compile(r"^.* Count(y|ies)")
+
+
 def _is_county(line: Text) -> bool:
     """Whether the given line holds a county name."""
     return _COUNTY_REGEX.match(line) is not None
+
+
+def _named_group(label: Text, regex: Text) -> Text:
+    """Returns the regex string `(?P<label>regex)`
+    This matches `regex` as a capture group named `label`."""
+    return r"(?P<" + label + r">" + regex + r")"
+
+
+# Regex matching state and zip, e.g. WV 25504.
+_STATE_ZIP_REGEX = re.compile(
+    r"WV[\s,]\s*" + _named_group("zip", r"\d+"),
+    re.IGNORECASE,
+)
+
+
+def _parse_zip(text: Text) -> Optional[Text]:
+    """If `text` contains a state and zip, e.g. `WV 25504`, returns the zip,
+    or `None` otherwise."""
+    match = _STATE_ZIP_REGEX.match(text)
+    return None if match is None else match.group("zip")
 
 
 class ParsedSite(NamedTuple):
@@ -108,49 +116,41 @@ class OpeningHours(NamedTuple):
     closes: Text
 
 
-# Type alias for a mapping from opening dates -> list of opening hours for each date.
-OpeningTimes = Dict[Optional[Text], List[OpeningHours]]
-# Type alias for parsed vaccine sites:
-# site details -> opening dates -> list of opening hours for each date.
-ParsedSites = Dict[ParsedSite, OpeningTimes]
+class ParsedSiteWithHours(NamedTuple):
+    """Vaccine site details, with opening hours for a single date.
+    The result of parsing a single line of fetched site data."""
+
+    site: ParsedSite
+    hours: List[OpeningHours]
 
 
-def _parse_site(line: Text, county: Optional[Text]) -> Optional[ParsedSite]:
-    """Parses the given `line`, denoting a vaccine site and its opening hours for a single day."""
-    match = _SITE_REGEX.match(line)
-    if match is None:
-        return None
-    # We need to handle both (name, street1, city) and (name, street1, street2, city).
-    # For simplicity, the regex matches the entire middle section as `details`,
-    # and we separate the components here by splitting on commas and trimming whitespace.
-    split_details = [d.strip() for d in match.group("details").strip().split(",") if d]
-    logger.debug("Comma-separated details: %s", split_details)
-    name, street1, street2, city = [None] * 4
-    num_details = len(split_details)
-    if num_details == 3:
-        name, street1, city = split_details
-    elif num_details == 4:
-        name, street1, street2, city = split_details
-    elif num_details == 2:
-        # Corner case caused by a typo: . used in the address instead of ,
-        initial_details, city = split_details
-        name, street1 = [d.strip() for d in initial_details.split(".") if d]
-    else:
-        logger.warn("Expected 2-4 comma-separated details, found %d", num_details)
-    return ParsedSite(
-        name=name,
-        street1=street1,
-        street2=street2,
-        city=city,
-        county=county,
-        state="WV",
-        zip=match.group("zip"),
-    )
+def _get_hours_regex(group_label: Text) -> Text:
+    # hh:mm a.m. or hh:mm p.m.
+    return _named_group(group_label, r"\d+:\d+ [ap]\.?m\.?")
 
 
-def _parse_opening_hours(line: Text) -> Optional[List[OpeningHours]]:
-    """Parses the given `line`, denoting a vaccine site's opening hours for a single day."""
-    match = _OPENING_HOURS_REGEX.match(line)
+# Opening hours
+# hh:mm a.m. - hh:mm p.m.( and hh:mm a.m. - hh:mm p.m.)?
+_OPENING_HOURS_REGEX_STRING = r"\s*".join(
+    [
+        _get_hours_regex("opens"),
+        r"[-–]",
+        _get_hours_regex("closes"),
+        r"(and",
+        _get_hours_regex("opens2"),
+        r"[-–]",
+        _get_hours_regex("closes2"),
+        r")?",
+    ]
+)
+_OPENING_HOURS_REGEX = re.compile(
+    _OPENING_HOURS_REGEX_STRING,
+    re.IGNORECASE,
+)
+
+
+def _parse_opening_hours(text: Text) -> Optional[List[OpeningHours]]:
+    match = _OPENING_HOURS_REGEX.match(text)
     if match is None:
         return None
     opening_hours = [OpeningHours(match.group("opens"), match.group("closes"))]
@@ -161,6 +161,63 @@ def _parse_opening_hours(line: Text) -> Optional[List[OpeningHours]]:
             OpeningHours(match.group("opens2"), match.group("closes2"))
         )
     return opening_hours
+
+
+def _parse_site(line: Text, county: Optional[Text]) -> Optional[ParsedSiteWithHours]:
+    """Parses the given `line`, denoting a vaccine site and its opening hours for a single day."""
+
+    # There is a variable number of details, e.g. street addresses can have 1 or 2 parts.
+    # Split the string on commas to obtain individual details, trim whitespace,
+    # and then use regex matching on some of the individual details.
+    details = [d.strip() for d in line.strip().split(",") if d]
+    if not details:
+        return None
+    logger.debug("Comma-separated details: %s", details)
+
+    # Parse first detail as opening hours.
+    opening_hours = _parse_opening_hours(details.pop(0))
+    if opening_hours is None:
+        return None
+
+    # Parse last detail as state and zip, e.g. WV 25504.
+    if not details:
+        return None
+    zip = _parse_zip(details.pop())
+    if zip is None:
+        return None
+
+    # We need to handle both (name, street1, city) and (name, street1, street2, city).
+    name, street1, street2, city = [None] * 4
+    num_details = len(details)
+    if num_details == 3:
+        name, street1, city = details
+    elif num_details == 4:
+        name, street1, street2, city = details
+    elif num_details == 2:
+        # Corner case caused by a typo: . used in the address instead of ,
+        initial_details, city = details
+        name, street1 = [d.strip() for d in initial_details.split(".") if d][0:2]
+    else:
+        logger.warning(
+            "Expected 2-4 remaining details, found %d: %s", num_details, details
+        )
+    site = ParsedSite(
+        name=name,
+        street1=street1,
+        street2=street2,
+        city=city,
+        county=county,
+        state="WV",
+        zip=zip,
+    )
+    return ParsedSiteWithHours(site=site, hours=opening_hours)
+
+
+# Type alias for a mapping from opening dates -> list of opening hours for each date.
+OpeningTimes = Dict[Optional[Text], List[OpeningHours]]
+# Type alias for parsed vaccine sites:
+# site details -> opening dates -> list of opening hours for each date.
+ParsedSites = Dict[ParsedSite, OpeningTimes]
 
 
 def _write(
@@ -199,6 +256,38 @@ def _read_fetch_metadata(metadata_filepath: pathlib.Path) -> Optional[Text]:
     return None
 
 
+def _get_lines(paragraph: Tag) -> List[Text]:
+    """Gets a list of non-trivial trimmed lines of text in the given `<p>` tag.
+
+    HTML lines are considered separate if there are `<br>` tags in between.
+    Other formatting remains within a single line.
+
+    This function attempts to be robust to inline formatting in the HTML markup,
+    concatenating their text contents to produce each line.
+    """
+    # Replace <br> tags with a fixed delimiter, so we can split on them.
+    # Source: https://stackoverflow.com/questions/61421079/beautifulsoup-get-text-ignoring-line-breaks-br
+    _BR_DELIMITER = "#BR_DELIMITER#"
+    for line_break in paragraph.find_all("br"):
+        line_break.replace_with(_BR_DELIMITER)
+
+    # Take all the strings in the paragraph and join them into one.
+    # This is preferable to iterating over `p.strings` as separate lines,
+    # because it handles text nested in tags, including inline formatting like <em> and <sup>.
+    # For example, `<p>1<sup>st</sup></p>` should be "1st", not ["1", "st"].
+    paragraph_text = "".join(paragraph.strings)
+    # Split up lines separated by <br> tags.
+    # These are sometimes used to separate county names from vaccine site details.
+    lines = paragraph_text.split(_BR_DELIMITER)
+    # Replace \n with spaces.
+    # We need this because some parsed HTML lines contain \n characters,
+    # but these are not semantically meaningful, unlike <p> or <br> tags.
+    # Trim whitespace and commas.
+    lines = [line.replace("\n", " ").strip().strip(",") for line in lines]
+    # Ignore effectively empty lines.
+    return list(filter(None, lines))
+
+
 def _parse(paragraphs: ResultSet) -> ParsedSites:
     """Parses the given lines as vaccine site information.
     Returns a mapping of the form:
@@ -213,48 +302,33 @@ def _parse(paragraphs: ResultSet) -> ParsedSites:
     # Expected sequence:
     # Monday, May 24, 2021
     # Abc County (may have multiple counties and sites for the same date)
-    # 8:00 a.m. – 8:00 p.m.
-    # Name, 100 Street Address, City, WV zip.
+    # 8:00 a.m. – 8:00 p.m., Name, 100 Street Address, City, WV zip.
     # (may have multiple sites for the same date and county)
     opening_date: Optional[Text] = None
-    opening_hours: List[OpeningHours] = []
     county: Optional[Text] = None
     logger.debug("Parsing HTML text")
     for p in paragraphs:
         # Multiple details may be within the same paragraph,
         # separated only by line breaks. Iterate through these.
-
-        # Note: this is a little fragile to changes in the HTML markup.
-        # To handle older versions of the page with details in separate <p> tags,
-        # and inconsistent formatting tags within the text,
-        # use `line = "".join(p.strings)`.
-        for line in p.strings:
-            # Trim whitespace and commas.
-            line = line.strip().strip(",")
-            line = line.replace("\n", " ")  # TODO do we need this?
-            if not line:
-                # Ignore effectively empty lines.
-                continue
-            # Try to parse as a county name.
-            if _is_county(line):
-                county = line
-                logger.debug("Parsed county: %s", county)
+        for line in _get_lines(p):
+            logger.debug("Parsing line: %s", line)
             # Try to parse as a date.
-            elif (
+            if (
                 candidate_date := _parse_date(line, DateFormat.SITE_OPENING_DATE)
             ) is not None:
                 logger.debug("Parsed date: %s", candidate_date)
                 opening_date = candidate_date
-            # Try to parse as the opening hours of a vaccine site.
-            elif (hours := _parse_opening_hours(line)) is not None:
-                opening_hours = hours
-                logger.debug("%s", opening_hours)
-            # Try to parse as the name and address of a vaccine site.
-            elif (parsed_site := _parse_site(line, county)) is not None:
-                logger.debug("%s", parsed_site)
-                sites_to_times[parsed_site][opening_date].extend(opening_hours)
-                # Reset saved opening hours so we can process the next site.
-                opening_hours = []
+            # Try to parse as the opening hours, name, and address of a vaccine site.
+            elif (parsed := _parse_site(line, county)) is not None:
+                logger.debug("%s", parsed.site)
+                logger.debug("Parsed hours for date %s: %s", opening_date, parsed.hours)
+                sites_to_times[parsed.site][opening_date].extend(parsed.hours)
+            # Try to parse as a county name.
+            # This is deliberately done after attempting to parse as a full vaccine site:
+            # some sites have the county in their name and would otherwise get parsed as a county.
+            elif _is_county(line):
+                county = line
+                logger.debug("Parsed county: %s", county)
             else:
                 logger.warning("Could not parse: '%s'", line)
     return sites_to_times
@@ -284,6 +358,7 @@ def main():
             soup = BeautifulSoup(input_file, "html.parser")
 
         logger.info("HTML title: %s", soup.title.string)
+
         # The relevant data is assumed to be in <p> tags.
         paragraphs = soup.find_all("p")
         date_updated = _parse_first_line_as_date(paragraphs)
