@@ -1,6 +1,6 @@
 ---
 state: tx
 arcgis:
-- id: 3c70075b524c4fddbd709eac877ca5a8
+- id: 15f20c50666a45f5be5cce3a4a655a20
   layer_names:
-  - HCPH_Public_COVID_VDU_Locations
+  - Weekly_HCPH_VDU_Site_Update
