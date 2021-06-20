@@ -112,32 +112,6 @@ def _get_inventory(site: dict) -> Optional[List[schema.Vaccine]]:
     return vaccines
 
 
-# def try_get_list(lis, index, default=None):
-#     if lis is None:
-#         return default
-
-#     try:
-#         value = lis[index]
-#         if value == "none":
-#             logger.warn("saw none value")
-#         return value
-#     except IndexError:
-#         return default
-
-
-# def try_get_lat_long(site):
-#     location = None
-#     try:
-#         location = schema.LatLng(
-#             latitude=site["geometry"]["y"],
-#             longitude=site["geometry"]["x"],
-#         )
-#     except KeyError:
-#         pass
-
-#     return location
-
-
 def normalize_state_name(name: str) -> str:
 
     if name is None:
@@ -148,11 +122,7 @@ def normalize_state_name(name: str) -> str:
     name = name.replace("'", "")
 
     # capitalize the first letter of each word in cases where a state name is provided
-    spl = name.split(" ")
-    if len(spl) > 1:
-        " ".join([word.capitalize() for word in spl])
-    else:
-        name = name.lower().capitalize()
+    name = name.title()
 
     lookup = us.states.lookup(name)
     if lookup:
