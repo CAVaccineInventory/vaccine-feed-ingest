@@ -1,21 +1,46 @@
 #!/usr/bin/env python
 
+import csv
 import json
 import pathlib
 import sys
 
-import pandas
-
 output_dir = pathlib.Path(sys.argv[1])
 input_dir = pathlib.Path(sys.argv[2])
 
-xlsx_filepath = input_dir / "ma.xlsx"
+xlsx_filepath = input_dir / "ma.csv"
 
 locations = []
-data = pandas.read_excel(xlsx_filepath, engine="openpyxl", skiprows=1)
 
-for row in data.itertuples():
-    locations.append(dict(name=row[1], address=row[3]))
+
+def transpose_keys(input_dict):
+    keymap = {
+        "Location Name": "name",
+        "Serves": "serves",
+        "Full Address": "address",
+        "Site Type": "site_type",
+        "Find an appointment": "appointment_link",
+        "Phone": "phone",
+        "E-mail": "email",
+        "Appointment info": "additional_info",
+        "Instructions at site": "instructions",
+        "Accessibility": "accessibility",
+        "Days of the week open": "days_open",
+        "Vaccines available": "vaccines_available",
+        "Website": "website",
+    }
+
+    newdict = {}
+    for key, value in input_dict.items():
+        newdict[keymap[key]] = value
+
+    return newdict
+
+
+with open(xlsx_filepath) as csvfile:
+    csvreader = csv.DictReader(csvfile)
+    for row in csvreader:
+        locations.append(transpose_keys(row))
 
 out_filepath = output_dir / "data.parsed.ndjson"
 
