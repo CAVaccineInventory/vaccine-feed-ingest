@@ -7,6 +7,7 @@ import pathlib
 import sys
 from typing import List, Optional, OrderedDict
 
+import pydantic
 import us
 import usaddress
 from opening_hours import OpeningHours
@@ -250,8 +251,10 @@ def apply_address_fixups(address: OrderedDict[str, str]) -> OrderedDict[str, str
             state = "North Dakota"
         elif state == "Mich.":
             state = "Michigan"
-        elif state == "SR":
-            raise CustomBailError()
+        elif state in ["SR", "US", "HEIGHTS"]:
+            # raise CustomBailError()
+            del address["StateName"]
+            state = None
         elif state == "GL":
             state = "FL"
 
@@ -264,7 +267,7 @@ def apply_address_fixups(address: OrderedDict[str, str]) -> OrderedDict[str, str
 
         address["StateName"] = normalize_state_name(state)
 
-        if len(address["StateName"]) == 1:
+        if address["StateName"] and len(address["StateName"]) == 1:
             del address["StateName"]
 
         if address.get("StateName") in [
@@ -324,7 +327,18 @@ def _get_address(site):
         normalized = normalize_address(parsed)
 
         return normalized
-    except (usaddress.RepeatedLabelError, CustomBailError):
+    except (
+        usaddress.RepeatedLabelError,
+        CustomBailError,
+        pydantic.error_wrappers.ValidationError,
+    ) as e:
+        logger.info("Skipping parsing for one record due to exception")
+        logger.warning(
+            "An error occurred while parsing the address for GISCorps record "
+            + site["attributes"]["GlobalID"]
+            + ": "
+            + str(e)
+        )
         return None
 
 
