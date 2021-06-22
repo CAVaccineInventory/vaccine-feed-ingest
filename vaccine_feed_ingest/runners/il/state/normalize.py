@@ -5,12 +5,12 @@ import json
 import os
 import pathlib
 import sys
-from typing import Optional, List
+from typing import List, Optional
 
 from vaccine_feed_ingest_schema import location as schema
 
 from vaccine_feed_ingest.utils.log import getLogger
-from vaccine_feed_ingest.utils.normalize import provider_id_from_name
+from vaccine_feed_ingest.utils.parse import location_id_from_name
 
 logger = getLogger(__file__)
 
@@ -19,7 +19,7 @@ SOURCE_NAME = "il_state"
 
 
 def _get_id(site: dict) -> str:
-    return provider_id_from_name(site["name"]) or "unknown"
+    return location_id_from_name(site["name"]) or "unknown"
 
 
 def _get_contacts(site: dict) -> Optional[List[schema.Contact]]:
