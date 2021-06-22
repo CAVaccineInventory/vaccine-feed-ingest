@@ -1910,7 +1910,7 @@ python-versions = ">=3.6"
 
 [[package]]
 name = "tableauscraper"
-version = "0.1.11"
+version = "0.1.14"
 description = "Library to get data from Tableau Viz"
 category = "main"
 optional = false
@@ -2215,7 +2215,7 @@ test = ["pytest", "pytest-runner"]
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.9"
-content-hash = "894cca66065cd7354c0bd8ce7961ffae55f8739bba0c62618a21593a5fa42dc2"
+content-hash = "9de6e0ed0e3fe75101f748ea6175350e8eba88a90f0d5cf0a84f584e833424e9"
 
 [metadata.files]
 aiohttp = [
@@ -3516,8 +3516,8 @@ soupsieve = [
     {file = "soupsieve-2.2.1.tar.gz", hash = "sha256:052774848f448cf19c7e959adf5566904d525f33a3f8b6ba6f6f8f26ec7de0cc"},
 ]
 tableauscraper = [
-    {file = "TableauScraper-0.1.11-py3-none-any.whl", hash = "sha256:5e2dc5e75781720a92763523c239129a7344f8f28c36715fdd3772cca752843a"},
-    {file = "TableauScraper-0.1.11.tar.gz", hash = "sha256:e494f352d835d817580ac67b585dcaf029eaccccc8461a27dc6b448c61c66256"},
+    {file = "TableauScraper-0.1.14-py3-none-any.whl", hash = "sha256:ce273c6842fb79992597e94a10d852469c61f389dd0fabf361554a19e027ff9a"},
+    {file = "TableauScraper-0.1.14.tar.gz", hash = "sha256:696deee235a8a50fee25fedab9b63c0a8e7843680242607f32ef889bd891e0d2"},
 ]
 terminado = [
     {file = "terminado-0.10.0-py3-none-any.whl", hash = "sha256:048ce7b271ad1f94c48130844af1de163e54913b919f8c268c89b36a6d468d7c"},
