@@ -139,6 +139,13 @@ def _get_opening_dates(site: dict) -> Optional[List[schema.OpenDate]]:
         return None
 
 
+def _get_notes(site: dict) -> Optional[List[str]]:
+    if notes := site["attributes"].get("notes"):
+        return [notes]
+
+    return None
+
+
 def _get_normalized_location(site: dict, timestamp: str) -> schema.NormalizedLocation:
     # Sometimes geometry is not included in the site data
     if site.get("attributes", None):
@@ -163,7 +170,7 @@ def _get_normalized_location(site: dict, timestamp: str) -> schema.NormalizedLoc
         access=None,
         parent_organization=None,
         links=None,
-        notes=None,
+        notes=_get_notes(site),
         active=None,
         source=schema.Source(
             source=SOURCE_NAME,
