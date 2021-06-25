@@ -150,13 +150,10 @@ def _get_contacts(site: dict) -> Optional[List[schema.Contact]]:
     return None
 
 
-def _get_published_at(site: dict) -> Optional[str]:
-    date = site["attributes"]["LAST_UPDATE_VAC"].strip()
-    time = site["attributes"]["LAST_UPDATE_TIME_VAC"].strip()
-    if date and time:
-        date_time_str = date + " " + time
-        date_time_obj = datetime.datetime.strptime(date_time_str, "%m/%d/%Y %H:%M:%S")
-        return date_time_obj.isoformat()
+def _get_published_at(site: dict) -> Optional[schema.StringDateTime]:
+    time = site["attributes"].get("EditDate")
+    if time:
+        return datetime.datetime.fromtimestamp(time / 1000)
 
     return None
 
