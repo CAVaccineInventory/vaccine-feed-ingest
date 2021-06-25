@@ -195,6 +195,9 @@ def _get_opening_dates(site: dict) -> Optional[List[schema.OpenDate]]:
     if end_date:
         end_date = datetime.datetime.fromtimestamp(end_date / 1000)
 
+    if start_date and end_date and start_date > end_date:
+        return None
+
     if start_date or end_date:
         return [schema.OpenDate(opens=start_date, closes=end_date)]
     else:
