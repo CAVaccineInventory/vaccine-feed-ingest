@@ -140,10 +140,29 @@ def _get_opening_dates(site: dict) -> Optional[List[schema.OpenDate]]:
 
 
 def _get_notes(site: dict) -> Optional[List[str]]:
+    notelist = []
     if notes := site["attributes"].get("notes"):
-        return [notes]
+        notelist.append(notes)
+
+    if oh_notes := site["attributes"].get("opening_hours_notes"):
+        notelist.append(oh_notes)
+
+    if len(notelist) > 0:
+        return notelist
 
     return None
+
+
+def _get_opening_hours(site):
+    oh = site["attributes"].get("operatinghours")
+    if oh:
+        try:
+            return OpeningHours.parse(oh).json()
+        except Exception:
+            # store the notes back in the dict so the notes function can grab it later
+            site["opening_hours_notes"] = "Hours: " + oh
+    else:
+        return None
 
 
 def _get_normalized_location(site: dict, timestamp: str) -> schema.NormalizedLocation:
@@ -164,7 +183,7 @@ def _get_normalized_location(site: dict, timestamp: str) -> schema.NormalizedLoc
         contact=_get_contacts(site),
         languages=None,
         opening_dates=_get_opening_dates(site),
-        opening_hours=None,
+        opening_hours=_get_opening_hours(site),
         availability=_get_availability(site),
         inventory=_get_inventory(site),
         access=None,
