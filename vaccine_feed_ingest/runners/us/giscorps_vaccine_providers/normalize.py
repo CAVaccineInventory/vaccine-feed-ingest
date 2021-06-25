@@ -124,9 +124,7 @@ def _get_opening_hours(site):
 
 def _get_active(site: dict) -> Optional[bool]:
     # end date may be important to check to determine if the site is historical or current. see docs on these fields at https://docs.google.com/document/d/1xqZDHtkNHfelez2Rm3mLAKTwz7gjCAMJaMKK_RxK8F8/edit#
-        # these fields are notcurrently  supported by the VTS schema
-
-   
+    # these fields are notcurrently  supported by the VTS schema
 
     status = site["attributes"].get("status")
 
@@ -192,10 +190,10 @@ def _get_opening_dates(site: dict) -> Optional[List[schema.OpenDate]]:
     end_date = site["attributes"].get("end_date")
 
     if start_date:
-        start_date = datetime.datetime.fromtimestamp(start_date/1000)
+        start_date = datetime.datetime.fromtimestamp(start_date / 1000)
 
     if end_date:
-        end_date = datetime.datetime.fromtimestamp(end_date/1000)
+        end_date = datetime.datetime.fromtimestamp(end_date / 1000)
 
     if start_date or end_date:
         return [schema.OpenDate(opens=start_date, closes=end_date)]
