@@ -109,64 +109,13 @@ def _get_published_at(site: dict) -> Optional[str]:
 
 
 def _get_address(site: dict) -> Optional[schema.Address]:
-    if site["attributes"]["ADDRESS"] is None:
-        return None
 
-    address_field = site["attributes"]["ADDRESS"].replace(",", "").split(" ")
-    city_starts = 0
-    city_ends = 0
+    addr = parse_address(site["attributes"]["address"])
 
-    if site["attributes"]["CITY"] is None:
-        # Some sites put all address data in a single field.
-        # In this case, he data seems to uppercase all characters in the address.
-        # But the city only capitalizes the first letter
-        for index, field in enumerate(address_field):
-            try:
-                if len(field) > 1 and field[1].islower() and city_starts == 0:
-                    city_starts = index
-                if field == "TX":
-                    city_ends = index
-                if index == len(address_field) - 1 and city_starts == 0:
-                    city_starts = index - 1
-                    city_ends = index
-            except IndexError as ie:
-                logger.error("Unable to parse address: %s", ie)
-                return None
+    addr = normalize_address(addr)
 
-        zip = address_field[-1]
-        if len(zip) < 5:
-            zip = None
+    return addr
 
-        return schema.Address(
-            street1=" ".join(address_field[0:city_starts]),
-            street2=None,
-            city=" ".join(address_field[city_starts:city_ends]),
-            state=schema.State.TEXAS,
-            zip=zip,
-        )
-
-    else:
-        # Sometimes the zip can be None, even though the rest of the address has been entered
-        if site["attributes"]["ZIP"] is None:
-            zip = None
-        else:
-            zip = str(site["attributes"]["ZIP"])
-
-            # remove typos
-            if len(zip) < 5:
-                zip = None
-            elif re.match(r"\d{6,}", zip):
-                zip = None
-            elif re.match(r"[a-zA-Z]", zip):
-                zip = None
-
-        return schema.Address(
-            street1=site["attributes"]["ADDRESS"].strip(),
-            street2=None,
-            city=site["attributes"]["CITY"].strip(),
-            state=schema.State.TEXAS,
-            zip=zip,
-        )
 
 
 def _get_normalized_location(site: dict, timestamp: str) -> schema.NormalizedLocation:
