@@ -163,7 +163,7 @@ def _get_normalized_location(site: dict, timestamp: str) -> schema.NormalizedLoc
         location=location,
         contact=_get_contacts(site),
         languages=None,
-        opening_dates=None,
+        opening_dates=_get_opening_dates(site),
         opening_hours=None,
         availability=_get_availability(site),
         inventory=_get_inventory(site),
