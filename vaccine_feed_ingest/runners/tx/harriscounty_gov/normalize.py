@@ -18,12 +18,7 @@ logger = getLogger(__file__)
 SOURCE_NAME = "tx_harriscounty_gov"
 
 VACCINES_FIELD = {
-    "JJ_AVAILABLE": schema.Vaccine(vaccine=schema.VaccineType.JOHNSON_JOHNSON_JANSSEN),
-    "JJ_AVAILABLE2": schema.Vaccine(vaccine=schema.VaccineType.JOHNSON_JOHNSON_JANSSEN),
-    "MODERNA_AVAILABLE": schema.Vaccine(vaccine=schema.VaccineType.MODERNA),
-    "MODERNA_AVAILABLE2": schema.Vaccine(vaccine=schema.VaccineType.MODERNA),
-    "PFIZER_AVAILABLE": schema.Vaccine(vaccine=schema.VaccineType.PFIZER_BIONTECH),
-    "PFIZER_AVAILABLE2": schema.Vaccine(vaccine=schema.VaccineType.PFIZER_BIONTECH),
+    "Moderna": schema.Vaccine(vaccine=schema.VaccineType.MODERNA),
 }
 
 
@@ -34,13 +29,11 @@ def _get_id(site: dict) -> str:
 def _get_inventory(site: dict) -> Optional[List[schema.Vaccine]]:
     inventory = []
 
-    for field, vaccine in VACCINES_FIELD.items():
-        try:
-            if site["attributes"][field] > 0 and vaccine not in inventory:
-                vaccine.supply_level = schema.VaccineSupply.IN_STOCK
-                inventory.append(vaccine)
-        except KeyError:
-            pass
+    if vaccine := site["attributes"].get("typeofvaccine"):
+        if vaccine in VACCINES_FIELD:
+            inventory.append(VACCINES_FIELD.get(vaccine))
+        else:
+            logger.warning("could not find value '" + vaccine + "' in hardcoded vaccine types list")
 
     if len(inventory) > 0:
         return inventory
