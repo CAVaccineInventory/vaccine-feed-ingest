@@ -116,6 +116,27 @@ def _get_address(site: dict) -> Optional[schema.Address]:
 
     return addr
 
+def _get_opening_dates(site: dict) -> Optional[List[schema.OpenDate]]:
+
+    start_date = site["attributes"].get("opendate")
+
+    # this field does not seem to exist, but might later
+    # see schema at https://services3.arcgis.com/FsUrhUGHe9VfghT8/ArcGIS/rest/services/Weekly_HCPH_VDU_Site_Update_0/FeatureServer/0
+    # end_date = site["attributes"].get("close_date")
+
+    if start_date:
+        start_date = datetime.datetime.fromtimestamp(start_date / 1000)
+
+    # if end_date:
+    #     end_date = datetime.datetime.fromtimestamp(end_date / 1000)
+
+    # if start_date and end_date and start_date > end_date:
+    #     return None
+
+    if start_date: # or end_date:
+        return [schema.OpenDate(opens=start_date, closes=None)]
+    else:
+        return None
 
 
 def _get_normalized_location(site: dict, timestamp: str) -> schema.NormalizedLocation:
