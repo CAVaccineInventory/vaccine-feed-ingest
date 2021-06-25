@@ -8,10 +8,17 @@ import re
 import sys
 from typing import List, Optional
 
+from opening_hours import OpeningHours
 from vaccine_feed_ingest_schema import location as schema
 
 from vaccine_feed_ingest.utils.log import getLogger
-from vaccine_feed_ingest.utils.normalize import normalize_phone, parse_address, normalize_address, normalize_url
+from vaccine_feed_ingest.utils.normalize import (
+    normalize_address,
+    normalize_phone,
+    normalize_url,
+    parse_address,
+)
+from vaccine_feed_ingest.utils.parse import location_id_from_name
 
 logger = getLogger(__file__)
 
@@ -33,7 +40,9 @@ def _get_inventory(site: dict) -> Optional[List[schema.Vaccine]]:
         if vaccine in VACCINES_FIELD:
             inventory.append(VACCINES_FIELD.get(vaccine))
         else:
-            logger.warning("could not find value '" + vaccine + "' in hardcoded vaccine types list")
+            logger.warning(
+                "could not find value '" + vaccine + "' in hardcoded vaccine types list"
+            )
 
     if len(inventory) > 0:
         return inventory
@@ -67,7 +76,6 @@ def _get_contacts(site: dict) -> Optional[List[schema.Contact]]:
     contacts = []
     phones = normalize_phone(site["attributes"]["phone"])
 
-
     contacts.extend(phones)
 
     website = normalize_url(site["attributes"]["website"])
@@ -98,6 +106,7 @@ def _get_address(site: dict) -> Optional[schema.Address]:
 
     return addr
 
+
 def _get_opening_dates(site: dict) -> Optional[List[schema.OpenDate]]:
 
     start_date = site["attributes"].get("opendate")
@@ -115,7 +124,7 @@ def _get_opening_dates(site: dict) -> Optional[List[schema.OpenDate]]:
     # if start_date and end_date and start_date > end_date:
     #     return None
 
-    if start_date: # or end_date:
+    if start_date:  # or end_date:
         return [schema.OpenDate(opens=start_date, closes=None)]
     else:
         return None
@@ -133,6 +142,7 @@ def _get_notes(site: dict) -> Optional[List[str]]:
         return notelist
 
     return None
+
 
 def _get_location(site: dict) -> Optional[schema.LatLng]:
     # Sometimes geometry is not included in the site data
