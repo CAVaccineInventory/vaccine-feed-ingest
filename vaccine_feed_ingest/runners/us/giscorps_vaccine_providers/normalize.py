@@ -102,6 +102,9 @@ def _get_notes(site: dict) -> Optional[List[str]]:
     if site.get("opening_hours_notes"):
         notes.append(site["opening_hours_notes"])
 
+    if comments := site.get("comments"):
+        notes.append(comments)
+
     if notes != []:
         return notes
 
