@@ -94,7 +94,6 @@ def sanitize_url(url):
 
 
 def _get_notes(site: dict) -> Optional[List[str]]:
-
     notes = []
     if site["attributes"]["Instructions"]:
         notes.append(site["attributes"]["Instructions"])
@@ -127,9 +126,7 @@ def _get_active(site: dict) -> Optional[bool]:
     # end date may be important to check to determine if the site is historical or current. see docs on these fields at https://docs.google.com/document/d/1xqZDHtkNHfelez2Rm3mLAKTwz7gjCAMJaMKK_RxK8F8/edit#
         # these fields are notcurrently  supported by the VTS schema
 
-    # start_date = site["attributes"].get("start_date")
-
-    # end_date = site["attributes"].get("end_date")
+   
 
     status = site["attributes"].get("status")
 
@@ -146,7 +143,7 @@ def _get_active(site: dict) -> Optional[bool]:
 
 def _get_access(site: dict) -> Optional[List[str]]:
     drive = site["attributes"].get("drive_through")
-    drive_bool = drive is not None
+    drive_bool = drive is not None and drive == "Yes"
 
     # walk = site["attributes"].get("drive_through")
     # walk_bool = drive is not None
