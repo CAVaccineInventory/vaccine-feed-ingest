@@ -15,7 +15,7 @@ from vaccine_feed_ingest.utils.normalize import normalize_phone
 
 logger = getLogger(__file__)
 
-SOURCE_NAME = "tx_arcgis"
+SOURCE_NAME = "tx_harriscounty_gov"
 
 VACCINES_FIELD = {
     "JJ_AVAILABLE": schema.Vaccine(vaccine=schema.VaccineType.JOHNSON_JOHNSON_JANSSEN),
@@ -39,14 +39,7 @@ def _get_availability(site: dict) -> schema.Availability:
 
 
 def _get_id(site: dict) -> str:
-    data_id = site["attributes"]["OBJECTID"]
-
-    # Could parse these from the input file name, but do not for now to avoid
-    # accidental mutation.
-    arcgis = "3078b524189848569f62985d71f4584b"
-    layer = 0
-
-    return f"{arcgis}_{layer}_{data_id}"
+    return site["attributes"]["globalid"]
 
 
 def _get_inventory(site: dict) -> Optional[List[schema.Vaccine]]:
