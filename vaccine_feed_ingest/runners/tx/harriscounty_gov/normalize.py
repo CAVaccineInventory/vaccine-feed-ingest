@@ -27,17 +27,6 @@ VACCINES_FIELD = {
 }
 
 
-def _get_availability(site: dict) -> schema.Availability:
-    for field in VACCINES_FIELD.keys():
-        try:
-            if site["attributes"][field] > 0:
-                return schema.Availability(appointments=True)
-        except KeyError:
-            pass
-
-    return None
-
-
 def _get_id(site: dict) -> str:
     return site["attributes"]["globalid"]
 
@@ -193,7 +182,7 @@ def _get_normalized_location(site: dict, timestamp: str) -> schema.NormalizedLoc
         languages=None,
         opening_dates=_get_opening_dates(site),
         opening_hours=_get_opening_hours(site),
-        availability=_get_availability(site),
+        availability=None,
         inventory=_get_inventory(site),
         access=None,
         parent_organization=None,
