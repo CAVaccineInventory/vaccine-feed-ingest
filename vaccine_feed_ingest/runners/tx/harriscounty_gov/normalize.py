@@ -120,10 +120,10 @@ def _get_address(site: dict) -> Optional[schema.Address]:
 
 def _get_normalized_location(site: dict, timestamp: str) -> schema.NormalizedLocation:
     # Sometimes geometry is not included in the site data
-    if site.get("geometry", None):
+    if site.get("attributes", None):
         location = schema.LatLng(
-            latitude=site["geometry"]["y"],
-            longitude=site["geometry"]["x"],
+            latitude=site["attributes"]["lat"],
+            longitude=site["attributes"]["lon"],
         )
     else:
         location = None
