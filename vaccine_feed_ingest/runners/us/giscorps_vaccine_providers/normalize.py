@@ -177,7 +177,7 @@ def try_lookup(mapping, value, default, name=None):
 
 
 def _get_published_at(site: dict) -> Optional[str]:
-    date_with_millis = site["attributes"]["CreationDate"]
+    date_with_millis = site["attributes"]["EditDate"]
     if date_with_millis:
         date = datetime.datetime.fromtimestamp(date_with_millis / 1000)  # Drop millis
         return date.isoformat()
