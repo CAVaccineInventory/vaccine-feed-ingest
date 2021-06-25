@@ -152,6 +152,23 @@ def _get_notes(site: dict) -> Optional[List[str]]:
 
     return None
 
+def _get_location(site: dict) -> Optional[schema.LatLng]:
+    # Sometimes geometry is not included in the site data
+    lat = site["attributes"].get("lat")
+    lon = site["attributes"].get("lon")
+    if lat and lon:
+        return schema.LatLng(
+            latitude=lat,
+            longitude=lon,
+        )
+    elif site.get("geometry", None):
+        return schema.LatLng(
+            latitude=site["geometry"]["y"],
+            longitude=site["geometry"]["x"],
+        )
+    else:
+        return None
+
 
 def _get_opening_hours(site):
     oh = site["attributes"].get("operatinghours")
@@ -166,20 +183,12 @@ def _get_opening_hours(site):
 
 
 def _get_normalized_location(site: dict, timestamp: str) -> schema.NormalizedLocation:
-    # Sometimes geometry is not included in the site data
-    if site.get("attributes", None):
-        location = schema.LatLng(
-            latitude=site["attributes"]["lat"],
-            longitude=site["attributes"]["lon"],
-        )
-    else:
-        location = None
 
     return schema.NormalizedLocation(
         id=f"{SOURCE_NAME}:{_get_id(site)}",
         name=site["attributes"]["location"],
         address=_get_address(site),
-        location=location,
+        location=_get_location(site),
         contact=_get_contacts(site),
         languages=None,
         opening_dates=_get_opening_dates(site),
