@@ -124,7 +124,11 @@ def _get_opening_hours(site):
 
 
 def _get_active(site: dict) -> Optional[bool]:
-    # end date may be important to check to determine if the site is historicle or current but i dont really feel like digging through the docs rn. see https://github.com/CAVaccineInventory/vaccine-feed-ingest/pull/119 for links that eventually lead to specs on the
+    # end date may be important to check to determine if the site is historical or current. see docs on these fields at https://docs.google.com/document/d/1xqZDHtkNHfelez2Rm3mLAKTwz7gjCAMJaMKK_RxK8F8/edit#
+        # these fields are notcurrently  supported by the VTS schema
+
+    # start_date = site["attributes"].get("start_date")
+
     # end_date = site["attributes"].get("end_date")
 
     status = site["attributes"].get("status")
@@ -345,6 +349,7 @@ def _get_address(site):
         return None
 
 
+# the schema for the incoming data is documented at https://docs.google.com/document/d/1xqZDHtkNHfelez2Rm3mLAKTwz7gjCAMJaMKK_RxK8F8/edit#
 def _get_normalized_location(site: dict, timestamp: str) -> schema.NormalizedLocation:
 
     if site.get("offers_vaccine") == "No":
