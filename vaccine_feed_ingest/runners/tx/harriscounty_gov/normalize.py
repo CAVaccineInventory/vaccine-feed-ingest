@@ -159,6 +159,12 @@ def _get_location(site: dict) -> Optional[schema.LatLng]:
         return None
 
 
+def _get_parent(site: dict) -> Optional[schema.Organization]:
+    if org := site["attributes"].get("agency"):
+        return schema.Organization(id=location_id_from_name(org), name=org)
+    return None
+
+
 def _get_opening_hours(site):
     oh = site["attributes"].get("operatinghours")
     if oh:
@@ -185,7 +191,7 @@ def _get_normalized_location(site: dict, timestamp: str) -> schema.NormalizedLoc
         availability=None,
         inventory=_get_inventory(site),
         access=None,
-        parent_organization=None,
+        parent_organization=_get_parent(site),
         links=None,
         notes=_get_notes(site),
         active=None,
