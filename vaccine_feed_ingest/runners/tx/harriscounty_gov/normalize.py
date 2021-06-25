@@ -248,7 +248,7 @@ def _get_normalized_location(site: dict, timestamp: str) -> schema.NormalizedLoc
         source=schema.Source(
             source=SOURCE_NAME,
             id=_get_id(site),
-            fetched_from_uri="https://tdem.maps.arcgis.com/apps/webappviewer/index.html?id=3700a84845c5470cb0dc3ddace5c376b",  # noqa: E501
+            fetched_from_uri="https://publichealth.harriscountytx.gov/Resources/2019-Novel-Coronavirus/Register-for-COVID-19-Vaccine",  # noqa: E501
             fetched_at=timestamp,
             published_at=_get_published_at(site),
             data=site,
