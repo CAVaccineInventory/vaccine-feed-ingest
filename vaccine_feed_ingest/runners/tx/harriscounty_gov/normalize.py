@@ -100,10 +100,10 @@ def _get_contacts(site: dict) -> Optional[List[schema.Contact]]:
     return None
 
 
-def _get_published_at(site: dict) -> Optional[schema.StringDateTime]:
+def _get_published_at(site: dict) -> Optional[str]:
     time = site["attributes"].get("EditDate")
     if time:
-        return datetime.datetime.fromtimestamp(time / 1000)
+        return datetime.datetime.fromtimestamp(time / 1000).isoformat()
 
     return None
 
