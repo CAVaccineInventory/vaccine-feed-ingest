@@ -189,6 +189,23 @@ def _get_published_at(site: dict) -> Optional[str]:
     return None
 
 
+def _get_opening_dates(site: dict) -> Optional[List[schema.OpenDate]]:
+    start_date = site["attributes"].get("start_date")
+
+    end_date = site["attributes"].get("end_date")
+
+    if start_date:
+        start_date = datetime.datetime.fromtimestamp(start_date/1000)
+
+    if end_date:
+        end_date = datetime.datetime.fromtimestamp(end_date/1000)
+
+    if start_date or end_date:
+        return [schema.OpenDate(opens=start_date, closes=end_date)]
+    else:
+        return None
+
+
 def try_get_list(lis, index, default=None):
     if lis is None:
         return default
@@ -362,7 +379,7 @@ def _get_normalized_location(site: dict, timestamp: str) -> schema.NormalizedLoc
         location=try_get_lat_long(site),
         contact=_get_contacts(site),
         languages=None,
-        opening_dates=None,
+        opening_dates=_get_opening_dates(site),
         opening_hours=_get_opening_hours(site),
         availability=_get_availability(site),
         inventory=None,
