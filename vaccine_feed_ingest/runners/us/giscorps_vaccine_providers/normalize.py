@@ -347,6 +347,9 @@ def _get_address(site):
 
 def _get_normalized_location(site: dict, timestamp: str) -> schema.NormalizedLocation:
 
+    if site.get("offers_vaccine") == "No":
+        return None
+
     return schema.NormalizedLocation(
         id=f"{SOURCE_NAME}:{_get_id(site)}",
         name=site["attributes"]["name"],
