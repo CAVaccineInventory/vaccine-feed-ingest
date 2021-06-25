@@ -11,7 +11,7 @@ from typing import List, Optional
 from vaccine_feed_ingest_schema import location as schema
 
 from vaccine_feed_ingest.utils.log import getLogger
-from vaccine_feed_ingest.utils.normalize import normalize_phone
+from vaccine_feed_ingest.utils.normalize import normalize_phone, parse_address, normalize_address, normalize_url
 
 logger = getLogger(__file__)
 
@@ -81,57 +81,14 @@ def _website_fixup(website):
     return website
 
 
-def _phone_fixup(phone):
-    if phone is None:
-        return None
-
-    if phone == "Non-Public":
-        return None
-
-    if phone == "1-833-UTCARES":
-        return "1-833-882-2737"
-
-    # handle multiple phone numbers
-    phone = phone.split("   ")[0]
-    phone = phone.split("; ")[0]
-
-    if "Houston" in phone:
-        # actually an address
-        return None
-
-    if re.search(r"@\S+.(com|org|gov)$", phone):
-        # actually an email
-        return None
-
-    if phone.startswith("\ufeff"):
-        phone = phone[len("\ufeff") :]
-    elif phone.startswith("Contact number"):
-        phone = phone[len("Contact number") :]
-
-    phone = re.sub(r"(ext)(\d+)", r"\1 \2", phone)
-    phone = re.sub(r"^(\d{3})\)", r"(\1)", phone)
-    phone = re.sub("(, )?option", "ext", phone, flags=re.I)
-
-    if re.match(r"^[\d ]+$", phone):
-        source_phone = re.sub(r"[^\d]", "", phone)
-        if len(source_phone) == 10:
-            phone = f"({source_phone[0:3]}) {source_phone[3:6]}-{source_phone[6:]}"
-
-    return phone
-
-
 def _get_contacts(site: dict) -> Optional[List[schema.Contact]]:
     contacts = []
-    phones = normalize_phone(site["attributes"]["PublicPhone"])
+    phones = normalize_phone(site["attributes"]["phone"])
 
-    for phone in phones:
-        phone = _phone_fixup(phone)
-        if phone is not None:
-            contacts.append(
-                schema.Contact(phone=phone, contact_type=schema.ContactType.GENERAL)
-            )
 
-    website = _website_fixup(site["attributes"]["WEBSITE"])
+    contacts.extend(phones)
+
+    website = normalize_url(site["attributes"]["website"])
     if website is not None:
         contacts.append(
             schema.Contact(website=website, contact_type=schema.ContactType.GENERAL)
