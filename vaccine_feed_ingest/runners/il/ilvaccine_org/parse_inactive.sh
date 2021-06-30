@@ -1,3 +1,6 @@
+# This scraper is inactive as the data source is no longer being updated.
+
+
 #!/usr/bin/env bash
 
 set -Eeuo pipefail
