@@ -1,5 +1,5 @@
 ---
 state: ri
-site: prepmod
+site: ri_prepmod
 parser: prepmod
 url: https://www.vaccinateri.org/
