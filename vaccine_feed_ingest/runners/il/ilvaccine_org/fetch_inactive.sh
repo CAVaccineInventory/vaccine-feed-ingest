@@ -1,6 +1,3 @@
-# This scraper is inactive as the data source is no longer being updated.
-
-
 #!/usr/bin/env bash
 
 set -Eeuo pipefail
@@ -13,3 +10,6 @@ else
 fi
 
 (cd "$output_dir" && curl --silent "https://ilvaccine-api.us-east-1.linodeobjects.com/vts.ndjson" -o 'ilvaccine_org.ndjson')
+
+
+# This scraper is inactive as the data source is no longer being updated.

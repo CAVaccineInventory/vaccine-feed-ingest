@@ -1,6 +1,3 @@
-# This scraper is inactive as the data source is no longer being updated.
-
-
 #!/usr/bin/env bash
 
 set -Eeuo pipefail
@@ -24,3 +21,6 @@ fi
 
 echo "Parsing ${input_dir} into ${output_dir}"
 cp "${input_dir}/ilvaccine_org.ndjson" "${output_dir}/ilvaccine_org.parsed.ndjson"
+
+
+# This scraper is inactive as the data source is no longer being updated.

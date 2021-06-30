@@ -1,6 +1,3 @@
-# This scraper is inactive as the data source is no longer being updated.
-
-
 #!/usr/bin/env python
 
 import datetime
@@ -113,3 +110,6 @@ for in_filepath in json_filepaths:
 
                 json.dump(normalized_site.dict(), fout)
                 fout.write("\n")
+
+
+# This scraper is inactive as the data source is no longer being updated.
