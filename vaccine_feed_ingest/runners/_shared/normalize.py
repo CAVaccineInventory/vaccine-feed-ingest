@@ -13,6 +13,7 @@ from typing import List
 
 import yaml
 from vaccine_feed_ingest_schema import location as schema
+from vaccine_feed_ingest.utils.parse import location_id_from_name
 
 # Configure logger
 logging.basicConfig(
@@ -44,6 +45,9 @@ def _get_source(config: dict, site: dict, timestamp: str) -> schema.Source:
         fetched_at=timestamp,
         data=site,
     )
+
+def _get_id(site: dict) -> str:
+    return location_id_from_name(site["address"].split(", ")[0])
 
 
 def _get_inventory(site: dict) -> List[schema.Vaccine]:
@@ -141,7 +145,7 @@ def normalize(config: dict, site: dict, timestamp: str) -> str:
     {"name": "Rebel Med NW - COVID Vaccine Clinic", "date": "04/30/2021", "address": "5401 Leary Ave NW, Seattle WA, 98107", "vaccines": "Moderna COVID-19 Vaccine", "ages": "Adults, Seniors", "info": "truncated", "hours": "09:00 am - 05:00 pm", "available": "14", "special": "If you are signing up for a second dose, you must get the same vaccine brand as your first dose.", "clinic_id": "2731"} # noqa: E501
     """
     normalized = schema.NormalizedLocation(
-        id=f"{config['site']}:{site['clinic_id']}",
+        id=f"{config['site']}:{_get_id(site)}",
         name=site["name"],
         address=_get_address(site),
         availability=schema.Availability(appointments=True),
