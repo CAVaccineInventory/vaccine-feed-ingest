@@ -13,6 +13,7 @@ from typing import List
 
 import yaml
 from vaccine_feed_ingest_schema import location as schema
+
 from vaccine_feed_ingest.utils.parse import location_id_from_name
 
 # Configure logger
@@ -45,6 +46,7 @@ def _get_source(config: dict, site: dict, timestamp: str) -> schema.Source:
         fetched_at=timestamp,
         data=site,
     )
+
 
 def _get_id(site: dict) -> str:
     return location_id_from_name(site["address"].split(", ")[0])
