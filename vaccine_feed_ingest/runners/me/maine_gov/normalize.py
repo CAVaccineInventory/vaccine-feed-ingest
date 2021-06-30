@@ -10,8 +10,8 @@ from typing import List, Optional
 from vaccine_feed_ingest_schema import location as schema
 
 from vaccine_feed_ingest.utils.log import getLogger
-from vaccine_feed_ingest.utils.parse import location_id_from_name
 from vaccine_feed_ingest.utils.normalize import normalize_url
+from vaccine_feed_ingest.utils.parse import location_id_from_name
 
 logger = getLogger(__file__)
 
@@ -76,7 +76,7 @@ def _get_contacts(site: dict) -> List[schema.Contact]:
     if website_matches:
         website = website_matches.group(1).split(" ")[0]
         if website.startswith("https://houltonregional.org"):
-            website = website.replace("\"", "")
+            website = website.replace('"', "")
         website = normalize_url(website)
     else:
         website = None
