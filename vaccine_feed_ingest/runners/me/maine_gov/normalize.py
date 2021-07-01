@@ -75,8 +75,7 @@ def _get_contacts(site: dict) -> List[schema.Contact]:
     website_matches = re.search('href="(http.*)"', scheduling_info_raw)
     if website_matches:
         website = website_matches.group(1).split(" ")[0]
-        if website.startswith("https://houltonregional.org"):
-            website = website.replace('"', "")
+        website = website.replace('"', "") # remove quote marks from urls
         website = normalize_url(website)
     else:
         website = None
