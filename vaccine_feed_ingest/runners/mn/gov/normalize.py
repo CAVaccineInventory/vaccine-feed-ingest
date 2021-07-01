@@ -44,6 +44,7 @@ def _get_id(site: dict) -> str:
 
     return f"{runner}_{site_name}:{arcgis}_{layer}_{data_id}"
 
+
 def _cleanup_url(url):
     if not url:
         return None
@@ -54,7 +55,7 @@ def _cleanup_url(url):
     if url == "COVID-19 Vaccine Information - Hennepin Healthcare":
         return None
     print(url)
-    
+
     url = re.sub(r"^https/:", "https://", url)  # fix typos
     url = re.sub(r"^https:/t", "https://t", url)  # fix typos
 
