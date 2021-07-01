@@ -22,4 +22,3 @@ fi
 
 echo "Parsing ${input_dir} into ${output_dir}"
 cp "${input_dir}/ilvaccine_org.ndjson" "${output_dir}/ilvaccine_org.parsed.ndjson"
-

@@ -11,5 +11,3 @@ else
 fi
 
 (cd "$output_dir" && curl --silent "https://ilvaccine-api.us-east-1.linodeobjects.com/vts.ndjson" -o 'ilvaccine_org.ndjson')
-
-
