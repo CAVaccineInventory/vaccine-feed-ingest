@@ -94,13 +94,15 @@ def sanitize_url(url):
 
 
 def _get_notes(site: dict) -> Optional[List[str]]:
-
     notes = []
     if site["attributes"]["Instructions"]:
         notes.append(site["attributes"]["Instructions"])
 
     if site.get("opening_hours_notes"):
         notes.append(site["opening_hours_notes"])
+
+    if comments := site.get("comments"):
+        notes.append(comments)
 
     if notes != []:
         return notes
@@ -121,8 +123,8 @@ def _get_opening_hours(site):
 
 
 def _get_active(site: dict) -> Optional[bool]:
-    # end date may be important to check to determine if the site is historicle or current but i dont really feel like digging through the docs rn. see https://github.com/CAVaccineInventory/vaccine-feed-ingest/pull/119 for links that eventually lead to specs on the
-    # end_date = site["attributes"].get("end_date")
+    # end date may be important to check to determine if the site is historical or current. see docs on these fields at https://docs.google.com/document/d/1xqZDHtkNHfelez2Rm3mLAKTwz7gjCAMJaMKK_RxK8F8/edit#
+    # these fields are notcurrently  supported by the VTS schema
 
     status = site["attributes"].get("status")
 
@@ -139,7 +141,7 @@ def _get_active(site: dict) -> Optional[bool]:
 
 def _get_access(site: dict) -> Optional[List[str]]:
     drive = site["attributes"].get("drive_through")
-    drive_bool = drive is not None
+    drive_bool = drive is not None and drive == "Yes"
 
     # walk = site["attributes"].get("drive_through")
     # walk_bool = drive is not None
@@ -174,12 +176,32 @@ def try_lookup(mapping, value, default, name=None):
 
 
 def _get_published_at(site: dict) -> Optional[str]:
-    date_with_millis = site["attributes"]["CreationDate"]
+    date_with_millis = site["attributes"]["EditDate"]
     if date_with_millis:
         date = datetime.datetime.fromtimestamp(date_with_millis / 1000)  # Drop millis
         return date.isoformat()
 
     return None
+
+
+def _get_opening_dates(site: dict) -> Optional[List[schema.OpenDate]]:
+    start_date = site["attributes"].get("start_date")
+
+    end_date = site["attributes"].get("end_date")
+
+    if start_date:
+        start_date = datetime.datetime.fromtimestamp(start_date / 1000)
+
+    if end_date:
+        end_date = datetime.datetime.fromtimestamp(end_date / 1000)
+
+    if start_date and end_date and start_date > end_date:
+        return None
+
+    if start_date or end_date:
+        return [schema.OpenDate(opens=start_date, closes=end_date)]
+    else:
+        return None
 
 
 def try_get_list(lis, index, default=None):
@@ -342,7 +364,11 @@ def _get_address(site):
         return None
 
 
+# the schema for the incoming data is documented at https://docs.google.com/document/d/1xqZDHtkNHfelez2Rm3mLAKTwz7gjCAMJaMKK_RxK8F8/edit#
 def _get_normalized_location(site: dict, timestamp: str) -> schema.NormalizedLocation:
+
+    if site.get("offers_vaccine") == "No":
+        return None
 
     return schema.NormalizedLocation(
         id=f"{SOURCE_NAME}:{_get_id(site)}",
@@ -351,7 +377,7 @@ def _get_normalized_location(site: dict, timestamp: str) -> schema.NormalizedLoc
         location=try_get_lat_long(site),
         contact=_get_contacts(site),
         languages=None,
-        opening_dates=None,
+        opening_dates=_get_opening_dates(site),
         opening_hours=_get_opening_hours(site),
         availability=_get_availability(site),
         inventory=None,
