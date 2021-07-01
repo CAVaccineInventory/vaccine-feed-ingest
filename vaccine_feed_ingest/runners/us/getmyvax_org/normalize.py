@@ -153,7 +153,6 @@ class GMVLocation(BaseModel):
     info_url: Optional[str]
     booking_phone: Optional[str]
     booking_url: Optional[str]
-    eligibility: Optional[str]
     description: Optional[str]
     requires_waitlist: bool
     meta: Optional[dict]
