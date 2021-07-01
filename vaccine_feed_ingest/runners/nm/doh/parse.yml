@@ -1,0 +1,6 @@
+---
+state: nm
+site: doh
+parser: json_list
+path:
+- data
