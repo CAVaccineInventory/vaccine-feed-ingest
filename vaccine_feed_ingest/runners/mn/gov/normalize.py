@@ -12,6 +12,7 @@ from pydantic import ValidationError
 from vaccine_feed_ingest_schema import location as schema
 
 from vaccine_feed_ingest.utils.log import getLogger
+from vaccine_feed_ingest.utils.normalize import normalize_url
 
 logger = getLogger(__file__)
 
@@ -43,6 +44,25 @@ def _get_id(site: dict) -> str:
 
     return f"{runner}_{site_name}:{arcgis}_{layer}_{data_id}"
 
+def _cleanup_url(url):
+    if not url:
+        return None
+    # if "@" in url:
+    #     # Some of these are email addresses.
+    #     # Skipping those for now.
+    #     return None
+    if url == "COVID-19 Vaccine Information - Hennepin Healthcare":
+        return None
+    print(url)
+    
+    url = re.sub(r"^https/:", "https://", url)  # fix typos
+    url = re.sub(r"^https:/t", "https://t", url)  # fix typos
+
+    # if not url.startswith("http"):
+    #     url = "http://" + url
+
+    return url
+
 
 def _get_contacts(site: dict) -> Optional[List[schema.Contact]]:
     contacts = []
@@ -50,23 +70,8 @@ def _get_contacts(site: dict) -> Optional[List[schema.Contact]]:
     if phone := site["attributes"]["Phone"]:
         contacts.append(schema.Contact(phone=phone))
 
-    def cleanup_url(url):
-        if not url:
-            return None
-        if "@" in url:
-            # Some of these are email addresses.
-            # Skipping those for now.
-            return None
-        if url == "COVID-19 Vaccine Information - Hennepin Healthcare":
-            return None
-        url = re.sub(r"^https/:", "https://", url)  # fix typos
-
-        if not url.startswith("http"):
-            url = "http://" + url
-
-        return url
-
-    if url := cleanup_url(site["attributes"]["URL"]):
+    if url := normalize_url(_cleanup_url(site["attributes"]["URL"])):
+        print(url)
         contacts.append(schema.Contact(website=url))
 
     if contacts:
