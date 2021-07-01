@@ -26,6 +26,9 @@ SOURCE_NAME = "tx_harriscounty_gov"
 
 VACCINES_FIELD = {
     "Moderna": schema.Vaccine(vaccine=schema.VaccineType.MODERNA),
+    "Pfizer": schema.Vaccine(vaccine=schema.VaccineType.PFIZER_BIONTECH),
+    "JohnsonJohnson": schema.Vaccine(vaccine=schema.VaccineType.JOHNSON_JOHNSON_JANSSEN),
+
 }
 
 
@@ -37,12 +40,13 @@ def _get_inventory(site: dict) -> Optional[List[schema.Vaccine]]:
     inventory = []
 
     if vaccine := site["attributes"].get("typeofvaccine"):
-        if vaccine in VACCINES_FIELD:
-            inventory.append(VACCINES_FIELD.get(vaccine))
-        else:
-            logger.warning(
-                "could not find value '" + vaccine + "' in hardcoded vaccine types list"
-            )
+        for vax_type, vax in VACCINES_FIELD.items():
+            print(vax_type, vaccine)
+            if vax_type in vaccine:
+                inventory.append(vax)
+
+        if len(inventory) != len(vaccine.split(",")):
+            logger.warn("some vaccine types were not automatically detected in string: " + vaccine)
 
     if len(inventory) > 0:
         return inventory
