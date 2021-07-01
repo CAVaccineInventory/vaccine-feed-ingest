@@ -10,4 +10,4 @@ else
     echo "Must pass an output_dir as first argument"
 fi
 
-curl --silent https://coronavirus.dc.gov/vaccinatedc -o "${output_dir}/data.html"
+curl --silent https://coronavirus.dc.gov/page/get-vaccinated -o "${output_dir}/data.html"
