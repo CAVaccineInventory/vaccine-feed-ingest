@@ -42,7 +42,6 @@ def _get_inventory(site: dict) -> Optional[List[schema.Vaccine]]:
 
     if vaccine := site["attributes"].get("typeofvaccine"):
         for vax_type, vax in VACCINES_FIELD.items():
-            print(vax_type, vaccine)
             if vax_type in vaccine:
                 inventory.append(vax)
 
