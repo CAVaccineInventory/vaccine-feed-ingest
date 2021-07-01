@@ -111,5 +111,3 @@ for in_filepath in json_filepaths:
 
                 json.dump(normalized_site.dict(), fout)
                 fout.write("\n")
-
-
