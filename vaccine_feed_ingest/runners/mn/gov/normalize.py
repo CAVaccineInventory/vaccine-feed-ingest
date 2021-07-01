@@ -52,7 +52,9 @@ def _cleanup_url(url):
     #     # Some of these are email addresses.
     #     # Skipping those for now.
     #     return None
-    if url == "COVID-19 Vaccine Information - Hennepin Healthcare":
+    if " " in url.strip():
+        # url contains spaces after stripping the leading and trailing ones
+        # it must be an invalid URL
         return None
 
     url = re.sub(r"^https/:", "https://", url)  # fix typos
