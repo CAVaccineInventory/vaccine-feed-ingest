@@ -54,7 +54,6 @@ def _cleanup_url(url):
     #     return None
     if url == "COVID-19 Vaccine Information - Hennepin Healthcare":
         return None
-    print(url)
 
     url = re.sub(r"^https/:", "https://", url)  # fix typos
     url = re.sub(r"^https:/t", "https://t", url)  # fix typos
@@ -72,7 +71,6 @@ def _get_contacts(site: dict) -> Optional[List[schema.Contact]]:
         contacts.append(schema.Contact(phone=phone))
 
     if url := normalize_url(_cleanup_url(site["attributes"]["URL"])):
-        print(url)
         contacts.append(schema.Contact(website=url))
 
     if contacts:
