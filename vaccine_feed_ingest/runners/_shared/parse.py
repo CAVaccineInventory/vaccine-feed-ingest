@@ -12,6 +12,8 @@ from bs4 import BeautifulSoup
 
 from vaccine_feed_ingest.utils.log import getLogger
 
+from vaccine_feed_ingest.utils.parse import location_id_from_name
+
 logger = getLogger(__file__)
 
 OUTPUT_DIR = pathlib.Path(sys.argv[1])
@@ -69,6 +71,14 @@ def _prepmod_find_data_item(parent, label, offset):
     except IndexError:
         return ""
     return content.strip() if isinstance(content, str) else content.get_text().strip()
+
+
+def _prepmod_location_id_from_street_address(address: str) -> str:
+    """
+    Create a unique id per location using the street address.
+    This needs to happen in the parser because it is used for deduplicating prepmod locations with different clinic ids as a result of haing different hous or vaccine supply .etc
+    """
+    return location_id_from_name(address.split(", ")[0])
 
 
 config = _get_config(YML_CONFIG)
@@ -144,6 +154,7 @@ elif config["parser"] == "prepmod":
                     "name": name,
                     "date": date,
                     "address": address,
+                    "location_id": _prepmod_location_id_from_street_address(address),
                     "vaccines": vaccines,
                     "ages": ages,
                     "info": additional_info,
