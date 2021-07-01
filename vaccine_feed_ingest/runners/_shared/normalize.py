@@ -153,7 +153,7 @@ def normalize(config: dict, site: dict, timestamp: str) -> str:
         opening_hours=_get_opening_hours(site),
         notes=_get_notes(site),
         source=_get_source(config, site, timestamp),
-    ).dict()
+    )
     return normalized
 
 
@@ -169,5 +169,5 @@ if config["parser"] == "prepmod":
                 for line in parsed_lines:
                     site = json.loads(line)
                     normalized_site = normalize(config, site, parsed_at_timestamp)
-                    json.dump(normalized_site, fout)
+                    json.dump(normalized_site.dict(), fout)
                     fout.write("\n")
