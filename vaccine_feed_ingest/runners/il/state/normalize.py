@@ -73,9 +73,6 @@ def _get_address(site):
     )
 
 
-# {"name": "ADAMS COUNTY HEALTH DEPARTMENT", "loc_type": "Public health provider - public health clinic", "address": "330 VERMONT ST", "city": "QUINCY", "zip": "62301", "county": "ADAMS", "website": "https://www.co.adams.il.us/government/departments/health-department/covid-19-vaccination-information", "lat": "39.9338798522949", "long": "-91.4105606079102", "pindetails": "<strong>Public health provider - public health clinic</strong><br/><a href='https://www.co.adams.il.us/government/departments/health-department/covid-19-vaccination-information'>ADAMS COUNTY HEALTH DEPARTMENT</a><br/>330 VERMONT ST<br/>QUINCY, IL  62301"}
-
-
 def _get_normalized_location(site: dict, timestamp: str) -> schema.NormalizedLocation:
 
     return schema.NormalizedLocation(
