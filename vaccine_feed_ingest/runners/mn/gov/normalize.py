@@ -48,10 +48,6 @@ def _get_id(site: dict) -> str:
 def _cleanup_url(url):
     if not url:
         return None
-    # if "@" in url:
-    #     # Some of these are email addresses.
-    #     # Skipping those for now.
-    #     return None
     if " " in url.strip():
         # url contains spaces after stripping the leading and trailing ones
         # it must be an invalid URL
@@ -59,9 +55,6 @@ def _cleanup_url(url):
 
     url = re.sub(r"^https/:", "https://", url)  # fix typos
     url = re.sub(r"^https:/t", "https://t", url)  # fix typos
-
-    # if not url.startswith("http"):
-    #     url = "http://" + url
 
     return url
 
