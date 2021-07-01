@@ -1236,7 +1236,7 @@ python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*"
 
 [[package]]
 name = "parse-opening-hours"
-version = "0.4.1"
+version = "0.4.2"
 description = "Parses opening hours from various human-readable strings into a standard JSON format"
 category = "main"
 optional = false
@@ -2215,7 +2215,7 @@ test = ["pytest", "pytest-runner"]
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.9"
-content-hash = "b9c8ee02a40b9467f6f2b03f3547073e4b5088c7a60a87b4800a74b400e70964"
+content-hash = "329524d32e0c3c9702a1e9e273390a5423a7f38e40ccc9b26b9657941eca76f3"
 
 [metadata.files]
 aiohttp = [
@@ -2985,8 +2985,8 @@ pandocfilters = [
     {file = "pandocfilters-1.4.3.tar.gz", hash = "sha256:bc63fbb50534b4b1f8ebe1860889289e8af94a23bff7445259592df25a3906eb"},
 ]
 parse-opening-hours = [
-    {file = "parse-opening-hours-0.4.1.tar.gz", hash = "sha256:b93824b512fd69b6ce1cd862b5c3665fac227af09f17ccb11f2934212ab5baf6"},
-    {file = "parse_opening_hours-0.4.1-py3-none-any.whl", hash = "sha256:28b529ac9f1c99ac6ddedd3390a8d978b3132f7f44ed708caee7e0a0a0a6ef3e"},
+    {file = "parse-opening-hours-0.4.2.tar.gz", hash = "sha256:6bf7dfee5f48c2e428fe31d810961d3347b5e2465ccb8249cd91f50295d2feaf"},
+    {file = "parse_opening_hours-0.4.2-py3-none-any.whl", hash = "sha256:72aed5c4e4b655d49f03d5284933c3e3394c3d27b217cfedeb2e226ae61a8c03"},
 ]
 parso = [
     {file = "parso-0.8.2-py2.py3-none-any.whl", hash = "sha256:a8c4922db71e4fdb90e0d0bc6e50f9b273d3397925e5e60a717e719201778d22"},
