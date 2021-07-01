@@ -53,7 +53,7 @@ def _cleanup_url(url):
         # it must be an invalid URL
         return None
 
-    url = re.sub(r"^https/:", "https://", url)  # fix typos
+    url = re.sub(r"^(https?)\/:([^\/:].*)", r"\g<1>://\g<2>", url)
     url = re.sub(r"^https:/t", "https://t", url)  # fix typos
 
     return url
