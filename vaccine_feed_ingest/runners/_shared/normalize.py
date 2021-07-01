@@ -48,7 +48,7 @@ def _get_source(config: dict, site: dict, timestamp: str) -> schema.Source:
     )
 
 
-def _get_id(site: dict) -> str:
+def _get_location_id(site: dict) -> str:
     return location_id_from_name(site["address"].split(", ")[0])
 
 
@@ -147,7 +147,7 @@ def normalize(config: dict, site: dict, timestamp: str) -> str:
     {"name": "Rebel Med NW - COVID Vaccine Clinic", "date": "04/30/2021", "address": "5401 Leary Ave NW, Seattle WA, 98107", "vaccines": "Moderna COVID-19 Vaccine", "ages": "Adults, Seniors", "info": "truncated", "hours": "09:00 am - 05:00 pm", "available": "14", "special": "If you are signing up for a second dose, you must get the same vaccine brand as your first dose.", "clinic_id": "2731"} # noqa: E501
     """
     normalized = schema.NormalizedLocation(
-        id=f"{config['site']}:{_get_id(site)}",
+        id=f"{config['site']}:{_get_location_id(site)}",
         name=site["name"],
         address=_get_address(site),
         availability=schema.Availability(appointments=True),
