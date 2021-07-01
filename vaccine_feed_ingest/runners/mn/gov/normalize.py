@@ -54,7 +54,7 @@ def _cleanup_url(url):
         return None
 
     url = re.sub(r"^(https?)\/:([^\/:].*)", r"\g<1>://\g<2>", url)
-    url = re.sub(r"^https:/t", "https://t", url)  # fix typos
+    url = re.sub(r"^(https?:\/)([^\/].*)", r"\g<1>/\g<2>", url)
 
     return url
 
