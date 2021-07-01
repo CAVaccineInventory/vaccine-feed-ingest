@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# This scraper is inactive as the data source is no longer being updated.
 
 import datetime
 import json
