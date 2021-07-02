@@ -162,7 +162,21 @@ parsed_at_timestamp = datetime.datetime.utcnow().isoformat()
 config = _get_config(YML_CONFIG)
 
 if config["parser"] == "prepmod":
+    SORTED_DIR = OUTPUT_DIR.joinpath("sorted/")
+    # Sort each record into a separate file based on its unique location (basically the street address)
+    # this substantially aids in the deduplication process for these 
     for input_file in INPUT_DIR.glob("*.ndjson"):
+        with input_file.open() as parsed_lines:
+            
+            for line in parsed_lines:
+                sorted_file = SORTED_DIR.joinpath("{}.parsed.ndjson" % site["location_id"])
+                if sorted_file.exists():
+                    append_write = 'a' # append if already exists
+                else:
+                    append_write = 'w' # make a new file if not
+                with sorted_file.open(append_write) as fsort:
+                    fsort.write(line)
+                    # fsort.write("\n")
         output_file = _get_out_filepath(input_file, OUTPUT_DIR)
         with input_file.open() as parsed_lines:
             with output_file.open("w") as fout:
