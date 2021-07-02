@@ -1,3 +1,4 @@
+from json.decoder import JSONDecodeError
 from typing import Dict, Optional
 
 import diskcache
@@ -128,11 +129,16 @@ class PlacekeyAPI(CachedAPI):
         if not places:
             return result
 
-        responses = self._placekey_api.lookup_placekeys(
-            places,
-            strict_address_match=strict_address_match,
-            strict_name_match=strict_name_match,
-        )
+        responses = None
+        try:
+            responses = self._placekey_api.lookup_placekeys(
+                places,
+                strict_address_match=strict_address_match,
+                strict_name_match=strict_name_match,
+            )
+        except JSONDecodeError:
+            logger.warning("Placekey failed. Continuing...", exc_info=True)
+            return result
 
         if not responses:
             logger.info(
