@@ -137,7 +137,7 @@ def _get_out_filepath(in_filepath: pathlib.Path, out_dir: pathlib.Path) -> pathl
     return out_dir.joinpath(f"{filename}.normalized.ndjson")
 
 
-def normalize(config: dict, site: dict, timestamp: str) -> str:
+def normalize(config: dict, site: dict, timestamp: str) -> schema.NormalizedLocation:
     """
     sample:
     {"name": "Rebel Med NW - COVID Vaccine Clinic", "date": "04/30/2021", "address": "5401 Leary Ave NW, Seattle WA, 98107", "vaccines": "Moderna COVID-19 Vaccine", "ages": "Adults, Seniors", "info": "truncated", "hours": "09:00 am - 05:00 pm", "available": "14", "special": "If you are signing up for a second dose, you must get the same vaccine brand as your first dose.", "clinic_id": "2731"} # noqa: E501
