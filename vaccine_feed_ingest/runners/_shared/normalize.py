@@ -156,8 +156,6 @@ def normalize(config: dict, site: dict, timestamp: str) -> schema.NormalizedLoca
     )
     return normalized
 
-def _confirm_matching(entry1: schema.NormalizedLocation, entry2: schema.NormalizedLocation, keyname: str) -> bool:
-    return entry1[keyname] == entry2[keyname]
 
 
 parsed_at_timestamp = datetime.datetime.utcnow().isoformat()
