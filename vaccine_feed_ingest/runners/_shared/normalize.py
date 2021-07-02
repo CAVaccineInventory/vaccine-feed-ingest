@@ -186,11 +186,14 @@ if config["parser"] == "prepmod":
     for input_file in SORTED_DIR.glob("*.ndjson"):
         output_file = _get_out_filepath(input_file, OUTPUT_DIR)
         with input_file.open() as parsed_lines:
-            normalized_entries = []
+            normalized_entry = None
             for line in parsed_lines:
                 site = json.loads(line)
                 normalized_site = normalize(config, site, parsed_at_timestamp)
-                normalized_entries.append(normalized_site)
+                if normalized_entry:
+                    normalized_entry = _combine_normalized(normalized_entry, normalized_site)
+                else:
+                    normalized_entry = normalized_site
             normalized_combined = _combine_normalized(normalized_entries)
             with output_file.open("w") as fout:
                 json.dump(normalized_combined.dict(), fout)
