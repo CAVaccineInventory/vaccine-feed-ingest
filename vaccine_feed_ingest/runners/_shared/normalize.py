@@ -177,11 +177,18 @@ if config["parser"] == "prepmod":
                 with sorted_file.open(append_write) as fsort:
                     fsort.write(line)
                     # fsort.write("\n")
+
+    # loop though each of the now-sorted locations and combine all the records
+    # from each file into one normalized record
+    for input_file in SORTED_DIR.glob("*.ndjson"):
         output_file = _get_out_filepath(input_file, OUTPUT_DIR)
         with input_file.open() as parsed_lines:
+            normalized_entries = []
+            for line in parsed_lines:
+                site = json.loads(line)
+                normalized_site = normalize(config, site, parsed_at_timestamp)
+                normalized_entries.append(normalized_site)
+            normalized_combined = _combine_normalized(normalized_entries)
             with output_file.open("w") as fout:
-                for line in parsed_lines:
-                    site = json.loads(line)
-                    normalized_site = normalize(config, site, parsed_at_timestamp)
-                    json.dump(normalized_site.dict(), fout)
-                    fout.write("\n")
+                json.dump(normalized_combined.dict(), fout)
+                fout.write("\n")
