@@ -1,0 +1,6 @@
+---
+state: sd
+arcgis:
+- id: bc664359dfcc45d3ba05d54c4a05d667
+  layer_names:
+  - COVID19 Vaccination Locations
