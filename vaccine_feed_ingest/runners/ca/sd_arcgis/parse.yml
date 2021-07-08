@@ -1,0 +1,4 @@
+---
+state: ca
+site: sd_arcgis
+parser: arcgis_features
