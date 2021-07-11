@@ -142,7 +142,7 @@ elif config["parser"] == "prepmod":
                     )
                     clinic_id = find_clinic_id.group(1)
                 else:
-                    clinic_id = "NOTFOUND"
+                    clinic_id = ""
                 data = {
                     "name": name,
                     "date": date,
