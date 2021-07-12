@@ -136,10 +136,11 @@ elif config["parser"] == "prepmod":
                     _prepmod_find_data_item(parent, "Available Appointments", -1) or 0
                 )
                 special = _prepmod_find_data_item(parent, "Special Instructions", -1)
-                find_clinic_id = EXTRACT_CLINIC_ID.match(
-                    parent.find_next_sibling("div", "map-image").find("img")["src"]
-                )
-                clinic_id = find_clinic_id.group(1)
+                if content := parent.find_next_sibling("div", "map-image").find("img"):
+                    find_clinic_id = EXTRACT_CLINIC_ID.match(content["src"])
+                    clinic_id = find_clinic_id.group(1)
+                else:
+                    clinic_id = ""
                 data = {
                     "name": name,
                     "date": date,
