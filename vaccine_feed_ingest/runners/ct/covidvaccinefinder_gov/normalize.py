@@ -12,9 +12,13 @@ import pydantic
 from vaccine_feed_ingest_schema import location as schema
 
 from vaccine_feed_ingest.utils.normalize import provider_id_from_name
+from vaccine_feed_ingest.utils.parse import location_id_from_name
 from vaccine_feed_ingest.utils.validation import BOUNDING_BOX
 
 logger = getLogger(__file__)
+
+
+SOURCE_NAME = "ct_covidvaccinefinder_gov"
 
 
 def _in_bounds(lat_lng: schema.LatLng) -> bool:
@@ -50,6 +54,18 @@ def _get_lat_lng(site: dict) -> Optional[schema.LatLng]:
         logger.warning("Invalid or missing lat/lng for %s: %s", site["_id"], str(e))
 
     return None
+
+
+def _get_id(site: dict) -> str:
+    addr = site.get("addressLine1")
+    has_location = addr and addr != ""
+    alt_id = (
+        location_id_from_name(site["addressLine1"])
+        if has_location
+        else site.get("_id", "unknown")
+    )
+
+    return site.get("sourceSystemId", alt_id) or alt_id
 
 
 def _get_contact(site: dict) -> List[schema.Contact]:
@@ -90,7 +106,7 @@ def _get_inventory(site: dict) -> List[schema.Vaccine]:
 
 def normalize(site: dict, timestamp: str) -> dict:
     links = [
-        schema.Link(authority="ct_gov", id=site["_id"]),
+        schema.Link(authority="ct_gov", id=_get_id(site)),
     ]
 
     parent_organization = schema.Organization(name=site["networks"][0]["name"])
@@ -104,7 +120,7 @@ def normalize(site: dict, timestamp: str) -> dict:
         parent_organization.id = parsed_provider_link[0]
 
     return schema.NormalizedLocation(
-        id=f"ct_covidvaccinefinder_gov:{site['_id']}",
+        id=f"{SOURCE_NAME}:{_get_id(site)}",
         name=site["displayName"],
         address=schema.Address(
             street1=site["addressLine1"],
@@ -130,8 +146,8 @@ def normalize(site: dict, timestamp: str) -> dict:
         notes=None,
         active=None,
         source=schema.Source(
-            source="ct_covidvaccinefinder_gov",
-            id=site["_id"],
+            source=SOURCE_NAME,
+            id=_get_id(site),
             fetched_from_uri="https://covidvaccinefinder.ct.gov/api/HttpTriggerGetProvider",  # noqa: E501
             fetched_at=timestamp,
             published_at=site["lastModified"],
