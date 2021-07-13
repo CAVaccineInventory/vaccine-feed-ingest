@@ -52,7 +52,7 @@ python-versions = "*"
 
 [[package]]
 name = "arcgis"
-version = "1.8.5.post3"
+version = "1.9.0"
 description = "ArcGIS API for Python"
 category = "main"
 optional = false
@@ -681,7 +681,7 @@ test = ["pytest (>=3.6.0)", "pytest-cov", "mock"]
 
 [[package]]
 name = "isort"
-version = "5.9.1"
+version = "5.9.2"
 description = "A Python utility / library to sort Python imports."
 category = "main"
 optional = true
@@ -2216,7 +2216,7 @@ test = ["pytest", "pytest-runner"]
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.9"
-content-hash = "34ea0423746b6c8416367bda65b60c9c93cefadcb22ee37b3b333f1e61fcfca5"
+content-hash = "5b231f42f9446702673c95437e3d146a4a3ae434f9cf639e980916a43869607a"
 
 [metadata.files]
 aiohttp = [
@@ -2271,7 +2271,7 @@ appnope = [
     {file = "appnope-0.1.2.tar.gz", hash = "sha256:dd83cd4b5b460958838f6eb3000c660b1f9caf2a5b1de4264e941512f603258a"},
 ]
 arcgis = [
-    {file = "arcgis-1.8.5.post3.tar.gz", hash = "sha256:737f39e7a32b9cec03c87324256f84c908d6af8ad5fee43cc5e0cf2402736398"},
+    {file = "arcgis-1.9.0.tar.gz", hash = "sha256:8384e0d7f106a94d95420e4589a6e537839fa5ef9c59611d3991d41b22d8d8b2"},
 ]
 argon2-cffi = [
     {file = "argon2-cffi-20.1.0.tar.gz", hash = "sha256:d8029b2d3e4b4cea770e9e5a0104dd8fa185c1724a0f01528ae4826a6d25f97d"},
@@ -2587,8 +2587,8 @@ ipywidgets = [
     {file = "ipywidgets-7.6.3.tar.gz", hash = "sha256:9f1a43e620530f9e570e4a493677d25f08310118d315b00e25a18f12913c41f0"},
 ]
 isort = [
-    {file = "isort-5.9.1-py3-none-any.whl", hash = "sha256:8e2c107091cfec7286bc0f68a547d0ba4c094d460b732075b6fba674f1035c0c"},
-    {file = "isort-5.9.1.tar.gz", hash = "sha256:83510593e07e433b77bd5bff0f6f607dbafa06d1a89022616f02d8b699cfcd56"},
+    {file = "isort-5.9.2-py3-none-any.whl", hash = "sha256:eed17b53c3e7912425579853d078a0832820f023191561fcee9d7cae424e0813"},
+    {file = "isort-5.9.2.tar.gz", hash = "sha256:f65ce5bd4cbc6abdfbe29afc2f0245538ab358c14590912df638033f157d555e"},
 ]
 jedi = [
     {file = "jedi-0.18.0-py2.py3-none-any.whl", hash = "sha256:18456d83f65f400ab0c2d3319e48520420ef43b23a086fdc05dff34132f0fb93"},

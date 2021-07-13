@@ -9,7 +9,7 @@ authors = ["Bryan Culbertson <bryan.culbertson@gmail.com>"]
 flake8 = { version = "^3.9.2", optional = true }
 black = { version = "^21.6b0", optional = true }
 mypy = { version = "^0.812", optional = true }
-isort = { version = "^5.9.1", optional = true }
+isort = { version = "^5.9.2", optional = true }
 
 # Test
 pytest = { version = "^6.2.4", optional = true }
@@ -20,7 +20,7 @@ python = "^3.9"
 click = "^7.1.2"
 python-dotenv = "^0.18.0"
 pathy = {extras = ["gcs"], version = "^0.5.2"}
-arcgis = "^1.8.5"
+arcgis = "^1.9.0"
 PyYAML = "^5.4.1"
 pydantic = "^1.8.2"
 Rtree = "^0.9.7"
