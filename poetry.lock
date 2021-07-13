@@ -52,7 +52,7 @@ python-versions = "*"
 
 [[package]]
 name = "arcgis"
-version = "1.8.5.post3"
+version = "1.9.0"
 description = "ArcGIS API for Python"
 category = "main"
 optional = false
@@ -2216,7 +2216,7 @@ test = ["pytest", "pytest-runner"]
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.9"
-content-hash = "34ea0423746b6c8416367bda65b60c9c93cefadcb22ee37b3b333f1e61fcfca5"
+content-hash = "63a8454bee810570660b53f038030b47e8be13957033ccd72daa35b5996d1834"
 
 [metadata.files]
 aiohttp = [
@@ -2271,7 +2271,7 @@ appnope = [
     {file = "appnope-0.1.2.tar.gz", hash = "sha256:dd83cd4b5b460958838f6eb3000c660b1f9caf2a5b1de4264e941512f603258a"},
 ]
 arcgis = [
-    {file = "arcgis-1.8.5.post3.tar.gz", hash = "sha256:737f39e7a32b9cec03c87324256f84c908d6af8ad5fee43cc5e0cf2402736398"},
+    {file = "arcgis-1.9.0.tar.gz", hash = "sha256:8384e0d7f106a94d95420e4589a6e537839fa5ef9c59611d3991d41b22d8d8b2"},
 ]
 argon2-cffi = [
     {file = "argon2-cffi-20.1.0.tar.gz", hash = "sha256:d8029b2d3e4b4cea770e9e5a0104dd8fa185c1724a0f01528ae4826a6d25f97d"},
